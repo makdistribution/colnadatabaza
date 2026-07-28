@@ -1,0 +1,6 @@
+{
+  "name": "MAK Distribution - Colná Databáza",
+  "description": "Systém pre colnú databázu, správu prepravných záznamov, fakturáciu, adresár zákazníkov a mesačné reporty zisku.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
