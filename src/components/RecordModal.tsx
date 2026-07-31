@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ColnaRecord } from '../types';
-import { X, Save, AlertTriangle, Bell, Calendar, Truck, DollarSign, FileCheck } from 'lucide-react';
+import { X, Save, AlertTriangle, Bell, Calendar, Truck, DollarSign, FileCheck, Upload } from 'lucide-react';
 
 interface RecordModalProps {
   isOpen: boolean;
@@ -8,6 +8,7 @@ interface RecordModalProps {
   onSave: (record: Partial<ColnaRecord>) => void;
   initialRecord?: ColnaRecord | null;
   customerList: string[];
+  readOnly?: boolean;
 }
 
 interface AmountInputProps {
@@ -76,7 +77,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   onClose,
   onSave,
   initialRecord,
-  customerList
+  customerList,
+  readOnly = false
 }) => {
   const [formData, setFormData] = useState<Partial<ColnaRecord>>({
     zakaznik: 'Petertransporte',
@@ -96,6 +98,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     splatna: '',
     zaplatena: false,
   });
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [isInvoiceDragActive, setIsInvoiceDragActive] = useState(false);
+  const invoiceInputRef = useRef<HTMLInputElement>(null);
+  const spzInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initialRecord) {
@@ -121,6 +127,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
       });
     }
   }, [initialRecord, isOpen, customerList]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setInvoiceFile(null);
+      setIsInvoiceDragActive(false);
+    }
+  }, [isOpen]);
 
   // Helper state toggles for UK/EU route selection
   const isUkZaclenieSelected = !!(formData.ukToEu && formData.ukToEu.includes('zaclenie v UK'));
@@ -169,6 +182,24 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     setFormData(prev => ({ ...prev, euToUk: newStr }));
   };
 
+  const selectInvoiceFile = (file?: File) => {
+    if (file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
+      setInvoiceFile(file);
+    }
+  };
+
+  const handleSpzChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectionStart = e.currentTarget.selectionStart;
+    const selectionEnd = e.currentTarget.selectionEnd;
+    const uppercaseValue = e.currentTarget.value.toUpperCase();
+    setFormData(prev => ({ ...prev, spz: uppercaseValue }));
+    requestAnimationFrame(() => {
+      if (spzInputRef.current && selectionStart !== null && selectionEnd !== null) {
+        spzInputRef.current.setSelectionRange(selectionStart, selectionEnd);
+      }
+    });
+  };
+
   if (!isOpen) return null;
 
   // Auto calculate profit
@@ -195,13 +226,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               style={{
                 borderRadius: '8px',
                 borderWidth: '4px',
-                borderColor: initialRecord ? '#e33a3a' : '#1e10d0',
+                borderColor: initialRecord && !readOnly ? '#e33a3a' : '#1e10d0',
                 borderStyle: 'solid',
                 fontSize: '15px',
                 fontFamily: 'system-ui, sans-serif'
               }}
             >
-              {initialRecord ? 'ÚPRAVA ZÁZNAMU COLNICE' : 'NOVÝ ZÁZNAM'}
+              {readOnly ? 'NÁHĽAD ZÁZNAMU COLNICE' : initialRecord ? 'ÚPRAVA ZÁZNAMU COLNICE' : 'NOVÝ ZÁZNAM'}
             </h3>
           </div>
           
@@ -215,6 +246,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 text-xs overflow-y-auto">
+          <fieldset disabled={readOnly} className="contents">
           
           {/* Row 1: Customer & Flags */}
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -236,7 +268,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </div>
 
             <div className="flex items-center gap-3 self-end pb-1">
-              {!initialRecord ? (
+              {!initialRecord || readOnly ? (
                 <>
                   <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
                     <input
@@ -275,6 +307,17 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   </span>
                 </label>
               )}
+              {readOnly && (
+                <label className="flex items-center gap-1.5 font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={formData.alert}
+                    readOnly
+                    className="rounded text-blue-600 focus:ring-0 w-4 h-4 bg-white border-slate-300 shrink-0"
+                  />
+                  <img src="/edit.png" alt="Edit" className="h-6.5 w-auto object-contain shrink-0" />
+                </label>
+              )}
             </div>
           </div>
 
@@ -297,9 +340,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <Truck className="w-3 h-3 text-blue-600" /> ŠPZ VOZIDLA
               </label>
               <input
+                ref={spzInputRef}
                 type="text"
                 value={formData.spz || ''}
-                onChange={(e) => setFormData({ ...formData, spz: e.target.value })}
+                onChange={handleSpzChange}
                 className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-slate-900 font-mono focus:ring-1 focus:ring-blue-500 outline-none"
               />
             </div>
@@ -321,7 +365,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2">
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
-                TRASA UK ➔ EU (KLIKNUTÍM ZVOLTE)
+                TRASA <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </label>
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <button
@@ -352,7 +396,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
             <div className="bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2">
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
-                TRASA EU ➔ UK (KLIKNUTÍM ZVOLTE)
+                TRASA <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </label>
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <button
@@ -431,7 +475,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           </div>
 
           {/* Row 5: Invoice Info & Payment */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-[0.9fr_1.1fr_1.4fr_1fr] gap-2.5 items-center">
             <div>
               <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase tracking-wide">
                 ČÍSLO FAKTÚRY
@@ -454,6 +498,46 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, splatna: e.target.value })}
                 className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 focus:ring-blue-500 outline-none"
               />
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <input
+                ref={invoiceInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(e) => selectInvoiceFile(e.target.files?.[0])}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => invoiceInputRef.current?.click()}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  setIsInvoiceDragActive(true);
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDragLeave={() => setIsInvoiceDragActive(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsInvoiceDragActive(false);
+                  selectInvoiceFile(e.dataTransfer.files?.[0]);
+                }}
+                className={`relative order-2 flex-1 h-[84px] rounded-xl border cursor-pointer transition-colors ${
+                  isInvoiceDragActive
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'border-blue-400 bg-slate-50 hover:bg-slate-100'
+                }`}
+              >
+                <Upload className="absolute left-1/2 top-1/2 w-5 h-5 -translate-x-1/2 -translate-y-1/2 text-blue-600" />
+                {invoiceFile && (
+                  <span className="absolute bottom-1 left-2 right-2 block text-center text-blue-700 font-semibold text-[9px] truncate">
+                    {invoiceFile.name}
+                  </span>
+                )}
+              </button>
+              <span className="order-1 w-[68px] shrink-0 translate-x-[3mm] text-slate-500 font-semibold text-[11px] uppercase leading-tight">
+                NAHRAJ VYSTAVENÚ FAKTÚRU
+              </span>
             </div>
 
             <div>
@@ -481,17 +565,18 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               value={formData.intPoznamka || ''}
               onChange={(e) => setFormData({ ...formData, intPoznamka: e.target.value })}
               className={`w-full bg-slate-50 ${
-                initialRecord
+                initialRecord && !readOnly
                   ? 'border-2 border-red-500 focus:ring-red-500'
                   : 'border border-slate-200 focus:ring-blue-500'
               } rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 outline-none`}
             />
           </div>
 
+          </fieldset>
         </form>
 
         {/* Bottom Action Footer */}
-        <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-center shrink-0">
+        {!readOnly && <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-center shrink-0">
           <button
             type="button"
             onClick={() => handleSubmit()}
@@ -499,7 +584,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           >
             ULOŽIŤ
           </button>
-        </div>
+        </div>}
 
       </div>
     </div>

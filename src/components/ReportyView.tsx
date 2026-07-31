@@ -181,8 +181,8 @@ export const ReportyView: React.FC<ReportyViewProps> = ({ records, year, onYearC
                   <div className="flex items-center gap-3">
                     <div className="bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold px-3 py-1 rounded-md font-mono text-xs flex items-center gap-1.5 shadow-2xs whitespace-nowrap">
                       <span className="text-emerald-900 font-extrabold">ZISK: € {profitFormatted}</span>
-                      <span className="text-emerald-700 font-sans mx-0.5 font-bold">➾</span>
-                      <span className="text-emerald-900 font-extrabold">€ {twoThirdsFormatted}</span>
+                      <span className="text-emerald-900 font-sans mx-0.5 font-bold">➜</span>
+                      <span className="text-emerald-900 font-extrabold">€ {twoThirdsFormatted} (poslať na účet)</span>
                     </div>
                   </div>
                 </button>

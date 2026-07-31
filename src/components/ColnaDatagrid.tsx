@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ColnaRecord } from '../types';
 import { parseMonthYear, extractYearAndMonth } from '../utils/monthUtils';
+import { RecordModal } from './RecordModal';
 
 // Helpers to extract status for the 4 split columns (UK ➔ EU and EU ➔ UK)
 const getUkZaclenie = (r: ColnaRecord): string => {
@@ -62,6 +63,7 @@ const getUkVyclenie = (r: ColnaRecord): string => {
   }
   return '';
 };
+
 import { 
   Plus, 
   Trash2, 
@@ -118,6 +120,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   const [activeViewTab, setActiveViewTab] = useState<'ACTIVE' | 'COMPLETED' | 'ALL'>('ACTIVE');
   const [currentPage, setCurrentPage] = useState(1);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [previewRecord, setPreviewRecord] = useState<ColnaRecord | null>(null);
   const pageSize = 10;
 
   const targetYear = parseMonthYear(currentMonthYear).year;
@@ -413,7 +416,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 />
               </th>
               <th rowSpan={2} className="p-2 w-10 text-center border-r border-slate-300 text-black">
-                Akcia
+                <img src="/edit1.png" alt="Edit" className="mx-auto h-6 w-auto object-contain" />
               </th>
               <th rowSpan={2} className="p-2 min-w-[150px] border-r border-slate-300 text-black">
                 ZÁKAZNÍK
@@ -437,10 +440,10 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 REF. NA FAKTÚRU
               </th>
               <th colSpan={2} className="p-1.5 text-center border-r border-b border-slate-300 text-black bg-blue-100 font-bold text-[16px] leading-[20px] font-sans">
-                UK ➔ EU
+                <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </th>
               <th colSpan={2} className="p-1.5 text-center border-r border-b border-[#bdc0e8] text-black bg-[#dbeafe] font-bold text-[16px] leading-[20px] font-sans">
-                EU ➔ UK
+                <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </th>
               <th rowSpan={2} className="p-2 min-w-[85px] text-right border-r border-slate-300 font-sans text-black">
                 <span className="whitespace-nowrap">FA OD UK</span>
@@ -462,6 +465,9 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               </th>
               <th rowSpan={2} className="p-2 min-w-[75px] text-right border-r border-slate-300 text-black font-extrabold whitespace-nowrap">
                 ZISK (€)
+              </th>
+              <th rowSpan={2} className="w-[0.9cm] min-w-[0.9cm] max-w-[0.9cm] p-0 text-center align-middle border-r border-slate-300 text-black">
+                <img src="/inv.png" alt="Invoice" className="mx-auto h-[28.8px] w-[28.8px] translate-y-[0.5px] object-contain" />
               </th>
               <th rowSpan={2} className="p-2 min-w-[85px] border-r border-slate-300 text-black">
                 ČÍSLO FAKTÚRY
@@ -491,7 +497,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
           <tbody className="divide-y divide-slate-200 font-mono text-[12px] text-slate-800">
             {paginatedRecords.length === 0 ? (
               <tr>
-                <td colSpan={21} className="p-10 text-center font-sans">
+                <td colSpan={22} className="p-10 text-center font-sans">
                   <div className="flex flex-col items-center justify-center gap-2 max-w-md mx-auto py-4">
                     <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 mb-1">
                       <Plus className="w-6 h-6" />
@@ -511,7 +517,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 return (
                   <tr
                     key={r.id}
-                    className={`transition-colors hover:bg-blue-50/50 ${
+                    onClick={() => setPreviewRecord(r)}
+                    className={`cursor-pointer transition-colors hover:bg-blue-50/50 ${
                       isSelected ? 'bg-blue-50/80' : idx % 2 === 1 ? 'bg-slate-50/70' : 'bg-white'
                     }`}
                   >
@@ -521,6 +528,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleSelectRow(r.id)}
+                        onClick={(e) => e.stopPropagation()}
                         className="rounded text-blue-600 focus:ring-0 w-3.5 h-3.5 border-slate-300"
                       />
                     </td>
@@ -528,16 +536,25 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     {/* Edit button */}
                     <td className="p-2 text-center border-r border-slate-200">
                       <button
-                        onClick={() => onEditRecord(r)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditRecord(r);
+                        }}
                         className="text-blue-600 hover:text-blue-800 hover:underline flex items-center justify-center mx-auto cursor-pointer font-sans font-semibold text-xs"
                       >
-                        <Edit3 className="w-3.5 h-3.5 mr-0.5" /> EDIT
+                        <Edit3 className="w-3.5 h-3.5" />
                       </button>
                     </td>
 
                     {/* Customer */}
                     <td className="p-2 font-mono font-bold text-[12px] text-slate-900 border-r border-slate-200">
-                      {r.zakaznik}
+                      <button
+                        type="button"
+                        onClick={() => setPreviewRecord(r)}
+                        className="text-left text-slate-900 hover:text-blue-600 cursor-pointer"
+                      >
+                        {r.zakaznik}
+                      </button>
                     </td>
 
                     {/* NEW flag */}
@@ -631,6 +648,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       {r.zisk ? `${r.zisk.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
+                    <td className="w-[0.9cm] min-w-[0.9cm] max-w-[0.9cm] p-0 text-center border-r border-slate-200"></td>
+
                     {/* CISLO FA */}
                     <td className="p-2 text-slate-700 border-r border-slate-200 font-medium">
                       {r.cisloFa}
@@ -645,7 +664,10 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     <td className="p-2 text-center border-r border-slate-200">
                       <button
                         type="button"
-                        onClick={() => onTogglePaid(r.id, !r.zaplatena)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTogglePaid(r.id, !r.zaplatena);
+                        }}
                         className="inline-flex items-center justify-center cursor-pointer p-0.5 hover:opacity-80 transition-opacity"
                         title={r.zaplatena ? 'Zaplatené (Kliknite pre zmenu)' : 'Nezaplatené (Kliknite pre zmenu)'}
                       >
@@ -681,6 +703,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <td className="p-2.5 text-right border-r border-slate-300 text-emerald-900 font-black text-sm bg-emerald-100/60">
                 {totalZisk.toFixed(2).replace('.', ',')}
               </td>
+              <td className="p-2.5 border-r border-slate-300"></td>
               <td colSpan={3} className="p-2.5"></td>
             </tr>
           </tfoot>
@@ -693,6 +716,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
           Zobrazených {paginatedRecords.length} z {filteredRecords.length} záznamov
         </div>
       </div>
+
+      {previewRecord && (
+        <RecordModal
+          isOpen={true}
+          onClose={() => setPreviewRecord(null)}
+          onSave={() => {}}
+          initialRecord={previewRecord}
+          customerList={[previewRecord.zakaznik]}
+          readOnly
+        />
+      )}
 
       {/* UZATVORIŤ MESIAC MODAL */}
       {isCloseModalOpen && (

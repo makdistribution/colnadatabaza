@@ -74,6 +74,9 @@ export default function App() {
   const [currentMonthYear, setCurrentMonthYear] = useState('JÚL / 2026');
   const [statusFilter, setStatusFilter] = useState<'OFF' | 'ALL' | 'UNPAID' | 'NEW'>('OFF');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isApplicationLocked, setIsApplicationLocked] = useState(true);
+  const [applicationPassword, setApplicationPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -297,6 +300,15 @@ export default function App() {
   const unpaidCount = colnaRecords.filter((r) => !r.zaplatena).length;
   const currentMonthProfit = colnaRecords.reduce((acc, r) => acc + (r.zisk || 0), 0);
 
+  const handleApplicationUnlock = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (applicationPassword === '123') {
+      setIsApplicationLocked(false);
+      return;
+    }
+    setPasswordError(true);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-blue-600 selection:text-white">
       {/* Header and Quick Stats Block connected together */}
@@ -417,6 +429,35 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {isApplicationLocked && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/20 backdrop-blur-md">
+          <div className="w-[90vw] h-[90vh] flex items-center justify-center rounded-2xl border border-white/60 bg-white/80 shadow-2xl backdrop-blur-xl">
+            <form onSubmit={handleApplicationUnlock} className="w-full max-w-sm px-8 text-center">
+              <h1 className="mb-6 text-2xl font-bold text-slate-900">Prístup do aplikácie</h1>
+              <input
+                type="password"
+                value={applicationPassword}
+                onChange={(event) => {
+                  setApplicationPassword(event.target.value);
+                  setPasswordError(false);
+                }}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-600"
+                autoFocus
+              />
+              {passwordError && (
+                <p className="mt-3 text-sm font-semibold text-red-600">Nesprávne heslo</p>
+              )}
+              <button
+                type="submit"
+                className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-bold text-white hover:bg-blue-700"
+              >
+                Vstúpiť
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
