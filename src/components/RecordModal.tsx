@@ -246,7 +246,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 text-xs overflow-y-auto">
-          <fieldset disabled={readOnly} className="contents">
+          <fieldset disabled={readOnly} className="space-y-3">
           
           {/* Row 1: Customer & Flags */}
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -267,7 +267,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </select>
             </div>
 
-            <div className="flex items-center gap-3 self-end pb-1">
+            <div className="flex items-center justify-end gap-3 self-end pb-1 w-[235.3125px] shrink-0">
               {!initialRecord || readOnly ? (
                 <>
                   <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
@@ -305,17 +305,6 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   <span className="text-slate-600 font-medium text-[12px] leading-tight self-center mt-0">
                     Zaznamenať zmenu a <img src="/mail.png" alt="Mail" className="h-4.5 w-auto inline-block align-middle mx-0.5" /><br />upozornenie o zmene
                   </span>
-                </label>
-              )}
-              {readOnly && (
-                <label className="flex items-center gap-1.5 font-medium text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.alert}
-                    readOnly
-                    className="rounded text-blue-600 focus:ring-0 w-4 h-4 bg-white border-slate-300 shrink-0"
-                  />
-                  <img src="/edit.png" alt="Edit" className="h-6.5 w-auto object-contain shrink-0" />
                 </label>
               )}
             </div>
@@ -568,7 +557,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 initialRecord && !readOnly
                   ? 'border-2 border-red-500 focus:ring-red-500'
                   : 'border border-slate-200 focus:ring-blue-500'
-              } rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 outline-none`}
+              } h-[30px] rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 outline-none`}
             />
           </div>
 
@@ -576,15 +565,16 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         </form>
 
         {/* Bottom Action Footer */}
-        {!readOnly && <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-center shrink-0">
+        <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-center shrink-0">
           <button
             type="button"
             onClick={() => handleSubmit()}
+            disabled={readOnly}
             className="bg-[#1a65ff] hover:bg-blue-700 text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
           >
             ULOŽIŤ
           </button>
-        </div>}
+        </div>
 
       </div>
     </div>
