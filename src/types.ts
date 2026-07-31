@@ -20,6 +20,23 @@ export interface ColnaRecord {
   isClosed?: boolean;
 }
 
+export interface MonthlyReport {
+  monthStart: string;
+  year: number;
+  month: number;
+  recordCount: number;
+  totalRevenue: number;
+  totalCosts: number;
+  totalProfit: number;
+}
+
+export interface AppBootstrap {
+  activeMonth: string;
+  activeReportYear: number;
+  records: ColnaRecord[];
+  reports: MonthlyReport[];
+}
+
 export interface AdresaRecord {
   id: string;
   pC: string;

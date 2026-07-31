@@ -9,6 +9,7 @@ interface RecordModalProps {
   initialRecord?: ColnaRecord | null;
   customerList: string[];
   readOnly?: boolean;
+  defaultDate?: string;
 }
 
 interface AmountInputProps {
@@ -78,7 +79,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   onSave,
   initialRecord,
   customerList,
-  readOnly = false
+  readOnly = false,
+  defaultDate,
 }) => {
   const [formData, setFormData] = useState<Partial<ColnaRecord>>({
     zakaznik: 'Petertransporte',
@@ -112,7 +114,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         isNew: true,
         bell: false,
         alert: false,
-        datumColnice: new Date().toISOString().split('T')[0],
+        datumColnice: defaultDate || new Date().toISOString().split('T')[0],
         spz: '',
         refNaFa: '',
         ukToEu: '',
@@ -126,7 +128,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         zaplatena: false,
       });
     }
-  }, [initialRecord, isOpen, customerList]);
+  }, [initialRecord, isOpen, customerList, defaultDate]);
 
   useEffect(() => {
     if (isOpen) {

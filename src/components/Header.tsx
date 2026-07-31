@@ -17,12 +17,14 @@ interface HeaderProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   availableYears?: number[];
+  activeReportYear?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   availableYears = [2026, 2025],
+  activeReportYear = availableYears[0],
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -216,8 +218,8 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
 
                   <div className="py-1">
-                    {availableYears.map((y, idx) => {
-                      const isLatest = idx === 0;
+                    {availableYears.map((y) => {
+                      const isLatest = y === activeReportYear;
                       const tabName = `REPORTY_${y}` as ActiveTab;
                       return (
                         <button

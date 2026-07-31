@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ColnaRecord } from '../types';
+import { ColnaRecord, MonthlyReport } from '../types';
 import { extractYearAndMonth, MONTH_NAMES } from '../utils/monthUtils';
 import { BarChart3, ChevronDown, ChevronRight, DollarSign, Calendar, TrendingUp, CheckCircle, Clock } from 'lucide-react';
 
 interface ReportyViewProps {
   records: ColnaRecord[];
+  reports: MonthlyReport[];
   year: number;
   onYearChange?: (year: number) => void;
   availableYears?: number[];
@@ -17,15 +18,18 @@ const formatMoney = (val: number) => {
   return parts.join(',');
 };
 
-export const ReportyView: React.FC<ReportyViewProps> = ({ records, year, onYearChange, availableYears }) => {
+export const ReportyView: React.FC<ReportyViewProps> = ({ records, reports, year, onYearChange, availableYears }) => {
   const [collapsedMonths, setCollapsedMonths] = useState<Record<number, boolean>>({});
 
   const yearList = availableYears && availableYears.length > 0 ? availableYears : [2026, 2025];
 
-  // Filter records by year using robust extractYearAndMonth
+  const yearReports = reports.filter((report) => report.year === year);
+  const reportedMonths = new Set(yearReports.map((report) => report.month));
+
+  // Reports contain only records from months that have been closed.
   const yearRecords = records.filter((r) => {
     const ym = extractYearAndMonth(r.datumColnice);
-    return ym ? ym.year === year : false;
+    return ym ? ym.year === year && reportedMonths.has(ym.month) : false;
   });
 
   // Group by month (0 = Jan, 11 = Dec)
@@ -35,22 +39,20 @@ export const ReportyView: React.FC<ReportyViewProps> = ({ records, year, onYearC
       return ym ? ym.month === index + 1 : false;
     });
 
-    const monthProfit = monthRecords.reduce((acc, r) => acc + (r.zisk || 0), 0);
-    const monthRevenue = monthRecords.reduce((acc, r) => acc + (r.faKlient || 0), 0);
-    const monthCosts = monthRecords.reduce((acc, r) => acc + (r.faOdUkAgent || 0) + (r.faOdEuAgent || 0), 0);
+    const report = yearReports.find((item) => item.month === index + 1);
 
     return {
       monthIndex: index,
       monthName: name,
       records: monthRecords,
-      totalProfit: monthProfit,
-      totalRevenue: monthRevenue,
-      totalCosts: monthCosts,
+      totalProfit: report?.totalProfit || 0,
+      totalRevenue: report?.totalRevenue || 0,
+      totalCosts: report?.totalCosts || 0,
     };
-  }).filter((g) => g.records.length > 0);
+  }).filter((g) => reportedMonths.has(g.monthIndex + 1));
 
-  const totalYearProfit = yearRecords.reduce((acc, r) => acc + (r.zisk || 0), 0);
-  const totalYearRevenue = yearRecords.reduce((acc, r) => acc + (r.faKlient || 0), 0);
+  const totalYearProfit = yearReports.reduce((acc, report) => acc + report.totalProfit, 0);
+  const totalYearRevenue = yearReports.reduce((acc, report) => acc + report.totalRevenue, 0);
   const unpaidCount = yearRecords.filter(r => !r.zaplatena).length;
 
   const toggleMonth = (index: number) => {

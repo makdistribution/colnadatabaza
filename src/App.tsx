@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ColnaRecord, 
+  AppBootstrap,
+  MonthlyReport,
   AdresaRecord, 
   LoginRecord, 
   InfoFaRecord, 
   ActiveTab 
 } from './types';
-import { parseMonthYear, formatMonthYear, extractYearAndMonth } from './utils/monthUtils';
+import { parseMonthYear, formatMonthYear } from './utils/monthUtils';
 import { 
-  INITIAL_COLNA_RECORDS, 
   INITIAL_ADRESY_RECORDS, 
   INITIAL_LOGIN_RECORDS, 
   INITIAL_INFO_FA_RECORDS 
@@ -22,28 +23,13 @@ import { LoginUdajeView } from './components/LoginUdajeView';
 import { InfoFaView } from './components/InfoFaView';
 import { ReportyView } from './components/ReportyView';
 import { SuboryView } from './components/SuboryView';
+import { appApi } from './lib/appApi';
 
 export default function App() {
-  // Persistence via localStorage
-  const [colnaRecords, setColnaRecords] = useState<ColnaRecord[]>(() => {
-    const saved = localStorage.getItem('mak_colna_records');
-    if (saved) {
-      try { 
-        const parsed = JSON.parse(saved);
-        const existingIds = new Set(parsed.map((r: ColnaRecord) => r.id));
-        const missingInitial = INITIAL_COLNA_RECORDS.filter(r => !existingIds.has(r.id));
-        const combined = missingInitial.length > 0 ? [...parsed, ...missingInitial] : parsed;
-        return combined.map((r: ColnaRecord) => {
-          const ym = extractYearAndMonth(r.datumColnice);
-          if (ym && ym.year === 2026 && ym.month === 7) {
-            return { ...r, isClosed: false };
-          }
-          return r;
-        });
-      } catch (e) { console.error(e); }
-    }
-    return INITIAL_COLNA_RECORDS.map(r => ({ ...r, isClosed: false }));
-  });
+  const [colnaRecords, setColnaRecords] = useState<ColnaRecord[]>([]);
+  const [monthlyReports, setMonthlyReports] = useState<MonthlyReport[]>([]);
+  const [activeReportYear, setActiveReportYear] = useState(2026);
+  const [isDataLoading, setIsDataLoading] = useState(false);
 
   const [adresyRecords, setAdresyRecords] = useState<AdresaRecord[]>(() => {
     const saved = localStorage.getItem('mak_adresy_records');
@@ -77,47 +63,31 @@ export default function App() {
   const [isApplicationLocked, setIsApplicationLocked] = useState(true);
   const [applicationPassword, setApplicationPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [applicationError, setApplicationError] = useState('');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingColnaRecord, setEditingColnaRecord] = useState<ColnaRecord | null>(null);
 
+  const applyBootstrap = (bootstrap: AppBootstrap) => {
+    const activeDate = new Date(`${bootstrap.activeMonth}T00:00:00`);
+    setCurrentMonthYear(formatMonthYear(activeDate.getMonth() + 1, activeDate.getFullYear()));
+    setActiveReportYear(bootstrap.activeReportYear);
+    setColnaRecords(bootstrap.records);
+    setMonthlyReports(bootstrap.reports);
+  };
+
   // Close month logic
-  const handleCloseMonth = (monthYearToClose: string) => {
-    const { month: targetMonth, year: targetYear } = parseMonthYear(monthYearToClose);
-
-    // 1. Mark records of this month as closed and completed
-    setColnaRecords((prev) =>
-      prev.map((r) => {
-        const ym = extractYearAndMonth(r.datumColnice);
-        if (ym && ym.year === targetYear && ym.month === targetMonth) {
-          return { ...r, isClosed: true, zaplatena: true };
-        }
-        return r;
-      })
-    );
-
-    // 2. Compute next month
-    let m = targetMonth + 1;
-    let y = targetYear;
-    if (m > 12) {
-      m = 1;
-      y += 1;
-    }
-    const nextMY = formatMonthYear(m, y);
-
-    // 3. Switch current active month to nextMY
-    setCurrentMonthYear(nextMY);
-
-    // 4. Show success toast notification
+  const handleCloseMonth = async (monthYearToClose: string, closeYear = false) => {
+    const { year: targetYear } = parseMonthYear(monthYearToClose);
+    const response = await appApi.closeMonth(closeYear);
+    applyBootstrap(response.bootstrap);
+    const nextDate = new Date(`${response.bootstrap.activeMonth}T00:00:00`);
+    const nextMY = formatMonthYear(nextDate.getMonth() + 1, nextDate.getFullYear());
+    setActiveTab('COLNA_DATABAZA');
     setToastMessage(`Mesiac ${monthYearToClose} bol úspešne uzatvorený. Dáta a zisk boli prenesené do REPORTY ${targetYear}. Automaticky bola vytvorená nová čisto prázdna databáza pre mesiac ${nextMY}.`);
     setTimeout(() => setToastMessage(null), 9000);
   };
-
-  // Sync to localStorage
-  useEffect(() => {
-    localStorage.setItem('mak_colna_records', JSON.stringify(colnaRecords));
-  }, [colnaRecords]);
 
   useEffect(() => {
     localStorage.setItem('mak_adresy_records', JSON.stringify(adresyRecords));
@@ -132,13 +102,14 @@ export default function App() {
   }, [infoFaRecords]);
 
   // Reset to original dataset from screenshots
-  const handleResetData = () => {
+  const handleResetData = async () => {
     if (window.confirm('Naozaj chcete obnoviť pôvodné ukážkové dáta z fotiek?')) {
-      setColnaRecords(INITIAL_COLNA_RECORDS);
-      setAdresyRecords(INITIAL_ADRESY_RECORDS);
-      setLoginRecords(INITIAL_LOGIN_RECORDS);
-      setInfoFaRecords(INITIAL_INFO_FA_RECORDS);
-      localStorage.clear();
+      try {
+        const response = await appApi.resetData();
+        applyBootstrap(response.bootstrap);
+      } catch (error) {
+        setToastMessage(error instanceof Error ? error.message : 'Dáta sa nepodarilo obnoviť.');
+      }
     }
   };
 
@@ -201,54 +172,40 @@ export default function App() {
   const activeYear = parseMonthYear(currentMonthYear).year;
   const availableYears = Array.from(
     new Set([
-      2025,
-      2026,
       activeYear,
-      ...colnaRecords.map((r) => extractYearAndMonth(r.datumColnice)?.year).filter((y): y is number => !!y)
+      activeReportYear,
+      ...monthlyReports.map((report) => report.year),
     ])
   ).sort((a, b) => b - a);
 
   // CRUD for Colna Records
-  const handleSaveColnaRecord = (partialRecord: Partial<ColnaRecord>) => {
-    if (partialRecord.id) {
-      // Edit
-      setColnaRecords((prev) =>
-        prev.map((r) => (r.id === partialRecord.id ? ({ ...r, ...partialRecord } as ColnaRecord) : r))
-      );
-    } else {
-      // Create new
-      const newRec: ColnaRecord = {
-        id: 'rec-' + Date.now(),
-        zakaznik: partialRecord.zakaznik || 'Petertransporte',
-        isNew: partialRecord.isNew ?? true,
-        bell: partialRecord.bell ?? false,
-        alert: partialRecord.alert ?? false,
-        datumColnice: partialRecord.datumColnice || new Date().toISOString().split('T')[0],
-        spz: partialRecord.spz || '',
-        refNaFa: partialRecord.refNaFa || '',
-        ukToEu: partialRecord.ukToEu || '',
-        euToUk: partialRecord.euToUk || '',
-        faOdUkAgent: Number(partialRecord.faOdUkAgent) || 0,
-        faOdEuAgent: Number(partialRecord.faOdEuAgent) || 0,
-        faKlient: Number(partialRecord.faKlient) || 0,
-        intPoznamka: partialRecord.intPoznamka || '',
-        zisk: Number(partialRecord.zisk) || 0,
-        cisloFa: partialRecord.cisloFa || '',
-        splatna: partialRecord.splatna || '',
-        zaplatena: partialRecord.zaplatena ?? false,
-      };
-      setColnaRecords((prev) => [newRec, ...prev]);
+  const handleSaveColnaRecord = async (partialRecord: Partial<ColnaRecord>) => {
+    try {
+      const { bootstrap } = await appApi.saveRecord(partialRecord);
+      applyBootstrap(bootstrap);
+      setIsModalOpen(false);
+      setEditingColnaRecord(null);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Záznam sa nepodarilo uložiť.');
     }
   };
 
-  const handleDeleteColnaRecords = (ids: string[]) => {
-    setColnaRecords((prev) => prev.filter((r) => !ids.includes(r.id)));
+  const handleDeleteColnaRecords = async (ids: string[]) => {
+    try {
+      const { bootstrap } = await appApi.deleteRecords(ids);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Záznamy sa nepodarilo vymazať.');
+    }
   };
 
-  const handleTogglePaid = (id: string, zaplatena: boolean) => {
-    setColnaRecords((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, zaplatena } : r))
-    );
+  const handleTogglePaid = async (id: string, zaplatena: boolean) => {
+    try {
+      const { bootstrap } = await appApi.togglePaid(id, zaplatena);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Stav úhrady sa nepodarilo uložiť.');
+    }
   };
 
   // CRUD for Adresy
@@ -300,13 +257,27 @@ export default function App() {
   const unpaidCount = colnaRecords.filter((r) => !r.zaplatena).length;
   const currentMonthProfit = colnaRecords.reduce((acc, r) => acc + (r.zisk || 0), 0);
 
-  const handleApplicationUnlock = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleApplicationUnlock = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (applicationPassword === '123') {
+    setIsDataLoading(true);
+    setApplicationError('');
+    try {
+      await appApi.unlock(applicationPassword);
+      const bootstrap = await appApi.bootstrap();
+      applyBootstrap(bootstrap);
       setIsApplicationLocked(false);
-      return;
+      setApplicationPassword('');
+      localStorage.removeItem('mak_colna_records');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Aplikáciu sa nepodarilo načítať.';
+      if (message === 'Nesprávne heslo') {
+        setPasswordError(true);
+      } else {
+        setApplicationError(message);
+      }
+    } finally {
+      setIsDataLoading(false);
     }
-    setPasswordError(true);
   };
 
   return (
@@ -317,6 +288,7 @@ export default function App() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           availableYears={availableYears}
+          activeReportYear={activeReportYear}
         />
 
         {/* Quick Stats Banner matching Screenshot */}
@@ -400,6 +372,7 @@ export default function App() {
         {activeTab.startsWith('REPORTY_') && (
           <ReportyView
             records={colnaRecords}
+            reports={monthlyReports}
             year={parseInt(activeTab.replace('REPORTY_', ''), 10) || 2026}
             onYearChange={(y) => setActiveTab(`REPORTY_${y}`)}
             availableYears={availableYears}
@@ -419,6 +392,7 @@ export default function App() {
         onSave={handleSaveColnaRecord}
         initialRecord={editingColnaRecord}
         customerList={customerList}
+        defaultDate={`${parseMonthYear(currentMonthYear).year}-${String(parseMonthYear(currentMonthYear).month).padStart(2, '0')}-01`}
       />
 
       {/* Bottom Footer */}
@@ -441,6 +415,7 @@ export default function App() {
                 onChange={(event) => {
                   setApplicationPassword(event.target.value);
                   setPasswordError(false);
+                  setApplicationError('');
                 }}
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-600"
                 autoFocus
@@ -448,11 +423,15 @@ export default function App() {
               {passwordError && (
                 <p className="mt-3 text-sm font-semibold text-red-600">Nesprávne heslo</p>
               )}
+              {applicationError && (
+                <p className="mt-3 text-sm font-semibold text-red-600">{applicationError}</p>
+              )}
               <button
                 type="submit"
-                className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-bold text-white hover:bg-blue-700"
+                disabled={isDataLoading}
+                className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-bold text-white hover:bg-blue-700 disabled:cursor-wait disabled:opacity-70"
               >
-                Vstúpiť
+                {isDataLoading ? 'Načítavam…' : 'Vstúpiť'}
               </button>
             </form>
           </div>

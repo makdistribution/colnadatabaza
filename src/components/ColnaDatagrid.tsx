@@ -96,7 +96,7 @@ interface ColnaDatagridProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   currentMonthYear: string;
-  onCloseMonth: (monthYear: string) => void;
+  onCloseMonth: (monthYear: string, closeYear?: boolean) => Promise<void>;
   onMonthYearChange: (monthYear: string) => void;
   statusFilter: 'OFF' | 'ALL' | 'UNPAID' | 'NEW';
   setStatusFilter: (filter: 'OFF' | 'ALL' | 'UNPAID' | 'NEW') => void;
@@ -120,6 +120,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   const [activeViewTab, setActiveViewTab] = useState<'ACTIVE' | 'COMPLETED' | 'ALL'>('ACTIVE');
   const [currentPage, setCurrentPage] = useState(1);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [isClosingMonth, setIsClosingMonth] = useState(false);
   const [previewRecord, setPreviewRecord] = useState<ColnaRecord | null>(null);
   const pageSize = 10;
 
@@ -792,14 +793,25 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 Zrušiť
               </button>
               <button
-                onClick={() => {
-                  setIsCloseModalOpen(false);
-                  onCloseMonth(currentMonthYear);
+                disabled={isClosingMonth}
+                onClick={async () => {
+                  const { month, year } = parseMonthYear(currentMonthYear);
+                  const closeYear = month === 12;
+                  if (closeYear && !window.confirm(`Chcete uzavrieť aj rok ${year}?`)) return;
+                  setIsClosingMonth(true);
+                  try {
+                    await onCloseMonth(currentMonthYear, closeYear);
+                    setIsCloseModalOpen(false);
+                  } catch (error) {
+                    window.alert(error instanceof Error ? error.message : 'Mesiac sa nepodarilo uzatvoriť.');
+                  } finally {
+                    setIsClosingMonth(false);
+                  }
                 }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-xs flex items-center gap-2 transition-all cursor-pointer text-xs"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-xs flex items-center gap-2 transition-all cursor-pointer text-xs disabled:cursor-wait disabled:opacity-70"
               >
                 <Check className="w-4 h-4" />
-                <span>Potvrdiť & Uzatvoriť mesiac</span>
+                <span>{isClosingMonth ? 'Uzatváram…' : 'Potvrdiť & Uzatvoriť mesiac'}</span>
               </button>
             </div>
           </div>
