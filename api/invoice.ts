@@ -6,7 +6,7 @@ import {
   getSupabaseAdmin,
   sendError,
   sendJson,
-} from '../src/server/apiUtils';
+} from '../src/server/apiUtils.js';
 
 const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => ({
   id: String(record.id),

@@ -7,7 +7,7 @@ import {
   readJsonBody,
   sendError,
   sendJson,
-} from '../src/server/apiUtils';
+} from '../src/server/apiUtils.js';
 
 const passwordsMatch = (provided: string, expected: string) => {
   const providedBuffer = Buffer.from(provided);

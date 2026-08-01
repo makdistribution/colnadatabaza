@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { INITIAL_COLNA_RECORDS } from '../src/data/initialData';
+import { INITIAL_COLNA_RECORDS } from '../src/data/initialData.js';
 import type { ColnaRecord } from '../src/types';
 import {
   ApiRequest,
@@ -9,8 +9,8 @@ import {
   readJsonBody,
   sendError,
   sendJson,
-} from '../src/server/apiUtils';
-import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs';
+} from '../src/server/apiUtils.js';
+import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs.js';
 
 type ActionBody = {
   action?: 'saveRecord' | 'deleteRecords' | 'togglePaid' | 'closeMonth' | 'resetData';
