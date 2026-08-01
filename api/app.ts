@@ -1,5 +1,4 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { INITIAL_COLNA_RECORDS } from '../src/data/initialData.js';
 import type { ColnaRecord } from '../src/types';
 import {
   ApiRequest,
@@ -29,7 +28,6 @@ type ActionBody = {
   closeYear?: boolean;
 };
 
-const ACTIVE_SEED_MONTH = '2026-07-01';
 const INVOICE_BUCKET = 'invoice-pdfs';
 
 const monthStartFromDate = (date: string) => {
@@ -152,62 +150,10 @@ const sendInvoicingEmailOnce = async (record: Record<string, unknown>) => {
   }
 };
 
-const seedDatabase = async () => {
+const initializeDatabase = async () => {
   const supabase = getSupabaseAdmin();
-  const monthStarts = Array.from(
-    new Set(INITIAL_COLNA_RECORDS.map((record) => monthStartFromDate(record.datumColnice))),
-  );
-  if (!monthStarts.includes(ACTIVE_SEED_MONTH)) monthStarts.push(ACTIVE_SEED_MONTH);
-
-  const { error: monthError } = await supabase.from('months').upsert(
-    monthStarts.map((monthStart) => ({
-      month_start: monthStart,
-      status: monthStart === ACTIVE_SEED_MONTH ? 'active' : 'closed',
-      closed_at: monthStart === ACTIVE_SEED_MONTH ? null : new Date().toISOString(),
-    })),
-  );
-  throwIfError(monthError);
-
-  const records = INITIAL_COLNA_RECORDS.map((record) => {
-    const monthStart = monthStartFromDate(record.datumColnice);
-    return toDatabaseRecord(
-      { ...record, isClosed: monthStart !== ACTIVE_SEED_MONTH },
-      record.id,
-      monthStart,
-    );
-  });
-  const { error: recordsError } = await supabase.from('customs_records').upsert(records);
-  throwIfError(recordsError);
-
-  const reports = monthStarts
-    .filter((monthStart) => monthStart !== ACTIVE_SEED_MONTH)
-    .map((monthStart) => {
-      const monthRecords = records.filter((record) => record.month_start === monthStart);
-      return {
-        month_start: monthStart,
-        report_year: Number(monthStart.slice(0, 4)),
-        report_month: Number(monthStart.slice(5, 7)),
-        record_count: monthRecords.length,
-        total_revenue: monthRecords.reduce((sum, record) => sum + record.fa_klient, 0),
-        total_costs: monthRecords.reduce(
-          (sum, record) => sum + record.fa_od_uk_agent + record.fa_od_eu_agent,
-          0,
-        ),
-        total_profit: monthRecords.reduce((sum, record) => sum + record.zisk, 0),
-      };
-    });
-  if (reports.length > 0) {
-    const { error: reportsError } = await supabase.from('monthly_reports').upsert(reports);
-    throwIfError(reportsError);
-  }
-
-  const { error: stateError } = await supabase.from('app_state').upsert({
-    singleton_id: 1,
-    active_month: ACTIVE_SEED_MONTH,
-    active_report_year: 2026,
-    updated_at: new Date().toISOString(),
-  });
-  throwIfError(stateError);
+  const { error } = await supabase.rpc('initialize_app_state');
+  throwIfError(error);
 };
 
 const ensureInitialized = async () => {
@@ -223,7 +169,7 @@ const ensureInitialized = async () => {
     }
     throw new Error(error.message);
   }
-  if (!data) await seedDatabase();
+  if (!data) await initializeDatabase();
 };
 
 const loadBootstrapData = async () => {
@@ -430,7 +376,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
         );
         throwIfError(error);
       }
-      await seedDatabase();
+      await initializeDatabase();
       sendJson(response, 200, { bootstrap: await loadBootstrapData() });
       return;
     }

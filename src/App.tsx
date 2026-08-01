@@ -30,7 +30,7 @@ export default function App() {
   const invoiceToken = new URLSearchParams(window.location.search).get('invoiceToken');
   const [colnaRecords, setColnaRecords] = useState<ColnaRecord[]>([]);
   const [monthlyReports, setMonthlyReports] = useState<MonthlyReport[]>([]);
-  const [activeReportYear, setActiveReportYear] = useState(2026);
+  const [activeReportYear, setActiveReportYear] = useState(0);
   const [isDataLoading, setIsDataLoading] = useState(false);
 
   const [adresyRecords, setAdresyRecords] = useState<AdresaRecord[]>(() => {
@@ -59,7 +59,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('COLNA_DATABAZA');
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentMonthYear, setCurrentMonthYear] = useState('JÚL / 2026');
+  const [currentMonthYear, setCurrentMonthYear] = useState('');
   const [statusFilter, setStatusFilter] = useState<'OFF' | 'ALL' | 'UNPAID' | 'NEW'>('OFF');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isApplicationLocked, setIsApplicationLocked] = useState(true);
@@ -72,8 +72,8 @@ export default function App() {
   const [editingColnaRecord, setEditingColnaRecord] = useState<ColnaRecord | null>(null);
 
   const applyBootstrap = (bootstrap: AppBootstrap) => {
-    const activeDate = new Date(`${bootstrap.activeMonth}T00:00:00`);
-    setCurrentMonthYear(formatMonthYear(activeDate.getMonth() + 1, activeDate.getFullYear()));
+    const [year, month] = bootstrap.activeMonth.split('-').map(Number);
+    setCurrentMonthYear(formatMonthYear(month, year));
     setActiveReportYear(bootstrap.activeReportYear);
     setColnaRecords(bootstrap.records);
     setMonthlyReports(bootstrap.reports);
@@ -84,8 +84,8 @@ export default function App() {
     const { year: targetYear } = parseMonthYear(monthYearToClose);
     const response = await appApi.closeMonth(closeYear);
     applyBootstrap(response.bootstrap);
-    const nextDate = new Date(`${response.bootstrap.activeMonth}T00:00:00`);
-    const nextMY = formatMonthYear(nextDate.getMonth() + 1, nextDate.getFullYear());
+    const [nextYear, nextMonth] = response.bootstrap.activeMonth.split('-').map(Number);
+    const nextMY = formatMonthYear(nextMonth, nextYear);
     setActiveTab('COLNA_DATABAZA');
     setToastMessage(`Mesiac ${monthYearToClose} bol úspešne uzatvorený. Dáta a zisk boli prenesené do REPORTY ${targetYear}. Automaticky bola vytvorená nová čisto prázdna databáza pre mesiac ${nextMY}.`);
     setTimeout(() => setToastMessage(null), 9000);
@@ -171,13 +171,11 @@ export default function App() {
   })();
 
   // List of available report years
-  const activeYear = parseMonthYear(currentMonthYear).year;
   const availableYears = Array.from(
     new Set([
-      activeYear,
       activeReportYear,
       ...monthlyReports.map((report) => report.year),
-    ])
+    ].filter((year) => year > 0))
   ).sort((a, b) => b - a);
 
   // CRUD for Colna Records
@@ -391,7 +389,7 @@ export default function App() {
           <ReportyView
             records={colnaRecords}
             reports={monthlyReports}
-            year={parseInt(activeTab.replace('REPORTY_', ''), 10) || 2026}
+            year={parseInt(activeTab.replace('REPORTY_', ''), 10) || activeReportYear}
             onYearChange={(y) => setActiveTab(`REPORTY_${y}`)}
             availableYears={availableYears}
           />

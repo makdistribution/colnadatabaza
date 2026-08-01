@@ -23,8 +23,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
-  availableYears = [2026, 2025],
-  activeReportYear = availableYears[0],
+  availableYears = [],
+  activeReportYear = availableYears[0] ?? 0,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 

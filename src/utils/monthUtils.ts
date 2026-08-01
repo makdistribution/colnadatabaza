@@ -4,33 +4,35 @@ export const MONTH_NAMES = [
 ];
 
 export function parseMonthYear(my: string): { month: number; year: number } {
-  if (!my) return { month: 7, year: 2026 };
+  if (!my) return { month: 1, year: 0 };
 
   if (my.includes('/')) {
     const parts = my.split('/').map(s => s.trim());
     if (parts.length >= 2) {
       const mStr = parts[0].toUpperCase();
       const yStr = parts[1];
-      const year = parseInt(yStr, 10) || 2026;
+      const year = parseInt(yStr, 10);
       const monthIdx = MONTH_NAMES.findIndex(n => n === mStr);
-      if (monthIdx !== -1) {
+      if (monthIdx !== -1 && Number.isInteger(year)) {
         return { month: monthIdx + 1, year };
       }
       const num = parseInt(mStr, 10);
-      if (!isNaN(num) && num >= 1 && num <= 12) {
+      if (!isNaN(num) && num >= 1 && num <= 12 && Number.isInteger(year)) {
         return { month: num, year };
       }
     }
   } else if (my.includes('•')) {
     const [mStr, yStr] = my.split('•').map(s => s.trim());
-    return { month: parseInt(mStr, 10) || 7, year: parseInt(yStr, 10) || 2026 };
+    const month = parseInt(mStr, 10);
+    const year = parseInt(yStr, 10);
+    if (month >= 1 && month <= 12 && Number.isInteger(year)) return { month, year };
   }
 
-  return { month: 7, year: 2026 };
+  return { month: 1, year: 0 };
 }
 
 export function formatMonthYear(month: number, year: number): string {
-  const mName = MONTH_NAMES[(month - 1 + 12) % 12] || 'JÚL';
+  const mName = MONTH_NAMES[(month - 1 + 12) % 12] || MONTH_NAMES[0];
   return `${mName} / ${year}`;
 }
 

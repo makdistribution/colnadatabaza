@@ -21,7 +21,7 @@ const formatMoney = (val: number) => {
 export const ReportyView: React.FC<ReportyViewProps> = ({ records, reports, year, onYearChange, availableYears }) => {
   const [collapsedMonths, setCollapsedMonths] = useState<Record<number, boolean>>({});
 
-  const yearList = availableYears && availableYears.length > 0 ? availableYears : [2026, 2025];
+  const yearList = availableYears && availableYears.length > 0 ? availableYears : [year];
 
   const yearReports = reports.filter((report) => report.year === year);
   const reportedMonths = new Set(yearReports.map((report) => report.month));
