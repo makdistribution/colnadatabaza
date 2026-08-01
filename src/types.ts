@@ -17,6 +17,7 @@ export interface ColnaRecord {
   cisloFa: string;
   splatna: string;
   zaplatena: boolean;
+  invoicePdfPath?: string;
   isClosed?: boolean;
 }
 

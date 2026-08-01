@@ -181,13 +181,25 @@ export default function App() {
   ).sort((a, b) => b - a);
 
   // CRUD for Colna Records
-  const handleSaveColnaRecord = async (partialRecord: Partial<ColnaRecord>) => {
+  const handleSaveColnaRecord = async (
+    partialRecord: Partial<ColnaRecord>,
+    invoiceFile?: File,
+  ) => {
+    let savedRecord: ColnaRecord | null = null;
     try {
-      const { bootstrap } = await appApi.saveRecord(partialRecord);
-      applyBootstrap(bootstrap);
+      const saveResult = await appApi.saveRecord(partialRecord);
+      savedRecord = saveResult.record;
+      applyBootstrap(saveResult.bootstrap);
+      if (invoiceFile) {
+        setEditingColnaRecord(savedRecord);
+        const uploadResult = await appApi.uploadInvoice(savedRecord.id, invoiceFile);
+        savedRecord = uploadResult.record;
+        applyBootstrap(uploadResult.bootstrap);
+      }
       setIsModalOpen(false);
       setEditingColnaRecord(null);
     } catch (error) {
+      if (savedRecord) setEditingColnaRecord(savedRecord);
       setToastMessage(error instanceof Error ? error.message : 'Záznam sa nepodarilo uložiť.');
     }
   };

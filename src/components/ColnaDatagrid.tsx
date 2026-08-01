@@ -649,7 +649,11 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       {r.zisk ? `${r.zisk.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
-                    <td className="w-[0.9cm] min-w-[0.9cm] max-w-[0.9cm] p-0 text-center border-r border-slate-200"></td>
+                    <td className="w-[0.9cm] min-w-[0.9cm] max-w-[0.9cm] p-0 text-center border-r border-slate-200">
+                      {r.invoicePdfPath && (
+                        <img src="/pin.png" alt="Faktúra PDF" className="h-8 w-auto mx-auto object-contain" />
+                      )}
+                    </td>
 
                     {/* CISLO FA */}
                     <td className="p-2 text-slate-700 border-r border-slate-200 font-medium">

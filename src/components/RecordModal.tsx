@@ -5,7 +5,7 @@ import { X, Save, AlertTriangle, Bell, Calendar, Truck, DollarSign, FileCheck, U
 interface RecordModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (record: Partial<ColnaRecord>) => void;
+  onSave: (record: Partial<ColnaRecord>, invoiceFile?: File) => void | Promise<void>;
   initialRecord?: ColnaRecord | null;
   customerList: string[];
   readOnly?: boolean;
@@ -102,6 +102,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   });
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [isInvoiceDragActive, setIsInvoiceDragActive] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const spzInputRef = useRef<HTMLInputElement>(null);
 
@@ -134,6 +135,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     if (isOpen) {
       setInvoiceFile(null);
       setIsInvoiceDragActive(false);
+      setIsSaving(false);
     }
   }, [isOpen]);
 
@@ -207,13 +209,20 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   // Auto calculate profit
   const calculatedProfit = (Number(formData.faKlient) || 0) - (Number(formData.faOdUkAgent) || 0) - (Number(formData.faOdEuAgent) || 0);
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    onSave({
-      ...formData,
-      zisk: calculatedProfit,
-    });
-    onClose();
+    setIsSaving(true);
+    try {
+      await onSave(
+        {
+          ...formData,
+          zisk: calculatedProfit,
+        },
+        invoiceFile || undefined,
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -520,9 +529,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 }`}
               >
                 <Upload className="absolute left-1/2 top-1/2 w-5 h-5 -translate-x-1/2 -translate-y-1/2 text-blue-600" />
-                {invoiceFile && (
+                {(invoiceFile || formData.invoicePdfPath) && (
                   <span className="absolute bottom-1 left-2 right-2 block text-center text-blue-700 font-semibold text-[9px] truncate">
-                    {invoiceFile.name}
+                    {invoiceFile?.name || 'FAKTÚRA NAHRATÁ'}
                   </span>
                 )}
               </button>
@@ -571,10 +580,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           <button
             type="button"
             onClick={() => handleSubmit()}
-            disabled={readOnly}
-            className="bg-[#1a65ff] hover:bg-blue-700 text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
+            disabled={readOnly || isSaving}
+            className="bg-[#1a65ff] hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
           >
-            ULOŽIŤ
+            {isSaving ? 'UKLADÁM…' : 'ULOŽIŤ'}
           </button>
         </div>
 

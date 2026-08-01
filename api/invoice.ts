@@ -27,6 +27,7 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => ({
   cisloFa: String(record.cislo_fa || ''),
   splatna: String(record.splatna || ''),
   zaplatena: Boolean(record.zaplatena),
+  invoicePdfPath: record.invoice_pdf_path ? String(record.invoice_pdf_path) : undefined,
   isClosed: Boolean(record.is_closed),
 });
 

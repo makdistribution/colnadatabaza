@@ -13,15 +13,24 @@ import {
 import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs.js';
 
 type ActionBody = {
-  action?: 'saveRecord' | 'deleteRecords' | 'togglePaid' | 'closeMonth' | 'resetData';
+  action?:
+    | 'saveRecord'
+    | 'deleteRecords'
+    | 'togglePaid'
+    | 'closeMonth'
+    | 'resetData'
+    | 'prepareInvoiceUpload'
+    | 'completeInvoiceUpload';
   record?: Partial<ColnaRecord>;
   ids?: string[];
   id?: string;
+  invoicePath?: string;
   zaplatena?: boolean;
   closeYear?: boolean;
 };
 
 const ACTIVE_SEED_MONTH = '2026-07-01';
+const INVOICE_BUCKET = 'invoice-pdfs';
 
 const monthStartFromDate = (date: string) => {
   const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(date);
@@ -72,11 +81,23 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => ({
   cisloFa: String(record.cislo_fa || ''),
   splatna: String(record.splatna || ''),
   zaplatena: Boolean(record.zaplatena),
+  invoicePdfPath: record.invoice_pdf_path ? String(record.invoice_pdf_path) : undefined,
   isClosed: Boolean(record.is_closed),
 });
 
 const throwIfError = (error: { message: string } | null) => {
   if (error) throw new Error(error.message);
+};
+
+const invoicePathForRecord = (recordId: string) => `records/${recordId}/invoice.pdf`;
+
+const deleteInvoicePdfs = async (recordIds: string[]) => {
+  if (recordIds.length === 0) return;
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.storage
+    .from(INVOICE_BUCKET)
+    .remove(recordIds.map(invoicePathForRecord));
+  throwIfError(error);
 };
 
 const sendInvoicingEmailOnce = async (record: Record<string, unknown>) => {
@@ -277,6 +298,50 @@ const saveRecord = async (record: Partial<ColnaRecord>) => {
   return fromDatabaseRecord(data);
 };
 
+const prepareInvoiceUpload = async (recordId: string) => {
+  const supabase = getSupabaseAdmin();
+  const { data: record, error: recordError } = await supabase
+    .from('customs_records')
+    .select('id')
+    .eq('id', recordId)
+    .single();
+  throwIfError(recordError);
+
+  const invoicePath = invoicePathForRecord(String(record.id));
+  const { data, error } = await supabase.storage
+    .from(INVOICE_BUCKET)
+    .createSignedUploadUrl(invoicePath, { upsert: true });
+  throwIfError(error);
+  return { invoicePath, token: data.token };
+};
+
+const completeInvoiceUpload = async (recordId: string, invoicePath: string) => {
+  const expectedPath = invoicePathForRecord(recordId);
+  if (invoicePath !== expectedPath) throw new Error('Neplatná cesta faktúry.');
+
+  const supabase = getSupabaseAdmin();
+  const { data: files, error: listError } = await supabase.storage
+    .from(INVOICE_BUCKET)
+    .list(`records/${recordId}`, { search: 'invoice.pdf' });
+  throwIfError(listError);
+  if (!files?.some((file) => file.name === 'invoice.pdf')) {
+    throw new Error('Nahraná faktúra sa v úložisku nenašla.');
+  }
+
+  const { data, error } = await supabase
+    .from('customs_records')
+    .update({
+      invoice_pdf_path: invoicePath,
+      is_new: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', recordId)
+    .select('*')
+    .single();
+  throwIfError(error);
+  return fromDatabaseRecord(data);
+};
+
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (!isAuthorized(request)) {
     sendJson(response, 401, { error: 'Unauthorized.' });
@@ -305,7 +370,19 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       return;
     }
 
+    if (body.action === 'prepareInvoiceUpload' && body.id) {
+      sendJson(response, 200, await prepareInvoiceUpload(body.id));
+      return;
+    }
+
+    if (body.action === 'completeInvoiceUpload' && body.id && body.invoicePath) {
+      const record = await completeInvoiceUpload(body.id, body.invoicePath);
+      sendJson(response, 200, { record, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
     if (body.action === 'deleteRecords' && body.ids?.length) {
+      await deleteInvoicePdfs(body.ids);
       const { error } = await supabase.from('customs_records').delete().in('id', body.ids);
       throwIfError(error);
       sendJson(response, 200, { success: true, bootstrap: await loadBootstrapData() });
@@ -337,6 +414,12 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     }
 
     if (body.action === 'resetData') {
+      const { data: records, error: recordsError } = await supabase
+        .from('customs_records')
+        .select('id');
+      throwIfError(recordsError);
+      await deleteInvoicePdfs((records || []).map((record) => String(record.id)));
+
       for (const table of ['monthly_reports', 'customs_records', 'app_state', 'months']) {
         const { error } = await supabase.from(table).delete().not(
           table === 'app_state' ? 'singleton_id' : table === 'months' || table === 'monthly_reports'
