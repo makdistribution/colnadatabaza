@@ -23,9 +23,11 @@ import { LoginUdajeView } from './components/LoginUdajeView';
 import { InfoFaView } from './components/InfoFaView';
 import { ReportyView } from './components/ReportyView';
 import { SuboryView } from './components/SuboryView';
+import { InvoiceCaseView } from './components/InvoiceCaseView';
 import { appApi } from './lib/appApi';
 
 export default function App() {
+  const invoiceToken = new URLSearchParams(window.location.search).get('invoiceToken');
   const [colnaRecords, setColnaRecords] = useState<ColnaRecord[]>([]);
   const [monthlyReports, setMonthlyReports] = useState<MonthlyReport[]>([]);
   const [activeReportYear, setActiveReportYear] = useState(2026);
@@ -279,6 +281,10 @@ export default function App() {
       setIsDataLoading(false);
     }
   };
+
+  if (invoiceToken) {
+    return <InvoiceCaseView token={invoiceToken} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-blue-600 selection:text-white">

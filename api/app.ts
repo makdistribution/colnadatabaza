@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { INITIAL_COLNA_RECORDS } from '../src/data/initialData';
 import type { ColnaRecord } from '../src/types';
 import {
@@ -10,6 +10,7 @@ import {
   sendError,
   sendJson,
 } from '../src/server/apiUtils';
+import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs';
 
 type ActionBody = {
   action?: 'saveRecord' | 'deleteRecords' | 'togglePaid' | 'closeMonth' | 'resetData';
@@ -76,6 +77,58 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => ({
 
 const throwIfError = (error: { message: string } | null) => {
   if (error) throw new Error(error.message);
+};
+
+const sendInvoicingEmailOnce = async (record: Record<string, unknown>) => {
+  if (!record.bell) return;
+
+  const supabase = getSupabaseAdmin();
+  const token = randomBytes(32).toString('base64url');
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  const claimedAt = new Date().toISOString();
+  const { data: claimedRecord, error: claimError } = await supabase
+    .from('customs_records')
+    .update({
+      invoice_token_hash: tokenHash,
+      invoicing_email_claimed_at: claimedAt,
+    })
+    .eq('id', record.id)
+    .is('invoicing_email_sent_at', null)
+    .is('invoicing_email_claimed_at', null)
+    .select('id')
+    .maybeSingle();
+  throwIfError(claimError);
+
+  // A missing row means this record was already claimed or emailed.
+  if (!claimedRecord) return;
+
+  try {
+    await sendInvoicingEmail({
+      customerName: String(record.zakaznik || ''),
+      customsDate: String(record.datum_colnice || ''),
+      vehicleRegistration: String(record.spz || ''),
+      invoiceReference: String(record.ref_na_fa || ''),
+      secureLink: createInvoiceLink(token),
+    });
+
+    const { error: sentError } = await supabase
+      .from('customs_records')
+      .update({ invoicing_email_sent_at: new Date().toISOString() })
+      .eq('id', record.id)
+      .eq('invoicing_email_claimed_at', claimedAt);
+    throwIfError(sentError);
+  } catch (error) {
+    await supabase
+      .from('customs_records')
+      .update({
+        invoice_token_hash: null,
+        invoicing_email_claimed_at: null,
+      })
+      .eq('id', record.id)
+      .eq('invoicing_email_claimed_at', claimedAt)
+      .is('invoicing_email_sent_at', null);
+    throw error;
+  }
 };
 
 const seedDatabase = async () => {
@@ -220,6 +273,7 @@ const saveRecord = async (record: Partial<ColnaRecord>) => {
     .select('*')
     .single();
   throwIfError(error);
+  await sendInvoicingEmailOnce(data);
   return fromDatabaseRecord(data);
 };
 
