@@ -70,6 +70,7 @@ export default function App() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingColnaRecord, setEditingColnaRecord] = useState<ColnaRecord | null>(null);
+  const [isCopyMode, setIsCopyMode] = useState(false);
 
   const applyBootstrap = (bootstrap: AppBootstrap) => {
     const [year, month] = bootstrap.activeMonth.split('-').map(Number);
@@ -102,18 +103,6 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('mak_info_fa_records', JSON.stringify(infoFaRecords));
   }, [infoFaRecords]);
-
-  // Reset to original dataset from screenshots
-  const handleResetData = async () => {
-    if (window.confirm('Naozaj chcete obnoviť pôvodné ukážkové dáta z fotiek?')) {
-      try {
-        const response = await appApi.resetData();
-        applyBootstrap(response.bootstrap);
-      } catch (error) {
-        setToastMessage(error instanceof Error ? error.message : 'Dáta sa nepodarilo obnoviť.');
-      }
-    }
-  };
 
   // List of unique customer names for dropdowns (ensuring no duplicate variations)
   const customerList = (() => {
@@ -196,6 +185,7 @@ export default function App() {
       }
       setIsModalOpen(false);
       setEditingColnaRecord(null);
+      setIsCopyMode(false);
     } catch (error) {
       if (savedRecord) setEditingColnaRecord(savedRecord);
       setToastMessage(error instanceof Error ? error.message : 'Záznam sa nepodarilo uložiť.');
@@ -316,7 +306,6 @@ export default function App() {
           records={colnaRecords}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
-          onResetData={handleResetData}
         />
       </div>
 
@@ -343,10 +332,17 @@ export default function App() {
             records={colnaRecords}
             onAddRecord={() => {
               setEditingColnaRecord(null);
+              setIsCopyMode(false);
               setIsModalOpen(true);
             }}
             onEditRecord={(r) => {
               setEditingColnaRecord(r);
+              setIsCopyMode(false);
+              setIsModalOpen(true);
+            }}
+            onCopyRecord={(r) => {
+              setEditingColnaRecord(r);
+              setIsCopyMode(true);
               setIsModalOpen(true);
             }}
             onDeleteRecords={handleDeleteColnaRecords}
@@ -404,10 +400,12 @@ export default function App() {
         onClose={() => {
           setIsModalOpen(false);
           setEditingColnaRecord(null);
+          setIsCopyMode(false);
         }}
         onSave={handleSaveColnaRecord}
         initialRecord={editingColnaRecord}
         customerList={customerList}
+        copyMode={isCopyMode}
         defaultDate={`${parseMonthYear(currentMonthYear).year}-${String(parseMonthYear(currentMonthYear).month).padStart(2, '0')}-01`}
       />
 

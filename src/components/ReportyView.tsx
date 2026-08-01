@@ -110,7 +110,7 @@ export const ReportyView: React.FC<ReportyViewProps> = ({ records, reports, year
               </div>
             )}
             <span className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-mono font-semibold border border-slate-200">
-              Celkovo konaní: <strong className="text-slate-900">{yearRecords.length}</strong>
+              Celkovo colných konaní: <strong className="text-slate-900">{yearRecords.length}</strong>
             </span>
           </div>
         </div>
@@ -176,7 +176,7 @@ export const ReportyView: React.FC<ReportyViewProps> = ({ records, reports, year
                       {group.monthName} {year}
                     </span>
                     <span className="text-slate-600 text-xs font-mono ml-2">
-                      ({group.records.length} konaní)
+                      ({group.records.length} colných konaní)
                     </span>
                   </div>
 

@@ -172,14 +172,17 @@ export const SuboryView: React.FC = () => {
               {files.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-slate-400 font-medium">
-                    Zatiaľ neboli nahraté žiadne súbory. Použite formulár vyššie pre nahrátie prvého súboru.
+                    Zatiaľ neboli nahraté žiadne súbory.
                   </td>
                 </tr>
               ) : (
                 files.map((file, idx) => (
                   <tr key={file.id} className={`hover:bg-blue-50/50 ${idx % 2 === 1 ? 'bg-slate-50/40' : 'bg-white'}`}>
-                    <td className="p-2.5 font-bold text-slate-900 border-r-2 border-slate-400 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-600 shrink-0" /> {file.name}
+                    <td className="p-2.5 font-bold text-slate-900 border-r-2 border-slate-400">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>{file.name}</span>
+                      </div>
                     </td>
                     <td className="p-2.5 text-slate-700 border-r-2 border-slate-400">
                       {file.note || <span className="text-slate-400 italic">Bez poznámky</span>}

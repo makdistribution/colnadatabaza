@@ -72,9 +72,6 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
             <h2 className="text-base font-bold text-slate-900 tracking-tight uppercase">
               PRIHLASOVACIE ÚDAJE (LOGIN ÚDAJE I & II)
             </h2>
-            <p className="text-xs text-slate-500">
-              Bezpečne uložené prístupy k portálom Getlink, Colnej databáze a administrácii.
-            </p>
           </div>
         </div>
 
@@ -172,10 +169,10 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                         <span className="text-slate-400">-</span>
                       ) : (
                         <div className="flex items-center justify-between gap-2 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-300">
-                          <span className="font-mono text-slate-900 font-bold tracking-wider">
+                          <span className="font-mono text-slate-900 font-bold tracking-wider inline-block w-[11rem] truncate tabular-nums">
                             {isPassShown ? r.heslo : '••••••••••••'}
                           </span>
-                          <div className="flex items-center gap-1 font-sans">
+                          <div className="flex items-center gap-1 font-sans shrink-0">
                             <button
                               onClick={() => togglePassword(r.id)}
                               className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
@@ -284,10 +281,10 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                         <span className="text-slate-400">-</span>
                       ) : (
                         <div className="flex items-center justify-between gap-2 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-300">
-                          <span className="font-mono text-slate-900 font-bold tracking-wider">
+                          <span className="font-mono text-slate-900 font-bold tracking-wider inline-block w-[11rem] truncate tabular-nums">
                             {isPassShown ? r.heslo : '••••••••••••'}
                           </span>
-                          <div className="flex items-center gap-1 font-sans">
+                          <div className="flex items-center gap-1 font-sans shrink-0">
                             <button
                               onClick={() => togglePassword(r.id)}
                               className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
@@ -338,7 +335,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                 <select
                   value={editingRecord.kategoria}
                   onChange={(e) => setEditingRecord({ ...editingRecord, kategoria: e.target.value as 'I' | 'II' })}
-                  className="w-full text-xs font-bold p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
+                  className="w-full text-xs font-bold text-slate-900 p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 >
                   <option value="I">Skupina I - Colné portály (Getlink, Colnica...)</option>
                   <option value="II">Skupina II - Webové stránky & Editory</option>
@@ -353,7 +350,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   value={editingRecord.sluzba}
                   onChange={(e) => setEditingRecord({ ...editingRecord, sluzba: e.target.value })}
                   placeholder="napr. GETLINK PORTÁL"
-                  className="w-full text-xs font-bold p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
+                  className="w-full text-xs font-bold text-slate-900 p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
@@ -364,7 +361,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   value={editingRecord.odkaz}
                   onChange={(e) => setEditingRecord({ ...editingRecord, odkaz: e.target.value })}
                   placeholder="napr. account.getlinkgroup.com"
-                  className="w-full text-xs p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
+                  className="w-full text-xs text-blue-600 underline p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
@@ -375,7 +372,11 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   value={editingRecord.prihlasenie}
                   onChange={(e) => setEditingRecord({ ...editingRecord, prihlasenie: e.target.value })}
                   placeholder="napr. mak@distribution.sk"
-                  className="w-full text-xs p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
+                  className={`w-full text-xs p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none ${
+                    editingRecord.prihlasenie.includes('@')
+                      ? 'text-blue-600 underline'
+                      : 'text-slate-900'
+                  }`}
                 />
               </div>
 
@@ -386,7 +387,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   value={editingRecord.heslo}
                   onChange={(e) => setEditingRecord({ ...editingRecord, heslo: e.target.value })}
                   placeholder="napr. Heslo123!"
-                  className="w-full text-xs font-mono font-bold p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
+                  className="w-full text-xs font-mono font-bold text-slate-900 p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
@@ -397,7 +398,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   value={editingRecord.poznamka || ''}
                   onChange={(e) => setEditingRecord({ ...editingRecord, poznamka: e.target.value })}
                   placeholder="Voliteľná poznámka..."
-                  className="w-full text-xs p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
+                  className="w-full text-xs text-slate-900 p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
 

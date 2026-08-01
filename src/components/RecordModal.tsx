@@ -10,6 +10,7 @@ interface RecordModalProps {
   customerList: string[];
   readOnly?: boolean;
   defaultDate?: string;
+  copyMode?: boolean;
 }
 
 interface AmountInputProps {
@@ -81,9 +82,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   customerList,
   readOnly = false,
   defaultDate,
+  copyMode = false,
 }) => {
   const [formData, setFormData] = useState<Partial<ColnaRecord>>({
-    zakaznik: 'Petertransporte',
+    zakaznik: '',
     isNew: true,
     bell: false,
     alert: false,
@@ -108,10 +110,15 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
   useEffect(() => {
     if (initialRecord) {
-      setFormData({ ...initialRecord });
+      if (copyMode) {
+        const { id: _id, invoicePdfPath: _pdf, ...copied } = initialRecord;
+        setFormData({ ...copied });
+      } else {
+        setFormData({ ...initialRecord });
+      }
     } else {
       setFormData({
-        zakaznik: customerList[0] || 'Petertransporte',
+        zakaznik: '',
         isNew: true,
         bell: false,
         alert: false,
@@ -129,7 +136,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         zaplatena: false,
       });
     }
-  }, [initialRecord, isOpen, customerList, defaultDate]);
+  }, [initialRecord, isOpen, customerList, defaultDate, copyMode]);
 
   useEffect(() => {
     if (isOpen) {
@@ -213,9 +220,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     if (e) e.preventDefault();
     setIsSaving(true);
     try {
+      const { id: _id, ...withoutId } = formData;
       await onSave(
         {
-          ...formData,
+          ...(copyMode ? withoutId : formData),
           zisk: calculatedProfit,
         },
         invoiceFile || undefined,
@@ -237,13 +245,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               style={{
                 borderRadius: '8px',
                 borderWidth: '4px',
-                borderColor: initialRecord && !readOnly ? '#e33a3a' : '#1e10d0',
+                borderColor: initialRecord && !copyMode && !readOnly ? '#e33a3a' : '#1e10d0',
                 borderStyle: 'solid',
                 fontSize: '15px',
                 fontFamily: 'system-ui, sans-serif'
               }}
             >
-              {readOnly ? 'NÁHĽAD ZÁZNAMU COLNICE' : initialRecord ? 'ÚPRAVA ZÁZNAMU COLNICE' : 'NOVÝ ZÁZNAM'}
+              {readOnly ? 'NÁHĽAD ZÁZNAMU COLNICE' : initialRecord && !copyMode ? 'ÚPRAVA ZÁZNAMU COLNICE' : 'NOVÝ ZÁZNAM'}
             </h3>
           </div>
           
@@ -271,6 +279,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 className="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 font-semibold text-xs focus:ring-1 focus:ring-blue-500 outline-none"
                 required
               >
+                <option value="">Vyberte zákazníka</option>
                 {customerList.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
@@ -279,7 +288,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </div>
 
             <div className="flex items-center justify-end gap-3 self-end pb-1 w-[235.3125px] shrink-0">
-              {!initialRecord || readOnly ? (
+              {!initialRecord || copyMode || readOnly ? (
                 <>
                   <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
                     <input
@@ -565,7 +574,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               value={formData.intPoznamka || ''}
               onChange={(e) => setFormData({ ...formData, intPoznamka: e.target.value })}
               className={`w-full bg-slate-50 ${
-                initialRecord && !readOnly
+                initialRecord && !copyMode && !readOnly
                   ? 'border-2 border-red-500 focus:ring-red-500'
                   : 'border border-slate-200 focus:ring-blue-500'
               } h-[30px] rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 outline-none`}

@@ -11,7 +11,6 @@ interface QuickStatsHeaderProps {
   records: ColnaRecord[];
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  onResetData?: () => void;
 }
 
 export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
@@ -21,7 +20,6 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
   records,
   searchTerm,
   setSearchTerm,
-  onResetData,
 }) => {
   const targetYear = parseMonthYear(currentMonthYear).year;
 
@@ -54,7 +52,7 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
       <div className="bg-slate-100/90 border-2 border-[#000a2f] rounded-2xl py-2 px-4 sm:px-6 shadow-xs font-sans" style={{ fontFamily: 'system-ui, sans-serif' }}>
         <div className="w-full flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
           
-          {/* Left: Search input & Reset button */}
+          {/* Left: Search input */}
           <div className="flex items-center gap-2 w-full md:w-auto">
             <div className="relative w-48 sm:w-60">
               <input
@@ -66,15 +64,6 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
               />
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
             </div>
-            {onResetData && (
-              <button
-                onClick={onResetData}
-                className="px-3 py-1.5 text-xs bg-white hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-300 rounded-lg transition-colors font-semibold cursor-pointer shrink-0 shadow-2xs"
-                title="Obnoviť pôvodné dáta"
-              >
-                Reset
-              </button>
-            )}
           </div>
 
           {/* Centered Month Display */}
