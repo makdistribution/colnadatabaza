@@ -329,6 +329,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
   const customsLocked = readOnly || invoiceHandoffMode;
   const invoiceEditable = !readOnly;
+  /** Accountant opened an already-issued invoice for correction (not first-time invoicing). */
+  const isAccountantCorrectionMode =
+    invoiceHandoffMode &&
+    Boolean(initialRecord?.invoicePdfPath || formData.invoicePdfPath || formData.cisloFa);
 
   const confirmDeleteInvoice = async () => {
     setIsInvoiceDeleteModalOpen(false);
@@ -454,7 +458,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               }}
             >
               {invoiceHandoffMode
-                ? 'FAKTURÁCIA NOVEJ COLNICE'
+                ? isAccountantCorrectionMode
+                  ? 'FAKTURÁCIA – OPRAVA FAKTÚRY'
+                  : 'FAKTURÁCIA NOVEJ COLNICE'
                 : readOnly
                   ? 'NÁHĽAD ZÁZNAMU COLNICE'
                   : initialRecord && !copyMode
@@ -853,10 +859,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               value={formData.intPoznamka || ''}
               onChange={(e) => setFormData({ ...formData, intPoznamka: e.target.value })}
               className={`w-full bg-slate-50 ${
-                initialRecord && !copyMode && !readOnly && !invoiceHandoffMode
-                  ? 'border-2 border-red-500 focus:ring-red-500'
-                  : 'border border-slate-200 focus:ring-blue-500'
-              } h-[30px] rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 outline-none`}
+                isAccountantCorrectionMode
+                  ? 'border-2 border-red-500 text-red-600 focus:ring-red-500'
+                  : initialRecord && !copyMode && !readOnly && !invoiceHandoffMode
+                    ? 'border-2 border-red-500 text-slate-900 focus:ring-red-500'
+                    : 'border border-slate-200 text-slate-900 focus:ring-blue-500'
+              } h-[30px] rounded-md px-2.5 py-1.5 focus:ring-1 outline-none`}
             />
           </div>
           </fieldset>
