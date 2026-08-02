@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AdresaRecord } from '../types';
 import { Plus, Trash2, Edit3, Search, Building2, Save, X, Phone, Mail, MapPin } from 'lucide-react';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 export const ALL_EUROPEAN_COUNTRIES = [
   { code: 'SR', name: 'Slovenská republika (SR)' },
@@ -68,10 +69,12 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [editingRecord, setEditingRecord] = useState<AdresaRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AdresaRecord | null>(null);
 
   const filtered = records.filter(r => 
     !searchTerm ||
     r.nazovFirmy.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (r.skratka || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.ico.includes(searchTerm) ||
     r.icDph.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -82,6 +85,7 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
       id: 'adr-' + Date.now(),
       pC: `0${records.length + 1}.`,
       nazovFirmy: '',
+      skratka: '',
       registrovanaAdresa: '',
       krajina: 'SR',
       ico: '',
@@ -101,8 +105,12 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingRecord && editingRecord.nazovFirmy.trim()) {
-      onSaveRecord(editingRecord);
+    if (editingRecord && editingRecord.nazovFirmy.trim() && (editingRecord.skratka || '').trim()) {
+      onSaveRecord({
+        ...editingRecord,
+        skratka: editingRecord.skratka.trim(),
+        nazovFirmy: editingRecord.nazovFirmy.trim(),
+      });
       setIsModalOpen(false);
       setEditingRecord(null);
     }
@@ -127,10 +135,9 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
           <div className="relative">
             <input
               type="text"
-              placeholder="Hľadať firmu, IČO..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white border border-slate-200 text-slate-900 text-xs rounded-lg px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 w-48 sm:w-64 placeholder-slate-400"
+              className="bg-white border border-slate-200 text-slate-900 text-xs rounded-lg px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 w-48 sm:w-64"
             />
             <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2" />
           </div>
@@ -152,6 +159,7 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
               <th className="p-2.5 w-14 text-center border-r-2 border-slate-400 text-black font-bold text-[16px] leading-[21.333px]">AKCIA</th>
               <th className="p-2.5 w-12 text-center border-r-2 border-slate-400 text-black font-bold text-[16px] leading-[21.333px]">P.Č.</th>
               <th className="p-2.5 border-r-2 border-slate-400 text-black font-bold text-[16px] leading-[21.333px]">NÁZOV FIRMY</th>
+              <th className="p-2.5 border-r-2 border-slate-400 text-center text-black font-bold text-[16px] leading-[21.333px]">SKRATKA</th>
               <th className="p-2.5 border-r-2 border-slate-400 text-black font-bold text-[16px] leading-[21.333px]">REGISTROVANÁ ADRESA</th>
               <th className="p-2.5 w-14 border-r-2 border-slate-400 text-center text-black font-bold text-[16px] leading-[21.333px]">KRAJINA</th>
               <th className="p-2.5 border-r-2 border-slate-400 text-black font-bold text-[16px] leading-[21.333px]">IČO</th>
@@ -165,7 +173,7 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
           <tbody className="divide-y divide-slate-300 font-sans text-xs text-slate-800">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={11} className="p-8 text-center text-slate-400">
+                <td colSpan={12} className="p-8 text-center text-slate-400">
                   Žiadne firmy v adresári.
                 </td>
               </tr>
@@ -184,9 +192,7 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => {
-                          if (window.confirm(`Smazať firmu ${r.nazovFirmy}?`)) onDeleteRecord(r.id);
-                        }}
+                        onClick={() => setDeleteTarget(r)}
                         className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 cursor-pointer"
                         title="Vymazať"
                       >
@@ -196,6 +202,7 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
                   </td>
                   <td className="p-2 font-mono text-slate-700 font-bold border-r-2 border-slate-400 text-center">{pcFormatted}</td>
                   <td className="p-2 font-bold text-slate-900 border-r-2 border-slate-400">{r.nazovFirmy}</td>
+                  <td className="p-2 font-semibold text-slate-900 border-r-2 border-slate-400">{r.skratka}</td>
                   <td className="p-2 text-slate-700 border-r-2 border-slate-400">
                     <div className="flex items-center gap-1.5">
                       <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> {r.registrovanaAdresa}
@@ -280,6 +287,18 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
                   value={editingRecord.nazovFirmy}
                   onChange={(e) => setEditingRecord({ ...editingRecord, nazovFirmy: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-800 font-bold mb-1">SKRATKA *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingRecord.skratka || ''}
+                  onChange={(e) => setEditingRecord({ ...editingRecord, skratka: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="napr. PETER TRANSPORTE"
                 />
               </div>
 
@@ -373,6 +392,23 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        title="VYMAZAŤ FIRMU"
+        message={
+          <>
+            Naozaj chcete vymazať{' '}
+            <strong className="font-bold text-red-900">{deleteTarget?.nazovFirmy}</strong>
+            ? Túto akciu nie je možné vrátiť späť.
+          </>
+        }
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) onDeleteRecord(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
 
     </div>
   );

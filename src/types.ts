@@ -19,6 +19,10 @@ export interface ColnaRecord {
   zaplatena: boolean;
   invoicePdfPath?: string;
   isClosed?: boolean;
+  /** Permanent case-link token (stored in Supabase). Used to build secure_link. */
+  invoiceToken?: string;
+  /** Last EmailJS notification time (ISO from Supabase). */
+  invoicingEmailSentAt?: string;
 }
 
 export interface MonthlyReport {
@@ -31,17 +35,32 @@ export interface MonthlyReport {
   totalProfit: number;
 }
 
+export interface AppDocument {
+  id: string;
+  name: string;
+  note: string;
+  size: string;
+  date: string;
+  storagePath: string;
+}
+
 export interface AppBootstrap {
   activeMonth: string;
   activeReportYear: number;
   records: ColnaRecord[];
   reports: MonthlyReport[];
+  adresyRecords: AdresaRecord[];
+  loginRecords: LoginRecord[];
+  infoFaRecords: InfoFaRecord[];
+  documents: AppDocument[];
 }
 
 export interface AdresaRecord {
   id: string;
   pC: string;
   nazovFirmy: string;
+  /** Short name for ZÁKAZNÍK dropdown — stored permanently, entered manually */
+  skratka: string;
   registrovanaAdresa: string;
   krajina: string;
   ico: string;

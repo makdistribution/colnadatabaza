@@ -1,0 +1,160 @@
+-- Historical closed-month report: JÚN / 2026
+-- Source: attached jun.png reference image (exact values only).
+-- Does not change close-month engine, app_state, or existing reports.
+
+insert into public.months (month_start, status, closed_at)
+values ('2026-06-01', 'closed', timestamptz '2026-07-01 00:00:00+00')
+on conflict (month_start) do update
+  set status = 'closed',
+      closed_at = coalesce(public.months.closed_at, excluded.closed_at);
+
+insert into public.customs_records (
+  id,
+  month_start,
+  zakaznik,
+  is_new,
+  bell,
+  alert,
+  datum_colnice,
+  spz,
+  ref_na_fa,
+  uk_to_eu,
+  eu_to_uk,
+  fa_od_uk_agent,
+  fa_od_eu_agent,
+  fa_klient,
+  int_poznamka,
+  zisk,
+  cislo_fa,
+  splatna,
+  zaplatena,
+  is_closed,
+  created_at,
+  updated_at
+)
+values
+  (
+    'hist-2026-06-1',
+    '2026-06-01',
+    'STANFUD s.r.o.',
+    false,
+    false,
+    false,
+    '2026-06-26',
+    'AB438CE',
+    'IMPORTUK',
+    'zaclenie v UK',
+    '',
+    0,
+    0,
+    120,
+    '',
+    120,
+    '',
+    null,
+    true,
+    true,
+    timestamptz '2026-06-26 12:00:00+00',
+    timestamptz '2026-06-26 12:00:00+00'
+  ),
+  (
+    'hist-2026-06-2',
+    '2026-06-01',
+    'Petertransporte',
+    false,
+    false,
+    false,
+    '2026-06-14',
+    'LE111AY/LE353YC',
+    '',
+    '',
+    'vyclenie v EU',
+    0,
+    0,
+    120,
+    'OPRAVA nákladov - suma na fakturaciu je OK',
+    120,
+    '',
+    null,
+    true,
+    true,
+    timestamptz '2026-06-14 12:00:00+00',
+    timestamptz '2026-06-14 12:00:00+00'
+  ),
+  (
+    'hist-2026-06-3',
+    '2026-06-01',
+    'Petertransporte',
+    false,
+    false,
+    false,
+    '2026-06-10',
+    'LE111AY/LE353YC',
+    'TWEvratka',
+    'zaclenie v UK',
+    '',
+    35,
+    0,
+    120,
+    '',
+    85,
+    '',
+    null,
+    true,
+    true,
+    timestamptz '2026-06-10 12:00:00+00',
+    timestamptz '2026-06-10 12:00:00+00'
+  )
+on conflict (id) do update set
+  month_start = excluded.month_start,
+  zakaznik = excluded.zakaznik,
+  is_new = excluded.is_new,
+  bell = excluded.bell,
+  alert = excluded.alert,
+  datum_colnice = excluded.datum_colnice,
+  spz = excluded.spz,
+  ref_na_fa = excluded.ref_na_fa,
+  uk_to_eu = excluded.uk_to_eu,
+  eu_to_uk = excluded.eu_to_uk,
+  fa_od_uk_agent = excluded.fa_od_uk_agent,
+  fa_od_eu_agent = excluded.fa_od_eu_agent,
+  fa_klient = excluded.fa_klient,
+  int_poznamka = excluded.int_poznamka,
+  zisk = excluded.zisk,
+  cislo_fa = excluded.cislo_fa,
+  splatna = excluded.splatna,
+  zaplatena = excluded.zaplatena,
+  is_closed = excluded.is_closed,
+  created_at = excluded.created_at,
+  updated_at = excluded.updated_at;
+
+insert into public.monthly_reports (
+  month_start,
+  report_year,
+  report_month,
+  record_count,
+  total_revenue,
+  total_costs,
+  total_profit,
+  created_at,
+  updated_at
+)
+values (
+  '2026-06-01',
+  2026,
+  6,
+  3,
+  360,
+  35,
+  325,
+  timestamptz '2026-07-01 00:00:00+00',
+  timestamptz '2026-07-01 00:00:00+00'
+)
+on conflict (month_start) do update set
+  report_year = excluded.report_year,
+  report_month = excluded.report_month,
+  record_count = excluded.record_count,
+  total_revenue = excluded.total_revenue,
+  total_costs = excluded.total_costs,
+  total_profit = excluded.total_profit,
+  updated_at = excluded.updated_at;

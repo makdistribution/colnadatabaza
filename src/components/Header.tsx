@@ -153,8 +153,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Center Links */}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-xs py-1">
+        {/* Center Links — shifted ~1 cm left */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs py-1 -translate-x-[1cm]">
           {/* Main Table Button */}
           <button
             onClick={() => setActiveTab('COLNA_DATABAZA')}
@@ -275,6 +275,17 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-[#45556c] whitespace-nowrap">🚛 GETLINK GMR</span>
             <ExternalLink className="w-3 h-3 text-[#45556c] opacity-60 shrink-0" />
           </a>
+
+          <a
+            href="https://www.zoborzoll.eu"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-white text-[#45556c] hover:text-blue-600 hover:bg-slate-50 rounded-lg border-[3px] border-[#07538e] transition-colors font-semibold whitespace-nowrap shrink-0"
+            title="Otvoriť ZOLLAPS"
+          >
+            <span className="text-[#45556c] whitespace-nowrap">ZOLLAPS</span>
+            <ExternalLink className="w-3 h-3 text-[#45556c] opacity-60 shrink-0" />
+          </a>
         </div>
 
         {/* Currency Exchange Converter (GBP ↔ EUR) */}
@@ -285,7 +296,6 @@ export const Header: React.FC<HeaderProps> = ({
               value={gbpVal}
               onChange={(e) => handleGbpChange(e.target.value)}
               onBlur={handleGbpBlur}
-              placeholder="0.00"
               className="w-full bg-transparent text-xs text-slate-900 focus:outline-none font-bold text-right pr-1"
             />
             <span className="text-[11px] font-bold text-slate-500 select-none shrink-0">GBP</span>
@@ -299,7 +309,6 @@ export const Header: React.FC<HeaderProps> = ({
               value={eurVal}
               onChange={(e) => handleEurChange(e.target.value)}
               onBlur={handleEurBlur}
-              placeholder="0.00"
               className="w-full bg-transparent text-xs text-slate-900 focus:outline-none font-bold text-right pr-1"
             />
             <span className="text-[11px] font-bold text-slate-500 select-none shrink-0">EUR</span>

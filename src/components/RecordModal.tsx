@@ -1,16 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ColnaRecord } from '../types';
-import { X, Save, AlertTriangle, Bell, Calendar, Truck, DollarSign, FileCheck, Upload } from 'lucide-react';
+import {
+  X,
+  AlertTriangle,
+  Bell,
+  Calendar,
+  Truck,
+  DollarSign,
+  Upload,
+  Trash2,
+  Copy,
+  Download,
+  ExternalLink,
+  Check,
+} from 'lucide-react';
+import { invoiceDisplayNameFromPath } from '../utils/invoiceFile';
+import { buildCaseLink, formatNotificationTimestampParts } from '../utils/caseLink';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { appApi } from '../lib/appApi';
 
 interface RecordModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (record: Partial<ColnaRecord>, invoiceFile?: File) => void | Promise<void>;
+  onDeleteInvoice?: (recordId: string) => Promise<void>;
   initialRecord?: ColnaRecord | null;
   customerList: string[];
   readOnly?: boolean;
   defaultDate?: string;
   copyMode?: boolean;
+  /** From email permanent link — dedicated accountant view (customs locked, invoice editable). */
+  invoiceHandoffMode?: boolean;
 }
 
 interface AmountInputProps {
@@ -78,18 +98,28 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  onDeleteInvoice,
   initialRecord,
   customerList,
   readOnly = false,
   defaultDate,
   copyMode = false,
+  invoiceHandoffMode = false,
 }) => {
+  const localTodayYmd = () => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   const [formData, setFormData] = useState<Partial<ColnaRecord>>({
     zakaznik: '',
     isNew: true,
     bell: false,
     alert: false,
-    datumColnice: new Date().toISOString().split('T')[0],
+    datumColnice: localTodayYmd(),
     spz: '',
     refNaFa: '',
     ukToEu: '',
@@ -105,16 +135,43 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [isInvoiceDragActive, setIsInvoiceDragActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
+  const [isInvoiceDeleteModalOpen, setIsInvoiceDeleteModalOpen] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const spzInputRef = useRef<HTMLInputElement>(null);
+
+  const [linkCopied, setLinkCopied] = useState(false);
+  const savingLockRef = useRef(false);
 
   useEffect(() => {
     if (initialRecord) {
       if (copyMode) {
-        const { id: _id, invoicePdfPath: _pdf, ...copied } = initialRecord;
-        setFormData({ ...copied });
+        const {
+          id: _id,
+          invoicePdfPath: _pdf,
+          invoiceToken: _token,
+          invoicingEmailSentAt: _sent,
+          ...copied
+        } = initialRecord;
+        // Copy is a new record — notification must be opt-in for this SAVE.
+        // Keep zakaznik exactly as stored (never rewrite / strip legal form).
+        setFormData({
+          ...copied,
+          zakaznik: copied.zakaznik || '',
+          bell: false,
+          alert: false,
+        });
       } else {
-        setFormData({ ...initialRecord });
+        // bell/alert checkboxes mean "send notification on THIS save".
+        // Never preload them from DB for edit — persistent OPRAVA must not
+        // auto-trigger a duplicate EmailJS send on the next SAVE.
+        // Accountant view keeps NEW/OPRAVA flags for read-only display.
+        // Keep zakaznik exactly as stored in Supabase (display-only stripping is in <select> labels).
+        setFormData(
+          invoiceHandoffMode
+            ? { ...initialRecord, bell: false }
+            : { ...initialRecord, bell: false, alert: false },
+        );
       }
     } else {
       setFormData({
@@ -122,7 +179,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         isNew: true,
         bell: false,
         alert: false,
-        datumColnice: defaultDate || new Date().toISOString().split('T')[0],
+        datumColnice: defaultDate || localTodayYmd(),
         spz: '',
         refNaFa: '',
         ukToEu: '',
@@ -136,7 +193,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         zaplatena: false,
       });
     }
-  }, [initialRecord, isOpen, customerList, defaultDate, copyMode]);
+    setLinkCopied(false);
+    savingLockRef.current = false;
+    setIsSaving(false);
+  }, [initialRecord, isOpen, customerList, defaultDate, copyMode, invoiceHandoffMode]);
 
   useEffect(() => {
     if (isOpen) {
@@ -199,6 +259,104 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     }
   };
 
+  const hasUploadedInvoice = !!(invoiceFile || formData.invoicePdfPath);
+  const displayedInvoiceName =
+    invoiceFile?.name || invoiceDisplayNameFromPath(formData.invoicePdfPath) || '';
+  const permanentCaseLink = copyMode ? '' : buildCaseLink(formData.invoiceToken);
+  const notificationTimestampParts = copyMode
+    ? null
+    : formatNotificationTimestampParts(formData.invoicingEmailSentAt);
+  const handleCopyCaseLink = async () => {
+    if (!permanentCaseLink) return;
+    try {
+      await navigator.clipboard.writeText(permanentCaseLink);
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      window.prompt('Skopírujte odkaz:', permanentCaseLink);
+    }
+  };
+
+  const handleOpenInvoice = async () => {
+    if (invoiceFile) {
+      const url = URL.createObjectURL(invoiceFile);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (!formData.id || !formData.invoicePdfPath) return;
+    try {
+      const { url } = await appApi.getInvoiceDownloadUrl(formData.id);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Faktúru sa nepodarilo otvoriť.');
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    if (invoiceFile) {
+      const url = URL.createObjectURL(invoiceFile);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = invoiceFile.name;
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return;
+    }
+    if (!formData.id || !formData.invoicePdfPath) return;
+    try {
+      const { url, fileName } = await appApi.getInvoiceDownloadUrl(formData.id);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Faktúru sa nepodarilo stiahnuť.');
+    }
+  };
+
+  const handleDeleteInvoiceClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (readOnly || isDeletingInvoice) return;
+    setIsInvoiceDeleteModalOpen(true);
+  };
+
+  const customsLocked = readOnly || invoiceHandoffMode;
+  const invoiceEditable = !readOnly;
+
+  const confirmDeleteInvoice = async () => {
+    setIsInvoiceDeleteModalOpen(false);
+
+    // Local-only selection (not yet saved/uploaded)
+    if (invoiceFile && !formData.invoicePdfPath) {
+      setInvoiceFile(null);
+      if (invoiceInputRef.current) invoiceInputRef.current.value = '';
+      return;
+    }
+
+    if (!formData.id || !onDeleteInvoice) return;
+
+    setIsDeletingInvoice(true);
+    try {
+      await onDeleteInvoice(formData.id);
+      setInvoiceFile(null);
+      if (invoiceInputRef.current) invoiceInputRef.current.value = '';
+      setFormData((prev) => ({
+        ...prev,
+        invoicePdfPath: undefined,
+        splatna: '',
+      }));
+    } finally {
+      setIsDeletingInvoice(false);
+    }
+  };
+
   const handleSpzChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectionStart = e.currentTarget.selectionStart;
     const selectionEnd = e.currentTarget.selectionEnd;
@@ -216,20 +374,59 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   // Auto calculate profit
   const calculatedProfit = (Number(formData.faKlient) || 0) - (Number(formData.faOdUkAgent) || 0) - (Number(formData.faOdEuAgent) || 0);
 
+  const isCreateOrCopy = !initialRecord || copyMode;
+  const willSendNotification =
+    !invoiceHandoffMode &&
+    !readOnly &&
+    (isCreateOrCopy ? Boolean(formData.bell) : Boolean(formData.alert));
+  const saveButtonLabel = isSaving
+    ? 'UKLADÁM…'
+    : willSendNotification
+      ? isCreateOrCopy
+        ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
+        : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
+      : 'ULOŽIŤ';
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    // Synchronous guard — React state alone cannot block double-clicks before re-render.
+    if (savingLockRef.current || isSaving || readOnly) return;
+    savingLockRef.current = true;
     setIsSaving(true);
     try {
+      // Accountant view: save only invoice fields; never mark OPRAVA / send notification.
+      if (invoiceHandoffMode) {
+        if (!initialRecord?.id) return;
+        await onSave(
+          {
+            ...initialRecord,
+            cisloFa: formData.cisloFa,
+            splatna: formData.splatna,
+            zaplatena: formData.zaplatena,
+            zisk: initialRecord.zisk,
+            invoiceHandoff: true,
+            alert: false,
+            bell: false,
+          } as Partial<ColnaRecord> & { invoiceHandoff?: boolean },
+          invoiceFile || undefined,
+        );
+        return;
+      }
+
       const { id: _id, ...withoutId } = formData;
+      // New + copy must never send an id (forces INSERT → new created_at → row 1).
+      // Edit keeps id so UPDATE preserves created_at / table position.
+      const isNewOrCopy = copyMode || !initialRecord;
       await onSave(
         {
-          ...(copyMode ? withoutId : formData),
+          ...(isNewOrCopy ? withoutId : formData),
           zisk: calculatedProfit,
         },
         invoiceFile || undefined,
       );
     } finally {
       setIsSaving(false);
+      savingLockRef.current = false;
     }
   };
 
@@ -245,13 +442,24 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               style={{
                 borderRadius: '8px',
                 borderWidth: '4px',
-                borderColor: initialRecord && !copyMode && !readOnly ? '#e33a3a' : '#1e10d0',
+                borderColor:
+                  invoiceHandoffMode
+                    ? '#0f766e'
+                    : initialRecord && !copyMode && !readOnly
+                      ? '#e33a3a'
+                      : '#1e10d0',
                 borderStyle: 'solid',
                 fontSize: '15px',
                 fontFamily: 'system-ui, sans-serif'
               }}
             >
-              {readOnly ? 'NÁHĽAD ZÁZNAMU COLNICE' : initialRecord && !copyMode ? 'ÚPRAVA ZÁZNAMU COLNICE' : 'NOVÝ ZÁZNAM'}
+              {invoiceHandoffMode
+                ? 'FAKTURÁCIA NOVEJ COLNICE'
+                : readOnly
+                  ? 'NÁHĽAD ZÁZNAMU COLNICE'
+                  : initialRecord && !copyMode
+                    ? 'ÚPRAVA ZÁZNAMU COLNICE'
+                    : 'NOVÝ ZÁZNAM'}
             </h3>
           </div>
           
@@ -264,8 +472,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 text-xs overflow-y-auto">
-          <fieldset disabled={readOnly} className="space-y-3">
+        <form id="colna-record-form" onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 text-xs overflow-y-auto">
+          {/* Customs fields — locked in accountant view */}
+          <fieldset disabled={customsLocked} className="space-y-3">
           
           {/* Row 1: Customer & Flags */}
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -279,14 +488,23 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 className="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 font-semibold text-xs focus:ring-1 focus:ring-blue-500 outline-none"
                 required
               >
-                <option value="">Vyberte zákazníka</option>
+                <option value=""></option>
+                {/* Options are SKRATKA values from Adresár (not official legal names). */}
+                {formData.zakaznik &&
+                  formData.zakaznik !== 'Iný zákazník' &&
+                  !customerList.includes(formData.zakaznik) && (
+                    <option value={formData.zakaznik}>{formData.zakaznik}</option>
+                  )}
                 {customerList.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
                 <option value="Iný zákazník">+ Pridať nového zákazníka</option>
               </select>
             </div>
 
+            {!invoiceHandoffMode && (
             <div className="flex items-center justify-end gap-3 self-end pb-1 w-[235.3125px] shrink-0">
               {!initialRecord || copyMode || readOnly ? (
                 <>
@@ -328,6 +546,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 </label>
               )}
             </div>
+            )}
           </div>
 
           {/* Row 2: Transport & Direction Grid */}
@@ -482,9 +701,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </div>
             </div>
           </div>
+          </fieldset>
 
-          {/* Row 5: Invoice Info & Payment */}
-          <div className="grid grid-cols-1 sm:grid-cols-[0.9fr_1.1fr_1.4fr_1fr] gap-2.5 items-center">
+          {/* Invoice fields — editable in accountant view */}
+          <fieldset disabled={!invoiceEditable} className="space-y-3">
+          {/* Row 5: Invoice — FAKTÚRA ZAPLATENÁ under DÁTUM SPLATNOSTI */}
+          <div className="grid grid-cols-1 gap-2.5 items-start sm:grid-cols-[0.9fr_1.1fr_minmax(0,1.6fr)]">
             <div>
               <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase tracking-wide">
                 ČÍSLO FAKTÚRY
@@ -497,19 +719,32 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               />
             </div>
 
-            <div>
-              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase tracking-wide">
-                DÁTUM SPLATNOSTI
+            <div className="space-y-2">
+              <div>
+                <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase tracking-wide">
+                  DÁTUM SPLATNOSTI
+                </label>
+                <input
+                  type="date"
+                  value={formData.splatna || ''}
+                  onChange={(e) => setFormData({ ...formData, splatna: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.zaplatena}
+                  onChange={(e) => setFormData({ ...formData, zaplatena: e.target.checked })}
+                  className="w-4 h-4 rounded text-blue-600 focus:ring-0 bg-white border-slate-300"
+                />
+                <span className={`font-bold text-[11px] uppercase ${formData.zaplatena ? 'text-emerald-700 font-extrabold' : 'text-slate-700'}`}>
+                  FAKTÚRA ZAPLATENÁ
+                </span>
               </label>
-              <input
-                type="date"
-                value={formData.splatna || ''}
-                onChange={(e) => setFormData({ ...formData, splatna: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 focus:ring-blue-500 outline-none"
-              />
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-start gap-2.5">
               <input
                 ref={invoiceInputRef}
                 type="file"
@@ -517,53 +752,97 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 onChange={(e) => selectInvoiceFile(e.target.files?.[0])}
                 className="hidden"
               />
-              <button
-                type="button"
-                onClick={() => invoiceInputRef.current?.click()}
-                onDragEnter={(e) => {
-                  e.preventDefault();
-                  setIsInvoiceDragActive(true);
-                }}
-                onDragOver={(e) => e.preventDefault()}
-                onDragLeave={() => setIsInvoiceDragActive(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setIsInvoiceDragActive(false);
-                  selectInvoiceFile(e.dataTransfer.files?.[0]);
-                }}
-                className={`relative order-2 flex-1 h-[84px] rounded-xl border cursor-pointer transition-colors ${
-                  isInvoiceDragActive
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-blue-400 bg-slate-50 hover:bg-slate-100'
-                }`}
-              >
-                <Upload className="absolute left-1/2 top-1/2 w-5 h-5 -translate-x-1/2 -translate-y-1/2 text-blue-600" />
-                {(invoiceFile || formData.invoicePdfPath) && (
-                  <span className="absolute bottom-1 left-2 right-2 block text-center text-blue-700 font-semibold text-[9px] truncate">
-                    {invoiceFile?.name || 'FAKTÚRA NAHRATÁ'}
-                  </span>
-                )}
-              </button>
-              <span className="order-1 w-[68px] shrink-0 translate-x-[3mm] text-slate-500 font-semibold text-[11px] uppercase leading-tight">
+              {/* Height matches upload/yellow box so label is vertically centered to that box only. */}
+              <span className="box-border flex h-[84px] w-[68px] shrink-0 translate-x-[3mm] items-center text-slate-500 font-semibold text-[11px] uppercase leading-tight">
                 NAHRAJ VYSTAVENÚ FAKTÚRU
               </span>
-            </div>
-
-            <div>
-              <label className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 h-[34px] font-bold text-slate-700 text-[11px] uppercase hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={formData.zaplatena}
-                  onChange={(e) => setFormData({ ...formData, zaplatena: e.target.checked })}
-                  className="w-4 h-4 rounded text-blue-600 focus:ring-0 bg-white border-slate-300"
-                />
-                <span className={formData.zaplatena ? 'text-emerald-700 font-extrabold' : 'text-slate-700'}>
-                  FAKTÚRA ZAPLATENÁ
-                </span>
-              </label>
+              <div className="flex min-w-0 flex-1 items-start gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => invoiceEditable && !hasUploadedInvoice && invoiceInputRef.current?.click()}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    if (invoiceEditable && !hasUploadedInvoice) setIsInvoiceDragActive(true);
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragLeave={() => setIsInvoiceDragActive(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsInvoiceDragActive(false);
+                    if (invoiceEditable && !hasUploadedInvoice) selectInvoiceFile(e.dataTransfer.files?.[0]);
+                  }}
+                  className={`relative min-w-0 flex-1 h-[84px] rounded-xl border transition-colors ${
+                    hasUploadedInvoice
+                      ? 'border-amber-500 bg-[#ECE039] cursor-default'
+                      : isInvoiceDragActive
+                        ? 'border-dashed border-blue-600 bg-blue-50 cursor-pointer'
+                        : 'border-dashed border-blue-400 bg-blue-50/40 hover:bg-blue-50 cursor-pointer'
+                  }`}
+                >
+                  {hasUploadedInvoice ? (
+                    <>
+                      <img
+                        src="/pin.png"
+                        alt="Faktúra PDF"
+                        className="absolute left-1/2 top-[38%] h-[28.8px] w-auto -translate-x-1/2 -translate-y-1/2 object-contain"
+                      />
+                      <span className="absolute bottom-1 left-2 right-2 text-center text-slate-900 font-semibold text-[9px] break-all whitespace-normal leading-tight">
+                        Current invoice: {displayedInvoiceName}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-blue-600 pointer-events-none">
+                      <Upload className="w-5 h-5" />
+                      <span className="text-[10px] font-bold uppercase tracking-wide leading-none">
+                        UPLOAD FILE
+                      </span>
+                    </span>
+                  )}
+                </button>
+                {hasUploadedInvoice && (
+                  <div className="flex w-[5.5rem] shrink-0 flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={() => { void handleOpenInvoice(); }}
+                      className="inline-flex w-full items-center justify-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Open
+                    </button>
+                    {invoiceEditable && (
+                      <button
+                        type="button"
+                        onClick={() => invoiceInputRef.current?.click()}
+                        className="inline-flex w-full items-center justify-center gap-1 rounded border border-blue-300 bg-blue-50 px-1.5 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-100 cursor-pointer"
+                      >
+                        <Upload className="w-3 h-3" /> Replace
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { void handleDownloadInvoice(); }}
+                      className="inline-flex w-full items-center justify-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <Download className="w-3 h-3" /> Download
+                    </button>
+                    {invoiceEditable && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteInvoiceClick}
+                        disabled={isDeletingInvoice}
+                        className="inline-flex w-full items-center justify-center gap-1 rounded border border-red-300 bg-white px-1.5 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3 h-3" /> Delete
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+          </fieldset>
 
+          {/* Remaining customs fields — locked in accountant view */}
+          <fieldset disabled={customsLocked} className="space-y-3">
           {/* Row 6: Internal Note (Full width) */}
           <div>
             <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase tracking-wide">
@@ -574,29 +853,81 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               value={formData.intPoznamka || ''}
               onChange={(e) => setFormData({ ...formData, intPoznamka: e.target.value })}
               className={`w-full bg-slate-50 ${
-                initialRecord && !copyMode && !readOnly
+                initialRecord && !copyMode && !readOnly && !invoiceHandoffMode
                   ? 'border-2 border-red-500 focus:ring-red-500'
                   : 'border border-slate-200 focus:ring-blue-500'
               } h-[30px] rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 outline-none`}
             />
           </div>
-
           </fieldset>
+
+          {/* LINK + single date/time field (refs: always one combined timestamp box) */}
+          <div className="grid w-full min-w-0 grid-cols-[3rem_minmax(0,1fr)_4.75rem_9.375rem] gap-1.5 items-start">
+            <span className="shrink-0 pt-1.5 text-slate-600 font-bold text-[11px] uppercase tracking-wide">
+              LINK
+            </span>
+            <div className="box-border h-[30px] w-full min-w-0 overflow-hidden rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5">
+              <a
+                href={permanentCaseLink || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`block h-full w-full truncate text-[11px] font-mono leading-tight ${
+                  permanentCaseLink
+                    ? 'text-blue-700 hover:underline'
+                    : 'pointer-events-none text-slate-400'
+                }`}
+                title={permanentCaseLink || undefined}
+              >
+                {permanentCaseLink || '\u00A0'}
+              </a>
+            </div>
+            <button
+              type="button"
+              onClick={() => { void handleCopyCaseLink(); }}
+              disabled={!permanentCaseLink}
+              className="inline-flex h-[30px] w-full items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-2 text-[10px] font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+              title="Kopírovať odkaz"
+            >
+              {linkCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              {linkCopied ? 'OK' : 'COPY'}
+            </button>
+            <div className="box-border flex h-[30px] w-full items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-1.5 font-mono text-[11px] text-slate-800">
+              <span className="whitespace-nowrap">
+                {notificationTimestampParts
+                  ? `${notificationTimestampParts.date} | ${notificationTimestampParts.time}`
+                  : '\u00A0'}
+              </span>
+            </div>
+          </div>
         </form>
 
-        {/* Bottom Action Footer */}
+        {/* Bottom Action Footer — submit via form= so Enter and click share one handler */}
         <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-center shrink-0">
           <button
-            type="button"
-            onClick={() => handleSubmit()}
+            type="submit"
+            form="colna-record-form"
             disabled={readOnly || isSaving}
             className="bg-[#1a65ff] hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
           >
-            {isSaving ? 'UKLADÁM…' : 'ULOŽIŤ'}
+            {saveButtonLabel}
           </button>
         </div>
 
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={isInvoiceDeleteModalOpen}
+        title="VYMAZAŤ FAKTÚRU"
+        message={
+          <>
+            Naozaj chcete vymazať{' '}
+            <strong className="font-bold text-red-900">nahratú faktúru</strong>
+            ? Túto akciu nie je možné vrátiť späť.
+          </>
+        }
+        onCancel={() => setIsInvoiceDeleteModalOpen(false)}
+        onConfirm={() => { void confirmDeleteInvoice(); }}
+      />
     </div>
   );
 };

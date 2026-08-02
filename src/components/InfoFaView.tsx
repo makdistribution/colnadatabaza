@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { InfoFaRecord } from '../types';
-import { BookOpen, AlertCircle, HelpCircle, Plus, Edit3, Trash2, Check, FileText } from 'lucide-react';
+import { BookOpen, AlertCircle, HelpCircle, Plus, Edit3, Trash2, FileText } from 'lucide-react';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 interface InfoFaViewProps {
   records: InfoFaRecord[];
@@ -15,6 +16,7 @@ export const InfoFaView: React.FC<InfoFaViewProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingRecord, setEditingRecord] = useState<InfoFaRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<InfoFaRecord | null>(null);
 
   const filtered = records.filter(r =>
     !searchTerm ||
@@ -63,6 +65,13 @@ export const InfoFaView: React.FC<InfoFaViewProps> = ({
                       title="Upraviť pokyn"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(r)}
+                      className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 cursor-pointer"
+                      title="Vymazať pokyn"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </td>
@@ -124,6 +133,23 @@ export const InfoFaView: React.FC<InfoFaViewProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        title="VYMAZAŤ POKYN"
+        message={
+          <>
+            Naozaj chcete vymazať fakturačný pokyn{' '}
+            <strong className="font-bold text-red-900">&quot;{deleteTarget?.nazov}&quot;</strong>
+            ? Túto akciu nie je možné vrátiť späť.
+          </>
+        }
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) onDeleteRecord(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
 
       {/* Edit Modal */}
       {editingRecord && (

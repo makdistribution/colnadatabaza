@@ -1,5 +1,10 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import type { ColnaRecord } from '../src/types';
+import { randomBytes, randomUUID } from 'node:crypto';
+import type {
+  AdresaRecord,
+  ColnaRecord,
+  InfoFaRecord,
+  LoginRecord,
+} from '../src/types';
 import {
   ApiRequest,
   ApiResponse,
@@ -9,7 +14,26 @@ import {
   sendError,
   sendJson,
 } from '../src/server/apiUtils.js';
+import {
+  deleteAdresaRecord,
+  deleteAppDocumentMeta,
+  deleteInfoFaRecord,
+  deleteLoginRecord,
+  getAppDocumentMeta,
+  loadDirectoryBootstrap,
+  migrateBrowserDirectoryData,
+  upsertAdresaRecord,
+  upsertAppDocumentMeta,
+  upsertInfoFaRecord,
+  upsertLoginRecord,
+} from '../src/server/directoryStore.js';
 import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs.js';
+import {
+  appDocumentPathForId,
+  formatDocumentSizeLabel,
+  sanitizeAppDocumentFileName,
+} from '../src/utils/appDocumentFile.js';
+import { invoicePathForRecord, sanitizeInvoiceFileName } from '../src/utils/invoiceFile.js';
 
 type ActionBody = {
   action?:
@@ -19,16 +43,43 @@ type ActionBody = {
     | 'closeMonth'
     | 'resetData'
     | 'prepareInvoiceUpload'
-    | 'completeInvoiceUpload';
-  record?: Partial<ColnaRecord>;
+    | 'completeInvoiceUpload'
+    | 'deleteInvoice'
+    | 'getInvoiceDownloadUrl'
+    | 'migrateBrowserData'
+    | 'saveAdresaRecord'
+    | 'deleteAdresaRecord'
+    | 'saveLoginRecord'
+    | 'deleteLoginRecord'
+    | 'saveInfoFaRecord'
+    | 'deleteInfoFaRecord'
+    | 'prepareDocumentUpload'
+    | 'completeDocumentUpload'
+    | 'deleteDocument'
+    | 'getDocumentDownloadUrl';
+  record?: Partial<ColnaRecord> & { invoiceHandoff?: boolean };
+  adresaRecord?: AdresaRecord;
+  loginRecord?: LoginRecord;
+  infoFaRecord?: InfoFaRecord;
+  adresyRecords?: AdresaRecord[];
+  loginRecords?: LoginRecord[];
+  infoFaRecords?: InfoFaRecord[];
   ids?: string[];
   id?: string;
   invoicePath?: string;
+  storagePath?: string;
+  fileName?: string;
+  note?: string;
+  sizeBytes?: number;
+  splatna?: string | null;
   zaplatena?: boolean;
+  clearNewBadge?: boolean;
   closeYear?: boolean;
 };
 
 const INVOICE_BUCKET = 'invoice-pdfs';
+const DOCUMENTS_BUCKET = 'app-documents';
+const MAX_DOCUMENT_BYTES = 50 * 1024 * 1024;
 
 const monthStartFromDate = (date: string) => {
   const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(date);
@@ -60,94 +111,178 @@ const toDatabaseRecord = (record: Partial<ColnaRecord>, id: string, monthStart: 
   updated_at: new Date().toISOString(),
 });
 
-const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => ({
-  id: String(record.id),
-  zakaznik: String(record.zakaznik || ''),
-  isNew: Boolean(record.is_new),
-  bell: Boolean(record.bell),
-  alert: Boolean(record.alert),
-  datumColnice: String(record.datum_colnice || ''),
-  spz: String(record.spz || ''),
-  refNaFa: String(record.ref_na_fa || ''),
-  ukToEu: String(record.uk_to_eu || ''),
-  euToUk: String(record.eu_to_uk || ''),
-  faOdUkAgent: Number(record.fa_od_uk_agent) || 0,
-  faOdEuAgent: Number(record.fa_od_eu_agent) || 0,
-  faKlient: Number(record.fa_klient) || 0,
-  intPoznamka: String(record.int_poznamka || ''),
-  zisk: Number(record.zisk) || 0,
-  cisloFa: String(record.cislo_fa || ''),
-  splatna: String(record.splatna || ''),
-  zaplatena: Boolean(record.zaplatena),
-  invoicePdfPath: record.invoice_pdf_path ? String(record.invoice_pdf_path) : undefined,
-  isClosed: Boolean(record.is_closed),
-});
+/** True when stored value is a legacy SHA-256 hex digest (not a displayable token). */
+const isLegacyTokenHash = (value: string) => /^[a-f0-9]{64}$/i.test(value);
+
+const isPermanentToken = (value: string) => /^[A-Za-z0-9_-]{43}$/.test(value);
+
+const createPermanentToken = () => randomBytes(32).toString('base64url');
+
+const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
+  const storedToken = record.invoice_token_hash ? String(record.invoice_token_hash) : '';
+  const invoiceToken = isPermanentToken(storedToken) ? storedToken : undefined;
+  return {
+    id: String(record.id),
+    zakaznik: String(record.zakaznik || ''),
+    isNew: Boolean(record.is_new),
+    bell: Boolean(record.bell),
+    alert: Boolean(record.alert),
+    datumColnice: String(record.datum_colnice || ''),
+    spz: String(record.spz || ''),
+    refNaFa: String(record.ref_na_fa || ''),
+    ukToEu: String(record.uk_to_eu || ''),
+    euToUk: String(record.eu_to_uk || ''),
+    faOdUkAgent: Number(record.fa_od_uk_agent) || 0,
+    faOdEuAgent: Number(record.fa_od_eu_agent) || 0,
+    faKlient: Number(record.fa_klient) || 0,
+    intPoznamka: String(record.int_poznamka || ''),
+    zisk: Number(record.zisk) || 0,
+    cisloFa: String(record.cislo_fa || ''),
+    splatna: String(record.splatna || ''),
+    zaplatena: Boolean(record.zaplatena),
+    invoicePdfPath: record.invoice_pdf_path ? String(record.invoice_pdf_path) : undefined,
+    isClosed: Boolean(record.is_closed),
+    invoiceToken,
+    invoicingEmailSentAt: record.invoicing_email_sent_at
+      ? String(record.invoicing_email_sent_at)
+      : undefined,
+  };
+};
 
 const throwIfError = (error: { message: string } | null) => {
   if (error) throw new Error(error.message);
 };
 
-const invoicePathForRecord = (recordId: string) => `records/${recordId}/invoice.pdf`;
-
 const deleteInvoicePdfs = async (recordIds: string[]) => {
   if (recordIds.length === 0) return;
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase.storage
-    .from(INVOICE_BUCKET)
-    .remove(recordIds.map(invoicePathForRecord));
+  const { data, error: selectError } = await supabase
+    .from('customs_records')
+    .select('invoice_pdf_path')
+    .in('id', recordIds);
+  throwIfError(selectError);
+  const paths = (data || [])
+    .map((row) => (row.invoice_pdf_path ? String(row.invoice_pdf_path) : ''))
+    .filter(Boolean);
+  // Also remove legacy fixed-path objects for older uploads.
+  const legacyPaths = recordIds.map((id) => `records/${id}/invoice.pdf`);
+  const uniquePaths = [...new Set([...paths, ...legacyPaths])];
+  if (uniquePaths.length === 0) return;
+  const { error } = await supabase.storage.from(INVOICE_BUCKET).remove(uniquePaths);
   throwIfError(error);
 };
 
-const sendInvoicingEmailOnce = async (record: Record<string, unknown>) => {
-  if (!record.bell) return;
+/**
+ * Send EmailJS notification at most once per save request that opts in.
+ * Atomic claim on invoicing_email_claimed_at prevents concurrent duplicate sends.
+ */
+const sendInvoicingEmailIfRequested = async (
+  record: Record<string, unknown>,
+  wantsEmail: boolean,
+  emailKind: 'new' | 'edit' = 'new',
+): Promise<Record<string, unknown>> => {
+  if (!wantsEmail) return record;
+
+  const storedToken = record.invoice_token_hash ? String(record.invoice_token_hash) : '';
+  if (!isPermanentToken(storedToken)) {
+    throw new Error('Permanent case link is missing for this record.');
+  }
 
   const supabase = getSupabaseAdmin();
-  const token = randomBytes(32).toString('base64url');
-  const tokenHash = createHash('sha256').update(token).digest('hex');
-  const claimedAt = new Date().toISOString();
-  const { data: claimedRecord, error: claimError } = await supabase
+  const recordId = String(record.id);
+
+  // Re-read claim/sent from DB — the in-memory row can be stale under concurrent saves.
+  const { data: latest, error: latestError } = await supabase
+    .from('customs_records')
+    .select('invoicing_email_claimed_at, invoicing_email_sent_at, bell, invoice_token_hash')
+    .eq('id', recordId)
+    .single();
+  throwIfError(latestError);
+  if (!latest) throw new Error('Záznam sa nenašiel.');
+
+  const previousClaim = latest.invoicing_email_claimed_at
+    ? String(latest.invoicing_email_claimed_at)
+    : null;
+  const previousSent = latest.invoicing_email_sent_at
+    ? String(latest.invoicing_email_sent_at)
+    : null;
+
+  // Send already in progress for this row (claimed after last successful send).
+  if (
+    previousClaim &&
+    (!previousSent || new Date(previousClaim).getTime() > new Date(previousSent).getTime())
+  ) {
+    return record;
+  }
+
+  const claimAt = new Date().toISOString();
+  let claimQuery = supabase
     .from('customs_records')
     .update({
-      invoice_token_hash: tokenHash,
-      invoicing_email_claimed_at: claimedAt,
+      invoicing_email_claimed_at: claimAt,
+      bell: false,
+      // Do NOT clear is_new here — NEW stays until accountant uploads + saves invoice.
+      updated_at: claimAt,
     })
-    .eq('id', record.id)
-    .is('invoicing_email_sent_at', null)
-    .is('invoicing_email_claimed_at', null)
-    .select('id')
-    .maybeSingle();
+    .eq('id', recordId);
+
+  claimQuery = previousClaim
+    ? claimQuery.eq('invoicing_email_claimed_at', previousClaim)
+    : claimQuery.is('invoicing_email_claimed_at', null);
+
+  const { data: claimed, error: claimError } = await claimQuery.select('*').maybeSingle();
   throwIfError(claimError);
 
-  // A missing row means this record was already claimed or emailed.
-  if (!claimedRecord) return;
+  // Another request won the claim — do not send a second email.
+  if (!claimed) {
+    const { data: current, error } = await supabase
+      .from('customs_records')
+      .select('*')
+      .eq('id', recordId)
+      .single();
+    throwIfError(error);
+    return current;
+  }
+
+  const secureLink = createInvoiceLink(String(claimed.invoice_token_hash || storedToken));
 
   try {
     await sendInvoicingEmail({
-      customerName: String(record.zakaznik || ''),
-      customsDate: String(record.datum_colnice || ''),
-      vehicleRegistration: String(record.spz || ''),
-      invoiceReference: String(record.ref_na_fa || ''),
-      secureLink: createInvoiceLink(token),
+      customerName: String(claimed.zakaznik || ''),
+      customsDate: String(claimed.datum_colnice || ''),
+      vehicleRegistration: String(claimed.spz || ''),
+      invoiceReference: String(claimed.ref_na_fa || ''),
+      secureLink,
+      kind: emailKind,
     });
-
-    const { error: sentError } = await supabase
-      .from('customs_records')
-      .update({ invoicing_email_sent_at: new Date().toISOString() })
-      .eq('id', record.id)
-      .eq('invoicing_email_claimed_at', claimedAt);
-    throwIfError(sentError);
   } catch (error) {
+    // Roll back claim so a later SAVE can retry; never leave a stuck in-progress claim.
     await supabase
       .from('customs_records')
       .update({
-        invoice_token_hash: null,
-        invoicing_email_claimed_at: null,
+        invoicing_email_claimed_at: previousClaim,
+        bell: Boolean(record.bell),
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', record.id)
-      .eq('invoicing_email_claimed_at', claimedAt)
-      .is('invoicing_email_sent_at', null);
+      .eq('id', recordId)
+      .eq('invoicing_email_claimed_at', claimAt);
     throw error;
   }
+
+  const sentAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('customs_records')
+    .update({
+      invoicing_email_sent_at: sentAt,
+      bell: false,
+      // Keep is_new — notification to accountant must not remove NEW.
+      updated_at: sentAt,
+    })
+    .eq('id', recordId)
+    .select('*')
+    .single();
+  throwIfError(error);
+  return data;
 };
 
 const initializeDatabase = async () => {
@@ -181,12 +316,18 @@ const loadBootstrapData = async () => {
       .select('active_month, active_report_year')
       .eq('singleton_id', 1)
       .single(),
-    supabase.from('customs_records').select('*').order('datum_colnice', { ascending: false }),
+    supabase
+      .from('customs_records')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false }),
     supabase.from('monthly_reports').select('*').order('month_start', { ascending: false }),
   ]);
   throwIfError(stateResult.error);
   throwIfError(recordsResult.error);
   throwIfError(reportsResult.error);
+
+  const directory = await loadDirectoryBootstrap(supabase);
 
   return {
     activeMonth: stateResult.data.active_month,
@@ -201,10 +342,86 @@ const loadBootstrapData = async () => {
       totalCosts: Number(report.total_costs) || 0,
       totalProfit: Number(report.total_profit) || 0,
     })),
+    ...directory,
   };
 };
 
-const saveRecord = async (record: Partial<ColnaRecord>) => {
+const prepareDocumentUpload = async (fileName: string) => {
+  const id = randomUUID();
+  const storagePath = appDocumentPathForId(id, fileName);
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .createSignedUploadUrl(storagePath, { upsert: true });
+  throwIfError(error);
+  return { id, storagePath, token: data.token };
+};
+
+const completeDocumentUpload = async (payload: {
+  id: string;
+  storagePath: string;
+  fileName: string;
+  note?: string;
+  sizeBytes?: number;
+}) => {
+  const expectedPrefix = `files/${payload.id}/`;
+  if (!payload.storagePath.startsWith(expectedPrefix)) {
+    throw new Error('Neplatná cesta súboru.');
+  }
+  const fileName = sanitizeAppDocumentFileName(payload.fileName);
+  if (payload.storagePath !== `${expectedPrefix}${fileName}`) {
+    throw new Error('Neplatná cesta súboru.');
+  }
+  const sizeBytes = Number(payload.sizeBytes) || 0;
+  if (sizeBytes <= 0 || sizeBytes > MAX_DOCUMENT_BYTES) {
+    throw new Error('Súbor môže mať maximálne 50 MB.');
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data: files, error: listError } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .list(`files/${payload.id}`, { search: fileName });
+  throwIfError(listError);
+  if (!files?.some((file) => file.name === fileName)) {
+    throw new Error('Nahraný súbor sa v úložisku nenašiel.');
+  }
+
+  const createdAt = new Date().toISOString();
+  return upsertAppDocumentMeta(supabase, {
+    id: payload.id,
+    name: fileName,
+    note: payload.note?.trim() || '',
+    size_label: formatDocumentSizeLabel(sizeBytes),
+    size_bytes: sizeBytes,
+    storage_path: payload.storagePath,
+    created_at: createdAt,
+  });
+};
+
+const deleteDocument = async (id: string) => {
+  const supabase = getSupabaseAdmin();
+  const storagePath = await deleteAppDocumentMeta(supabase, id);
+  if (storagePath) {
+    const { error: removeError } = await supabase.storage
+      .from(DOCUMENTS_BUCKET)
+      .remove([storagePath]);
+    throwIfError(removeError);
+  }
+};
+
+const getDocumentDownloadUrl = async (id: string) => {
+  const supabase = getSupabaseAdmin();
+  const document = await getAppDocumentMeta(supabase, id);
+  if (!document.storagePath) throw new Error('Súbor nemá úložnú cestu.');
+
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .createSignedUrl(document.storagePath, 60, { download: document.name });
+  throwIfError(error);
+  return { url: data.signedUrl, fileName: document.name };
+};
+
+const saveRecord = async (record: Partial<ColnaRecord> & { invoiceHandoff?: boolean }) => {
   if (!record.datumColnice) throw new Error('Dátum colnice je povinný.');
   const supabase = getSupabaseAdmin();
   const { data: state, error: stateError } = await supabase
@@ -215,45 +432,127 @@ const saveRecord = async (record: Partial<ColnaRecord>) => {
   throwIfError(stateError);
 
   const targetMonth = monthStartFromDate(record.datumColnice);
+  const isUpdate = Boolean(record.id);
   const id = record.id || randomUUID();
   let isClosed = false;
+  let permanentToken = '';
+  let existingIsNew = false;
+  let existingAlert = false;
+  // Accountant opened the permanent email link — save invoice/data without OPRAVA.
+  const isInvoiceHandoff = Boolean(record.invoiceHandoff);
+  // Email is opt-in per SAVE only (never from persisted OPRAVA/bell flags alone).
+  // Create: "Odoslať na fakturáciu" (bell). Edit: "upozornenie o zmene" (alert).
+  // Invoice handoff never sends notification email.
+  const wantsEmail = isInvoiceHandoff
+    ? false
+    : isUpdate
+      ? Boolean(record.alert)
+      : Boolean(record.bell);
 
-  if (record.id) {
+  if (isUpdate) {
     const { data: existing, error } = await supabase
       .from('customs_records')
-      .select('month_start, is_closed')
-      .eq('id', record.id)
+      .select('month_start, is_closed, invoice_token_hash, is_new, alert, invoice_pdf_path')
+      .eq('id', id)
       .single();
     throwIfError(error);
     if (existing.month_start !== targetMonth) {
       throw new Error('Záznam nemožno presunúť do iného mesiaca.');
     }
     isClosed = Boolean(existing.is_closed);
+    existingIsNew = Boolean(existing.is_new);
+    existingAlert = Boolean(existing.alert);
+    // Accountant save with invoice already on record → clear NEW permanently.
+    if (isInvoiceHandoff && existing.invoice_pdf_path) {
+      existingIsNew = false;
+    }
+    const existingToken = existing.invoice_token_hash ? String(existing.invoice_token_hash) : '';
+    // Never replace a valid permanent token. Backfill only when missing/legacy hash.
+    permanentToken =
+      isPermanentToken(existingToken) && !isLegacyTokenHash(existingToken)
+        ? existingToken
+        : createPermanentToken();
   } else if (targetMonth !== state.active_month) {
     throw new Error('Nové záznamy možno pridávať iba do aktívneho mesiaca.');
+  } else {
+    permanentToken = createPermanentToken();
   }
 
-  const databaseRecord = toDatabaseRecord({ ...record, isClosed }, id, targetMonth);
-  const { data, error } = await supabase
-    .from('customs_records')
-    .upsert(databaseRecord)
-    .select('*')
-    .single();
-  throwIfError(error);
-  await sendInvoicingEmailOnce(data);
-  return fromDatabaseRecord(data);
+  // NEW vs OPRAVA:
+  // - create: NEW from form
+  // - update: never restore NEW; never clear NEW here (cleared only after accountant invoice save)
+  // - invoice handoff: preserve NEW/OPRAVA (accountant does not edit customs flags)
+  const databaseRecord = {
+    ...toDatabaseRecord({ ...record, isClosed }, id, targetMonth),
+    invoice_token_hash: permanentToken,
+    is_new: isUpdate ? existingIsNew : Boolean(record.isNew ?? true),
+    alert: isUpdate ? (isInvoiceHandoff ? existingAlert : true) : false,
+  };
+
+  // Insert new rows with a fresh created_at (newest first in bootstrap order).
+  // Updates must never rewrite created_at, so position stays fixed.
+  let data: Record<string, unknown> | null = null;
+  if (isUpdate) {
+    const updated = await supabase
+      .from('customs_records')
+      .update(databaseRecord)
+      .eq('id', id)
+      .select('*')
+      .single();
+    throwIfError(updated.error);
+    data = updated.data;
+  } else {
+    // Retry token on the extremely rare unique-index collision.
+    let insertError: { message: string; code?: string } | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const token = attempt === 0 ? permanentToken : createPermanentToken();
+      const inserted = await supabase
+        .from('customs_records')
+        .insert({
+          ...databaseRecord,
+          invoice_token_hash: token,
+          created_at: new Date().toISOString(),
+        })
+        .select('*')
+        .single();
+      if (!inserted.error) {
+        data = inserted.data;
+        insertError = null;
+        break;
+      }
+      insertError = inserted.error;
+      const isUniqueConflict =
+        inserted.error.code === '23505' ||
+        /duplicate|unique/i.test(inserted.error.message || '');
+      if (!isUniqueConflict) break;
+    }
+    throwIfError(insertError);
+  }
+
+  if (!data) throw new Error('Záznam sa nepodarilo uložiť.');
+  const afterEmail = await sendInvoicingEmailIfRequested(
+    data,
+    wantsEmail,
+    isUpdate ? 'edit' : 'new',
+  );
+  return fromDatabaseRecord(afterEmail);
 };
 
-const prepareInvoiceUpload = async (recordId: string) => {
+const prepareInvoiceUpload = async (recordId: string, fileName: string) => {
   const supabase = getSupabaseAdmin();
   const { data: record, error: recordError } = await supabase
     .from('customs_records')
-    .select('id')
+    .select('id, invoice_pdf_path')
     .eq('id', recordId)
     .single();
   throwIfError(recordError);
 
-  const invoicePath = invoicePathForRecord(String(record.id));
+  const invoicePath = invoicePathForRecord(String(record.id), fileName);
+  const previousPath = record.invoice_pdf_path ? String(record.invoice_pdf_path) : '';
+  if (previousPath && previousPath !== invoicePath) {
+    await supabase.storage.from(INVOICE_BUCKET).remove([previousPath]);
+  }
+
   const { data, error } = await supabase.storage
     .from(INVOICE_BUCKET)
     .createSignedUploadUrl(invoicePath, { upsert: true });
@@ -261,24 +560,72 @@ const prepareInvoiceUpload = async (recordId: string) => {
   return { invoicePath, token: data.token };
 };
 
-const completeInvoiceUpload = async (recordId: string, invoicePath: string) => {
-  const expectedPath = invoicePathForRecord(recordId);
-  if (invoicePath !== expectedPath) throw new Error('Neplatná cesta faktúry.');
+const completeInvoiceUpload = async (
+  recordId: string,
+  invoicePath: string,
+  splatna?: string,
+  clearNewBadge = false,
+) => {
+  const expectedPrefix = `records/${recordId}/`;
+  if (!invoicePath.startsWith(expectedPrefix)) throw new Error('Neplatná cesta faktúry.');
+  const fileName = sanitizeInvoiceFileName(invoicePath.slice(expectedPrefix.length));
+  if (invoicePath !== `${expectedPrefix}${fileName}`) throw new Error('Neplatná cesta faktúry.');
 
   const supabase = getSupabaseAdmin();
   const { data: files, error: listError } = await supabase.storage
     .from(INVOICE_BUCKET)
-    .list(`records/${recordId}`, { search: 'invoice.pdf' });
+    .list(`records/${recordId}`, { search: fileName });
   throwIfError(listError);
-  if (!files?.some((file) => file.name === 'invoice.pdf')) {
+  if (!files?.some((file) => file.name === fileName)) {
     throw new Error('Nahraná faktúra sa v úložisku nenašla.');
+  }
+
+  const updatePayload: Record<string, unknown> = {
+    invoice_pdf_path: invoicePath,
+    updated_at: new Date().toISOString(),
+  };
+  // NEW is removed only after accountant upload + successful save.
+  if (clearNewBadge) {
+    updatePayload.is_new = false;
+  }
+  if (splatna) {
+    updatePayload.splatna = splatna;
   }
 
   const { data, error } = await supabase
     .from('customs_records')
+    .update(updatePayload)
+    .eq('id', recordId)
+    .select('*')
+    .single();
+  throwIfError(error);
+  return fromDatabaseRecord(data);
+};
+
+const deleteInvoice = async (recordId: string) => {
+  const supabase = getSupabaseAdmin();
+  const { data: record, error: recordError } = await supabase
+    .from('customs_records')
+    .select('id, invoice_pdf_path')
+    .eq('id', recordId)
+    .single();
+  throwIfError(recordError);
+
+  const paths = [
+    record.invoice_pdf_path ? String(record.invoice_pdf_path) : '',
+    `records/${recordId}/invoice.pdf`,
+  ].filter(Boolean);
+  if (paths.length > 0) {
+    const { error: removeError } = await supabase.storage.from(INVOICE_BUCKET).remove([...new Set(paths)]);
+    throwIfError(removeError);
+  }
+
+  // Never restore NEW after it was cleared (e.g. after first invoicing email).
+  const { data, error } = await supabase
+    .from('customs_records')
     .update({
-      invoice_pdf_path: invoicePath,
-      is_new: false,
+      invoice_pdf_path: null,
+      splatna: null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', recordId)
@@ -286,6 +633,26 @@ const completeInvoiceUpload = async (recordId: string, invoicePath: string) => {
     .single();
   throwIfError(error);
   return fromDatabaseRecord(data);
+};
+
+const getInvoiceDownloadUrl = async (recordId: string) => {
+  const supabase = getSupabaseAdmin();
+  const { data: record, error: recordError } = await supabase
+    .from('customs_records')
+    .select('id, invoice_pdf_path')
+    .eq('id', recordId)
+    .single();
+  throwIfError(recordError);
+
+  const storagePath = record.invoice_pdf_path ? String(record.invoice_pdf_path) : '';
+  if (!storagePath) throw new Error('Faktúra nie je nahratá.');
+
+  const fileName = sanitizeInvoiceFileName(storagePath.split('/').pop() || 'invoice.pdf');
+  const { data, error } = await supabase.storage
+    .from(INVOICE_BUCKET)
+    .createSignedUrl(storagePath, 60, { download: fileName });
+  throwIfError(error);
+  return { url: data.signedUrl, fileName };
 };
 
 export default async function handler(request: ApiRequest, response: ApiResponse) {
@@ -316,14 +683,30 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       return;
     }
 
-    if (body.action === 'prepareInvoiceUpload' && body.id) {
-      sendJson(response, 200, await prepareInvoiceUpload(body.id));
+    if (body.action === 'prepareInvoiceUpload' && body.id && body.fileName) {
+      sendJson(response, 200, await prepareInvoiceUpload(body.id, body.fileName));
       return;
     }
 
     if (body.action === 'completeInvoiceUpload' && body.id && body.invoicePath) {
-      const record = await completeInvoiceUpload(body.id, body.invoicePath);
+      const record = await completeInvoiceUpload(
+        body.id,
+        body.invoicePath,
+        body.splatna || undefined,
+        Boolean(body.clearNewBadge),
+      );
       sendJson(response, 200, { record, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'deleteInvoice' && body.id) {
+      const record = await deleteInvoice(body.id);
+      sendJson(response, 200, { record, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'getInvoiceDownloadUrl' && body.id) {
+      sendJson(response, 200, await getInvoiceDownloadUrl(body.id));
       return;
     }
 
@@ -378,6 +761,88 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       }
       await initializeDatabase();
       sendJson(response, 200, { bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'migrateBrowserData') {
+      await migrateBrowserDirectoryData(supabase, {
+        adresyRecords: body.adresyRecords,
+        loginRecords: body.loginRecords,
+        infoFaRecords: body.infoFaRecords,
+      });
+      sendJson(response, 200, { bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'saveAdresaRecord' && body.adresaRecord) {
+      const record = await upsertAdresaRecord(supabase, body.adresaRecord);
+      sendJson(response, 200, {
+        record,
+        bootstrap: await loadBootstrapData(),
+      });
+      return;
+    }
+
+    if (body.action === 'deleteAdresaRecord' && body.id) {
+      await deleteAdresaRecord(supabase, body.id);
+      sendJson(response, 200, { success: true, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'saveLoginRecord' && body.loginRecord) {
+      await upsertLoginRecord(supabase, body.loginRecord);
+      sendJson(response, 200, { bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'deleteLoginRecord' && body.id) {
+      await deleteLoginRecord(supabase, body.id);
+      sendJson(response, 200, { success: true, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'saveInfoFaRecord' && body.infoFaRecord) {
+      await upsertInfoFaRecord(supabase, body.infoFaRecord);
+      sendJson(response, 200, { bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'deleteInfoFaRecord' && body.id) {
+      await deleteInfoFaRecord(supabase, body.id);
+      sendJson(response, 200, { success: true, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'prepareDocumentUpload' && body.fileName) {
+      sendJson(response, 200, await prepareDocumentUpload(body.fileName));
+      return;
+    }
+
+    if (
+      body.action === 'completeDocumentUpload' &&
+      body.id &&
+      body.storagePath &&
+      body.fileName
+    ) {
+      const document = await completeDocumentUpload({
+        id: body.id,
+        storagePath: body.storagePath,
+        fileName: body.fileName,
+        note: body.note,
+        sizeBytes: body.sizeBytes,
+      });
+      sendJson(response, 200, { document, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'deleteDocument' && body.id) {
+      await deleteDocument(body.id);
+      sendJson(response, 200, { success: true, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'getDocumentDownloadUrl' && body.id) {
+      sendJson(response, 200, await getDocumentDownloadUrl(body.id));
       return;
     }
 

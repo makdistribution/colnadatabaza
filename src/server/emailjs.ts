@@ -4,7 +4,11 @@ interface InvoicingEmail {
   vehicleRegistration: string;
   invoiceReference: string;
   secureLink: string;
+  /** NEW customs → default EMAILJS_TEMPLATE_ID; EDIT → template_myjr2fb */
+  kind?: 'new' | 'edit';
 }
+
+const EDIT_NOTIFICATION_TEMPLATE_ID = 'template_myjr2fb';
 
 const requiredEnvironmentValue = (name: string) => {
   const value = process.env[name];
@@ -13,16 +17,30 @@ const requiredEnvironmentValue = (name: string) => {
 };
 
 export const createInvoiceLink = (token: string) => {
-  const baseUrl = requiredEnvironmentValue('APP_BASE_URL');
+  const baseUrl = requiredEnvironmentValue('APP_BASE_URL').trim();
   const url = new URL(baseUrl);
   url.searchParams.set('invoiceToken', token);
-  return url.toString();
+  const link = url.toString();
+  if (!token || !link.includes('invoiceToken=')) {
+    throw new Error('Failed to build permanent case link for EmailJS.');
+  }
+  return link;
 };
 
 export const sendInvoicingEmail = async (email: InvoicingEmail) => {
+  const secureLink = String(email.secureLink || '').trim();
+  if (!secureLink || !/^https?:\/\//i.test(secureLink)) {
+    throw new Error('EmailJS secure_link is missing or invalid.');
+  }
+
+  const templateId =
+    email.kind === 'edit'
+      ? EDIT_NOTIFICATION_TEMPLATE_ID
+      : requiredEnvironmentValue('EMAILJS_TEMPLATE_ID');
+
   const requestBody: Record<string, unknown> = {
     service_id: requiredEnvironmentValue('EMAILJS_SERVICE_ID'),
-    template_id: requiredEnvironmentValue('EMAILJS_TEMPLATE_ID'),
+    template_id: templateId,
     user_id: requiredEnvironmentValue('EMAILJS_PUBLIC_KEY'),
     template_params: {
       customer_name: email.customerName,
@@ -30,7 +48,8 @@ export const sendInvoicingEmail = async (email: InvoicingEmail) => {
       vehicle_registration: email.vehicleRegistration,
       spz: email.vehicleRegistration,
       invoice_reference: email.invoiceReference,
-      secure_link: email.secureLink,
+      // Existing EmailJS template variable — full permanent case link (clickable URL text).
+      secure_link: secureLink,
     },
   };
 

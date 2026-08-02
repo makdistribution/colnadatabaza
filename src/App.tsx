@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ColnaRecord, 
   AppBootstrap,
+  AppDocument,
   MonthlyReport,
   AdresaRecord, 
   LoginRecord, 
@@ -9,11 +10,6 @@ import {
   ActiveTab 
 } from './types';
 import { parseMonthYear, formatMonthYear } from './utils/monthUtils';
-import { 
-  INITIAL_ADRESY_RECORDS, 
-  INITIAL_LOGIN_RECORDS, 
-  INITIAL_INFO_FA_RECORDS 
-} from './data/initialData';
 import { Header } from './components/Header';
 import { QuickStatsHeader } from './components/QuickStatsHeader';
 import { ColnaDatagrid } from './components/ColnaDatagrid';
@@ -23,39 +19,46 @@ import { LoginUdajeView } from './components/LoginUdajeView';
 import { InfoFaView } from './components/InfoFaView';
 import { ReportyView } from './components/ReportyView';
 import { SuboryView } from './components/SuboryView';
-import { InvoiceCaseView } from './components/InvoiceCaseView';
 import { appApi } from './lib/appApi';
 
+const BROWSER_DATA_KEYS = [
+  'mak_adresy_records',
+  'mak_login_records',
+  'mak_info_fa_records',
+  'mak_colna_records',
+  'mak_customs_creation_order',
+] as const;
+
+const readLocalJsonArray = <T,>(key: string): T[] | undefined => {
+  try {
+    const saved = localStorage.getItem(key);
+    if (!saved) return undefined;
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? (parsed as T[]) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const clearBrowserBusinessData = () => {
+  for (const key of BROWSER_DATA_KEYS) {
+    localStorage.removeItem(key);
+  }
+};
+
 export default function App() {
-  const invoiceToken = new URLSearchParams(window.location.search).get('invoiceToken');
+  const [pendingInvoiceToken] = useState(
+    () => new URLSearchParams(window.location.search).get('invoiceToken'),
+  );
   const [colnaRecords, setColnaRecords] = useState<ColnaRecord[]>([]);
   const [monthlyReports, setMonthlyReports] = useState<MonthlyReport[]>([]);
   const [activeReportYear, setActiveReportYear] = useState(0);
   const [isDataLoading, setIsDataLoading] = useState(false);
 
-  const [adresyRecords, setAdresyRecords] = useState<AdresaRecord[]>(() => {
-    const saved = localStorage.getItem('mak_adresy_records');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return INITIAL_ADRESY_RECORDS;
-  });
-
-  const [loginRecords, setLoginRecords] = useState<LoginRecord[]>(() => {
-    const saved = localStorage.getItem('mak_login_records');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return INITIAL_LOGIN_RECORDS;
-  });
-
-  const [infoFaRecords, setInfoFaRecords] = useState<InfoFaRecord[]>(() => {
-    const saved = localStorage.getItem('mak_info_fa_records');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
-    }
-    return INITIAL_INFO_FA_RECORDS;
-  });
+  const [adresyRecords, setAdresyRecords] = useState<AdresaRecord[]>([]);
+  const [loginRecords, setLoginRecords] = useState<LoginRecord[]>([]);
+  const [infoFaRecords, setInfoFaRecords] = useState<InfoFaRecord[]>([]);
+  const [documents, setDocuments] = useState<AppDocument[]>([]);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('COLNA_DATABAZA');
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,14 +74,92 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingColnaRecord, setEditingColnaRecord] = useState<ColnaRecord | null>(null);
   const [isCopyMode, setIsCopyMode] = useState(false);
+  /** Opened via ?invoiceToken= — show as NOVÝ ZÁZNAM (accountant invoice handoff). */
+  const [isInvoiceHandoff, setIsInvoiceHandoff] = useState(false);
 
   const applyBootstrap = (bootstrap: AppBootstrap) => {
     const [year, month] = bootstrap.activeMonth.split('-').map(Number);
     setCurrentMonthYear(formatMonthYear(month, year));
     setActiveReportYear(bootstrap.activeReportYear);
+    // Order comes from Supabase (created_at desc). Do not reorder on the client.
     setColnaRecords(bootstrap.records);
     setMonthlyReports(bootstrap.reports);
+    setAdresyRecords(bootstrap.adresyRecords || []);
+    setLoginRecords(bootstrap.loginRecords || []);
+    setInfoFaRecords(bootstrap.infoFaRecords || []);
+    setDocuments(bootstrap.documents || []);
   };
+
+  const openRecordFromInvoiceToken = async (token: string, records: ColnaRecord[]) => {
+    const normalized = token.trim();
+    if (!normalized) return;
+
+    const openRecord = (record: ColnaRecord) => {
+      setEditingColnaRecord(record);
+      setIsCopyMode(false);
+      setIsInvoiceHandoff(true);
+      setIsModalOpen(true);
+      setActiveTab('COLNA_DATABAZA');
+    };
+
+    const fromBootstrap = records.find((record) => record.invoiceToken === normalized);
+    if (fromBootstrap) {
+      openRecord(fromBootstrap);
+      return;
+    }
+
+    try {
+      const { record } = await appApi.resolveInvoiceToken(normalized);
+      openRecord(record);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      // Never surface "not found" / unauthorized as a pre-login dead end.
+      // Login gate already ran; only show a soft error if lookup truly failed after auth.
+      if (message === 'Unauthorized.' || message === 'Nesprávne heslo') return;
+      setToastMessage(
+        message && message !== 'Colný záznam sa nenašiel.'
+          ? message
+          : 'Colný záznam z odkazu sa nepodarilo otvoriť. Skúste obnoviť stránku po prihlásení.',
+      );
+    }
+  };
+
+  const loadApplicationData = async () => {
+    const localAdresy = readLocalJsonArray<AdresaRecord>('mak_adresy_records');
+    const localLogin = readLocalJsonArray<LoginRecord>('mak_login_records');
+    const localInfoFa = readLocalJsonArray<InfoFaRecord>('mak_info_fa_records');
+    const migrateResult = await appApi.migrateBrowserData({
+      adresyRecords: localAdresy,
+      loginRecords: localLogin,
+      infoFaRecords: localInfoFa,
+    });
+    applyBootstrap(migrateResult.bootstrap);
+    clearBrowserBusinessData();
+    if (pendingInvoiceToken) {
+      await openRecordFromInvoiceToken(pendingInvoiceToken, migrateResult.bootstrap.records);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const session = await appApi.getSession();
+        if (cancelled || !session.authenticated) return;
+        setIsDataLoading(true);
+        await loadApplicationData();
+        if (!cancelled) setIsApplicationLocked(false);
+      } catch {
+        // Stay locked; user can unlock manually.
+      } finally {
+        if (!cancelled) setIsDataLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Close month logic
   const handleCloseMonth = async (monthYearToClose: string, closeYear = false) => {
@@ -92,70 +173,16 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 9000);
   };
 
-  useEffect(() => {
-    localStorage.setItem('mak_adresy_records', JSON.stringify(adresyRecords));
-  }, [adresyRecords]);
-
-  useEffect(() => {
-    localStorage.setItem('mak_login_records', JSON.stringify(loginRecords));
-  }, [loginRecords]);
-
-  useEffect(() => {
-    localStorage.setItem('mak_info_fa_records', JSON.stringify(infoFaRecords));
-  }, [infoFaRecords]);
-
-  // List of unique customer names for dropdowns (ensuring no duplicate variations)
+  // ZÁKAZNÍK dropdown: ONLY values from Adresár column SKRATKA (never official legal name).
   const customerList = (() => {
-    const defaultCustomers = [
-      'Petertransporte',
-      'CSAD Tisnov',
-      'edysea',
-      'STANFUD',
-      'MJ Sped',
-      'Martin Andel',
-      'ABC SPED'
-    ];
-
-    const colnaCustomers = colnaRecords.map((c) => c.zakaznik?.trim()).filter(Boolean);
-    const adresyCustomers = adresyRecords.map((a) => a.nazovFirmy?.trim()).filter(Boolean);
-
-    const cleanNormalize = (str: string) =>
-      str
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[\s.,_\-]/g, '')
-        .replace(/sro|spolsro/g, '');
-
     const list: string[] = [];
-    const seenKeys = new Set<string>();
-
-    const addCustomer = (name: string) => {
-      if (!name) return;
-      const trimmed = name.trim();
-      const key = cleanNormalize(trimmed);
-      if (!key) return;
-
-      let alreadyExists = false;
-      for (const seen of seenKeys) {
-        if (
-          seen === key ||
-          (seen.length >= 4 && key.length >= 4 && (seen.includes(key) || key.includes(seen)))
-        ) {
-          alreadyExists = true;
-          break;
-        }
-      }
-      if (!alreadyExists) {
-        seenKeys.add(key);
-        list.push(trimmed);
-      }
-    };
-
-    defaultCustomers.forEach(addCustomer);
-    colnaCustomers.forEach(addCustomer);
-    adresyCustomers.forEach(addCustomer);
-
+    const seen = new Set<string>();
+    for (const row of adresyRecords) {
+      const skratka = String(row.skratka || '').trim();
+      if (!skratka || seen.has(skratka)) continue;
+      seen.add(skratka);
+      list.push(skratka);
+    }
     return list;
   })();
 
@@ -169,7 +196,7 @@ export default function App() {
 
   // CRUD for Colna Records
   const handleSaveColnaRecord = async (
-    partialRecord: Partial<ColnaRecord>,
+    partialRecord: Partial<ColnaRecord> & { invoiceHandoff?: boolean },
     invoiceFile?: File,
   ) => {
     let savedRecord: ColnaRecord | null = null;
@@ -178,17 +205,39 @@ export default function App() {
       savedRecord = saveResult.record;
       applyBootstrap(saveResult.bootstrap);
       if (invoiceFile) {
-        setEditingColnaRecord(savedRecord);
-        const uploadResult = await appApi.uploadInvoice(savedRecord.id, invoiceFile);
+        const uploadResult = await appApi.uploadInvoice(savedRecord.id, invoiceFile, {
+          // NEW clears only after accountant upload + successful save.
+          clearNewBadge: Boolean(partialRecord.invoiceHandoff),
+        });
         savedRecord = uploadResult.record;
         applyBootstrap(uploadResult.bootstrap);
       }
+      // Close dialog after successful save; table already refreshed via bootstrap.
       setIsModalOpen(false);
       setEditingColnaRecord(null);
       setIsCopyMode(false);
+      setIsInvoiceHandoff(false);
     } catch (error) {
-      if (savedRecord) setEditingColnaRecord(savedRecord);
+      if (savedRecord) {
+        setEditingColnaRecord(savedRecord);
+        setIsModalOpen(true);
+      }
       setToastMessage(error instanceof Error ? error.message : 'Záznam sa nepodarilo uložiť.');
+    }
+  };
+
+  const handleDownloadInvoiceFromTable = async (recordId: string) => {
+    try {
+      const { url, fileName } = await appApi.getInvoiceDownloadUrl(recordId);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Faktúru sa nepodarilo stiahnuť.');
     }
   };
 
@@ -198,6 +247,17 @@ export default function App() {
       applyBootstrap(bootstrap);
     } catch (error) {
       setToastMessage(error instanceof Error ? error.message : 'Záznamy sa nepodarilo vymazať.');
+    }
+  };
+
+  const handleDeleteInvoice = async (recordId: string) => {
+    try {
+      const { record, bootstrap } = await appApi.deleteInvoice(recordId);
+      applyBootstrap(bootstrap);
+      setEditingColnaRecord(record);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Faktúru sa nepodarilo vymazať.');
+      throw error;
     }
   };
 
@@ -211,53 +271,89 @@ export default function App() {
   };
 
   // CRUD for Adresy
-  const handleSaveAdresaRecord = (record: AdresaRecord) => {
-    setAdresyRecords((prev) => {
-      const exists = prev.some((a) => a.id === record.id);
-      if (exists) {
-        return prev.map((a) => (a.id === record.id ? record : a));
-      }
-      return [record, ...prev];
-    });
+  const handleSaveAdresaRecord = async (record: AdresaRecord) => {
+    try {
+      const { bootstrap } = await appApi.saveAdresaRecord(record);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Adresu sa nepodarilo uložiť.');
+    }
   };
 
-  const handleDeleteAdresaRecord = (id: string) => {
-    setAdresyRecords((prev) => prev.filter((a) => a.id !== id));
+  const handleDeleteAdresaRecord = async (id: string) => {
+    try {
+      const { bootstrap } = await appApi.deleteAdresaRecord(id);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Adresu sa nepodarilo vymazať.');
+    }
   };
 
   // CRUD for Login Records
-  const handleSaveLoginRecord = (record: LoginRecord) => {
-    setLoginRecords((prev) => {
-      const exists = prev.some((l) => l.id === record.id);
-      if (exists) {
-        return prev.map((l) => (l.id === record.id ? record : l));
-      }
-      return [record, ...prev];
-    });
+  const handleSaveLoginRecord = async (record: LoginRecord) => {
+    try {
+      const { bootstrap } = await appApi.saveLoginRecord(record);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Prihlasovacie údaje sa nepodarilo uložiť.');
+    }
   };
 
-  const handleDeleteLoginRecord = (id: string) => {
-    setLoginRecords((prev) => prev.filter((l) => l.id !== id));
+  const handleDeleteLoginRecord = async (id: string) => {
+    try {
+      const { bootstrap } = await appApi.deleteLoginRecord(id);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Prihlasovacie údaje sa nepodarilo vymazať.');
+    }
   };
 
   // CRUD for Info FA
-  const handleSaveInfoFaRecord = (record: InfoFaRecord) => {
-    setInfoFaRecords((prev) => {
-      const exists = prev.some((i) => i.id === record.id);
-      if (exists) {
-        return prev.map((i) => (i.id === record.id ? record : i));
-      }
-      return [record, ...prev];
-    });
+  const handleSaveInfoFaRecord = async (record: InfoFaRecord) => {
+    try {
+      const { bootstrap } = await appApi.saveInfoFaRecord(record);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Info FA sa nepodarilo uložiť.');
+    }
   };
 
-  const handleDeleteInfoFaRecord = (id: string) => {
-    setInfoFaRecords((prev) => prev.filter((i) => i.id !== id));
+  const handleDeleteInfoFaRecord = async (id: string) => {
+    try {
+      const { bootstrap } = await appApi.deleteInfoFaRecord(id);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Info FA sa nepodarilo vymazať.');
+    }
   };
 
-  // Calculate current month profit & unpaid count
-  const unpaidCount = colnaRecords.filter((r) => !r.zaplatena).length;
-  const currentMonthProfit = colnaRecords.reduce((acc, r) => acc + (r.zisk || 0), 0);
+  const handleUploadDocument = async (file: File, note: string) => {
+    const { bootstrap } = await appApi.uploadDocument(file, note);
+    applyBootstrap(bootstrap);
+  };
+
+  const handleDeleteDocument = async (id: string) => {
+    try {
+      const { bootstrap } = await appApi.deleteDocument(id);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Súbor sa nepodarilo vymazať.');
+    }
+  };
+
+  const handleDownloadDocument = async (id: string) => {
+    try {
+      const { url } = await appApi.getDocumentDownloadUrl(id);
+      const link = document.createElement('a');
+      link.href = url;
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Súbor sa nepodarilo stiahnuť.');
+    }
+  };
 
   const handleApplicationUnlock = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -265,11 +361,9 @@ export default function App() {
     setApplicationError('');
     try {
       await appApi.unlock(applicationPassword);
-      const bootstrap = await appApi.bootstrap();
-      applyBootstrap(bootstrap);
+      await loadApplicationData();
       setIsApplicationLocked(false);
       setApplicationPassword('');
-      localStorage.removeItem('mak_colna_records');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Aplikáciu sa nepodarilo načítať.';
       if (message === 'Nesprávne heslo') {
@@ -282,14 +376,10 @@ export default function App() {
     }
   };
 
-  if (invoiceToken) {
-    return <InvoiceCaseView token={invoiceToken} />;
-  }
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-blue-600 selection:text-white">
       {/* Header and Quick Stats Block connected together */}
-      <div className="sticky top-0 z-40 bg-[#000a2f]">
+      <div className="sticky top-0 z-40 bg-[#000a2f] print:hidden">
         <Header
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -311,7 +401,7 @@ export default function App() {
 
       {/* Success / Notification Banner */}
       {toastMessage && (
-        <div className="bg-emerald-600 text-white px-4 py-3 border-b border-emerald-500 shadow-md flex items-center justify-between font-medium text-xs animate-in slide-in-from-top duration-200">
+        <div className="bg-emerald-600 text-white px-4 py-3 border-b border-emerald-500 shadow-md flex items-center justify-between font-medium text-xs animate-in slide-in-from-top duration-200 print:hidden">
           <div className="flex items-center gap-2.5">
             <span className="bg-emerald-700 p-1 rounded-md">✓</span>
             <span>{toastMessage}</span>
@@ -326,29 +416,33 @@ export default function App() {
       )}
 
       {/* Main Workspace */}
-      <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-2 overflow-x-hidden" style={{ backgroundColor: '#000a2f' }}>
+      <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-2 overflow-x-hidden print:p-0 print:overflow-visible" style={{ backgroundColor: '#000a2f' }}>
         {activeTab === 'COLNA_DATABAZA' && (
           <ColnaDatagrid
             records={colnaRecords}
+            customerDirectory={adresyRecords}
             onAddRecord={() => {
               setEditingColnaRecord(null);
               setIsCopyMode(false);
+              setIsInvoiceHandoff(false);
               setIsModalOpen(true);
             }}
             onEditRecord={(r) => {
               setEditingColnaRecord(r);
               setIsCopyMode(false);
+              setIsInvoiceHandoff(false);
               setIsModalOpen(true);
             }}
             onCopyRecord={(r) => {
               setEditingColnaRecord(r);
               setIsCopyMode(true);
+              setIsInvoiceHandoff(false);
               setIsModalOpen(true);
             }}
             onDeleteRecords={handleDeleteColnaRecords}
             onTogglePaid={handleTogglePaid}
+            onDownloadInvoice={handleDownloadInvoiceFromTable}
             searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
             currentMonthYear={currentMonthYear}
             onCloseMonth={handleCloseMonth}
             onMonthYearChange={setCurrentMonthYear}
@@ -368,6 +462,7 @@ export default function App() {
         {activeTab === 'LOGIN_UDAJE' && (
           <LoginUdajeView
             records={loginRecords}
+            searchTerm={searchTerm}
             onSaveRecord={handleSaveLoginRecord}
             onDeleteRecord={handleDeleteLoginRecord}
           />
@@ -388,10 +483,19 @@ export default function App() {
             year={parseInt(activeTab.replace('REPORTY_', ''), 10) || activeReportYear}
             onYearChange={(y) => setActiveTab(`REPORTY_${y}`)}
             availableYears={availableYears}
+            searchTerm={searchTerm}
+            customerDirectory={adresyRecords}
           />
         )}
 
-        {activeTab === 'SUBORY' && <SuboryView />}
+        {activeTab === 'SUBORY' && (
+          <SuboryView
+            files={documents}
+            onUpload={handleUploadDocument}
+            onDelete={handleDeleteDocument}
+            onDownload={handleDownloadDocument}
+          />
+        )}
       </main>
 
       {/* Add / Edit Record Modal */}
@@ -401,16 +505,26 @@ export default function App() {
           setIsModalOpen(false);
           setEditingColnaRecord(null);
           setIsCopyMode(false);
+          setIsInvoiceHandoff(false);
         }}
         onSave={handleSaveColnaRecord}
+        onDeleteInvoice={handleDeleteInvoice}
         initialRecord={editingColnaRecord}
         customerList={customerList}
         copyMode={isCopyMode}
-        defaultDate={`${parseMonthYear(currentMonthYear).year}-${String(parseMonthYear(currentMonthYear).month).padStart(2, '0')}-01`}
+        invoiceHandoffMode={isInvoiceHandoff}
+        defaultDate={(() => {
+          // Match header "Dátum" (local calendar today) — never first-of-month / UTC yesterday.
+          const today = new Date();
+          const y = today.getFullYear();
+          const m = String(today.getMonth() + 1).padStart(2, '0');
+          const d = String(today.getDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        })()}
       />
 
       {/* Bottom Footer */}
-      <footer className="border-t border-slate-900 bg-[#060a12] py-4 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-900 bg-[#060a12] py-4 text-center text-xs text-slate-500 print:hidden">
         <div className="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-center">
           <div>
             © 2026 <strong className="text-slate-300 ml-3">MAK DISTRIBUTION</strong>
@@ -419,7 +533,7 @@ export default function App() {
       </footer>
 
       {isApplicationLocked && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/20 backdrop-blur-md">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/20 backdrop-blur-md print:hidden">
           <div className="w-[90vw] h-[90vh] flex items-center justify-center rounded-2xl border border-white/60 bg-white/80 shadow-2xl backdrop-blur-xl">
             <form onSubmit={handleApplicationUnlock} className="w-full max-w-sm px-8 text-center">
               <h1 className="mb-6 text-2xl font-bold text-slate-900">Prístup do aplikácie</h1>

@@ -57,10 +57,9 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
             <div className="relative w-48 sm:w-60">
               <input
                 type="text"
-                placeholder="Hľadať v databáze..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-lg pl-8 pr-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400 font-medium"
+                className="w-full bg-white border border-slate-300 text-slate-900 text-xs rounded-lg pl-8 pr-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
               />
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
             </div>

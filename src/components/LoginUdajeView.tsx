@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { LoginRecord } from '../types';
 import { Key, ExternalLink, Eye, EyeOff, Copy, Check, Plus, Trash2, Edit3, ShieldCheck, X, Save } from 'lucide-react';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 interface LoginUdajeViewProps {
   records: LoginRecord[];
+  searchTerm?: string;
   onSaveRecord: (record: LoginRecord) => void;
   onDeleteRecord: (id: string) => void;
 }
 
 export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
   records,
+  searchTerm = '',
   onSaveRecord,
   onDeleteRecord
 }) => {
@@ -19,6 +22,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
   // Edit / Add Modal State
   const [editingRecord, setEditingRecord] = useState<LoginRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<LoginRecord | null>(null);
 
   const togglePassword = (id: string) => {
     setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
@@ -57,8 +61,21 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
     setEditingRecord(null);
   };
 
-  const cat1 = records.filter(r => r.kategoria === 'I');
-  const cat2 = records.filter(r => r.kategoria === 'II');
+  const matchesSearch = (record: LoginRecord) => {
+    if (!searchTerm) return true;
+    const needle = searchTerm.toLowerCase();
+    return (
+      record.sluzba.toLowerCase().includes(needle) ||
+      record.odkaz.toLowerCase().includes(needle) ||
+      record.prihlasenie.toLowerCase().includes(needle) ||
+      (record.poznamka || '').toLowerCase().includes(needle) ||
+      record.kategoria.toLowerCase().includes(needle)
+    );
+  };
+
+  const visibleRecords = records.filter(matchesSearch);
+  const cat1 = visibleRecords.filter(r => r.kategoria === 'I');
+  const cat2 = visibleRecords.filter(r => r.kategoria === 'II');
 
   return (
     <div className="space-y-6 my-4">
@@ -129,12 +146,8 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm(`Naozaj chcete vymazať prístup pre "${r.sluzba}"?`)) {
-                              onDeleteRecord(r.id);
-                            }
-                          }}
-                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                          onClick={() => setDeleteTarget(r)}
+                          className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 cursor-pointer"
                           title="Vymazať"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -149,10 +162,10 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                         href={r.odkaz.startsWith('http') ? r.odkaz : `https://${r.odkaz}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1 max-w-[220px] truncate font-normal"
+                        className="text-blue-600 underline hover:text-blue-800 break-all whitespace-normal font-normal"
                       >
-                        <span>{r.odkaz}</span>
-                        <ExternalLink className="w-3 h-3 text-blue-500 shrink-0" />
+                        {r.odkaz}
+                        <ExternalLink className="inline-block w-3 h-3 text-blue-500 ml-1 align-text-bottom" />
                       </a>
                     </td>
                     <td className="p-2.5 border-r-2 border-slate-400 text-slate-800 font-medium">
@@ -241,12 +254,8 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm(`Naozaj chcete vymazať prístup pre "${r.sluzba}"?`)) {
-                              onDeleteRecord(r.id);
-                            }
-                          }}
-                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                          onClick={() => setDeleteTarget(r)}
+                          className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 cursor-pointer"
                           title="Vymazať"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -261,10 +270,10 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                         href={r.odkaz.startsWith('http') ? r.odkaz : `https://${r.odkaz}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1 max-w-[240px] truncate font-normal"
+                        className="text-blue-600 underline hover:text-blue-800 break-all whitespace-normal font-normal"
                       >
-                        <span>{r.odkaz}</span>
-                        <ExternalLink className="w-3 h-3 text-blue-500 shrink-0" />
+                        {r.odkaz}
+                        <ExternalLink className="inline-block w-3 h-3 text-blue-500 ml-1 align-text-bottom" />
                       </a>
                     </td>
                     <td className="p-2.5 border-r-2 border-slate-400 text-slate-800 font-medium">
@@ -337,7 +346,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   onChange={(e) => setEditingRecord({ ...editingRecord, kategoria: e.target.value as 'I' | 'II' })}
                   className="w-full text-xs font-bold text-slate-900 p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 >
-                  <option value="I">Skupina I - Colné portály (Getlink, Colnica...)</option>
+                  <option value="I">SKUPINA I – Colné portály</option>
                   <option value="II">Skupina II - Webové stránky & Editory</option>
                 </select>
               </div>
@@ -349,7 +358,6 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   required
                   value={editingRecord.sluzba}
                   onChange={(e) => setEditingRecord({ ...editingRecord, sluzba: e.target.value })}
-                  placeholder="napr. GETLINK PORTÁL"
                   className="w-full text-xs font-bold text-slate-900 p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
@@ -360,7 +368,6 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   type="text"
                   value={editingRecord.odkaz}
                   onChange={(e) => setEditingRecord({ ...editingRecord, odkaz: e.target.value })}
-                  placeholder="napr. account.getlinkgroup.com"
                   className="w-full text-xs text-blue-600 underline p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
@@ -371,7 +378,6 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   type="text"
                   value={editingRecord.prihlasenie}
                   onChange={(e) => setEditingRecord({ ...editingRecord, prihlasenie: e.target.value })}
-                  placeholder="napr. mak@distribution.sk"
                   className={`w-full text-xs p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none ${
                     editingRecord.prihlasenie.includes('@')
                       ? 'text-blue-600 underline'
@@ -386,7 +392,6 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   type="text"
                   value={editingRecord.heslo}
                   onChange={(e) => setEditingRecord({ ...editingRecord, heslo: e.target.value })}
-                  placeholder="napr. Heslo123!"
                   className="w-full text-xs font-mono font-bold text-slate-900 p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
@@ -397,7 +402,6 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   type="text"
                   value={editingRecord.poznamka || ''}
                   onChange={(e) => setEditingRecord({ ...editingRecord, poznamka: e.target.value })}
-                  placeholder="Voliteľná poznámka..."
                   className="w-full text-xs text-slate-900 p-2.5 rounded-lg border-2 border-slate-300 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
@@ -421,6 +425,23 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        title="VYMAZAŤ PRÍSTUP"
+        message={
+          <>
+            Naozaj chcete vymazať{' '}
+            <strong className="font-bold text-red-900">prístup pre &quot;{deleteTarget?.sluzba}&quot;</strong>
+            ? Túto akciu nie je možné vrátiť späť.
+          </>
+        }
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) onDeleteRecord(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
 
     </div>
   );

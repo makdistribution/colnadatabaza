@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { ColnaRecord } from '../types';
+import React, { useEffect, useState } from 'react';
+import { AdresaRecord, ColnaRecord } from '../types';
 import { parseMonthYear, extractYearAndMonth } from '../utils/monthUtils';
+import { resolveCustomerSkratka } from '../utils/customerSkratka';
 import { RecordModal } from './RecordModal';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 // Helpers to extract status for the 4 split columns (UK ➔ EU and EU ➔ UK)
 const getUkZaclenie = (r: ColnaRecord): string => {
@@ -67,7 +69,6 @@ const getUkVyclenie = (r: ColnaRecord): string => {
 import { 
   Plus, 
   Trash2, 
-  Search, 
   Edit3,
   Copy,
   Check, 
@@ -90,13 +91,14 @@ import {
 
 interface ColnaDatagridProps {
   records: ColnaRecord[];
+  customerDirectory?: AdresaRecord[];
   onAddRecord: () => void;
   onEditRecord: (record: ColnaRecord) => void;
   onCopyRecord: (record: ColnaRecord) => void;
   onDeleteRecords: (ids: string[]) => void;
   onTogglePaid: (id: string, zaplatena: boolean) => void;
+  onDownloadInvoice?: (recordId: string) => void;
   searchTerm: string;
-  setSearchTerm: (term: string) => void;
   currentMonthYear: string;
   onCloseMonth: (monthYear: string, closeYear?: boolean) => Promise<void>;
   onMonthYearChange: (monthYear: string) => void;
@@ -106,13 +108,14 @@ interface ColnaDatagridProps {
 
 export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   records,
+  customerDirectory = [],
   onAddRecord,
   onEditRecord,
   onCopyRecord,
   onDeleteRecords,
   onTogglePaid,
+  onDownloadInvoice,
   searchTerm,
-  setSearchTerm,
   currentMonthYear,
   onCloseMonth,
   onMonthYearChange,
@@ -198,7 +201,13 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
-  const paginatedRecords = filteredRecords.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedRecords = filteredRecords.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  // Always show the newest row (Supabase created_at order) on page 1 after creates/reloads.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredRecords[0]?.id, currentMonthYear, statusFilter, activeViewTab, searchTerm]);
 
   // Checkbox handlers
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,6 +242,18 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   const totalFaEuAgent = filteredRecords.reduce((acc, r) => acc + (r.faOdEuAgent || 0), 0);
   const totalFaKlient = filteredRecords.reduce((acc, r) => acc + (r.faKlient || 0), 0);
   const totalZisk = filteredRecords.reduce((acc, r) => acc + (r.zisk || 0), 0);
+
+  // Print uses the full current-month table (Supabase order preserved).
+  const printRecords = monthRecords;
+  const printTotalFaUk = printRecords.reduce((acc, r) => acc + (r.faOdUkAgent || 0), 0);
+  const printTotalFaEu = printRecords.reduce((acc, r) => acc + (r.faOdEuAgent || 0), 0);
+  const printTotalFaKlient = printRecords.reduce((acc, r) => acc + (r.faKlient || 0), 0);
+  const printTotalZisk = printRecords.reduce((acc, r) => acc + (r.zisk || 0), 0);
+  const printDateStr = (() => {
+    const now = new Date();
+    return `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+  })();
+  const formatMoney = (value: number) => value.toFixed(2).replace('.', ',');
 
   // Format date DD.MM.YYYY (without spaces after dots)
   const formatDateStr = (dateStr: string) => {
@@ -269,7 +290,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   };
 
   return (
-    <div className="bg-white border-2 border-slate-400 rounded-xl shadow-xs overflow-hidden my-4">
+    <>
+    <div className="bg-white border-2 border-slate-400 rounded-xl shadow-xs overflow-hidden my-4 print:hidden">
       
       {/* Top Filter & Action Bar */}
       <div className="bg-slate-50 p-3.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -380,19 +402,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
           </div>
         )}
 
-        {/* Search Input & Export buttons */}
+        {/* Export buttons */}
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Vyhľadať..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white border border-slate-200 text-slate-900 rounded-lg px-2.5 py-1.5 pr-7 text-xs w-36 sm:w-48 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400"
-            />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2" />
-          </div>
-
           <button
             onClick={handleExportCSV}
             className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium cursor-pointer shadow-2xs"
@@ -411,7 +422,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
       </div>
 
       {/* Main Table Grid */}
-      <div className="overflow-x-auto w-full">
+      <div className="w-full overflow-x-auto min-[1600px]:overflow-x-hidden">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-[#dae3ed] text-black uppercase font-extrabold tracking-wider border-b border-slate-300 select-none text-[16px] leading-tight font-sans">
@@ -423,34 +434,31 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                   className="rounded text-blue-600 focus:ring-0 w-3.5 h-3.5 border-slate-400"
                 />
               </th>
-              <th rowSpan={2} className="p-1 w-10 min-w-[40px] max-w-[44px] text-center border-r border-slate-300 text-black">
-                <div className="flex flex-col items-center justify-center gap-0.5 leading-none">
-                  <Copy className="w-3.5 h-3.5 text-blue-600" />
-                  <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                </div>
+              <th rowSpan={2} className="p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black">
+                <img src="/edit1.png" alt="Akcia" className="mx-auto h-6 w-auto object-contain" />
               </th>
-              <th rowSpan={2} className="p-2 min-w-[130px] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-2 min-w-[141px] border-r border-slate-300 text-black">
                 ZÁKAZNÍK
               </th>
               <th rowSpan={2} className="p-1 w-4 text-center border-r border-slate-300 text-black" title="Nové colné konanie v evidencii">
                 NEW
               </th>
-              <th rowSpan={2} className="p-2 min-w-[40px] text-center border-r border-slate-300 text-black" title="Odoslať na fakturáciu">
-                <img src="/mail.png" alt="Fakturácia" className="mx-auto object-contain -mb-[3px] p-0" style={{ width: '26.375px', height: '41px' }} />
+              <th rowSpan={2} className="p-2 min-w-[40px] text-center border-r border-slate-300 text-black" title="Email odoslaný">
+                <img src="/mail.png" alt="Email odoslaný" className="mx-auto object-contain -mb-[3px] p-0" style={{ width: '26.375px', height: '41px' }} />
               </th>
-              <th rowSpan={2} className="p-2 min-w-[36px] text-center border-r border-slate-300 text-black" title="Upozornenie o zmene">
-                <img src="/edit.png" alt="Zmena" className="mx-auto object-contain p-0" style={{ width: '23px', height: '41px', marginTop: '2px', marginLeft: '0px', paddingTop: '0px', paddingLeft: '0px' }} />
+              <th rowSpan={2} className="p-2 min-w-[36px] text-center border-r border-slate-300 text-black" title="OPRAVA">
+                <img src="/edit.png" alt="OPRAVA" className="mx-auto object-contain p-0" style={{ width: '23px', height: '41px', marginTop: '2px', marginLeft: '0px', paddingTop: '0px', paddingLeft: '0px' }} />
               </th>
               <th rowSpan={2} className="p-1 min-w-[60px] border-r border-slate-300 text-black">
                 DÁTUM
               </th>
-              <th rowSpan={2} className="p-2 min-w-[100px] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-2 min-w-[111px] border-r border-slate-300 text-black">
                 ŠPZ 🚛
               </th>
-              <th rowSpan={2} className="p-2 min-w-[72px] text-center border-r border-slate-300 font-sans text-black">
+              <th rowSpan={2} className="px-0 py-2 min-w-[54px] text-center border-r border-slate-300 font-sans text-black">
                 REF. NA FAKTÚRU
               </th>
-              <th colSpan={2} className="p-1.5 text-center border-r-2 border-b border-slate-400 text-black bg-blue-100 font-bold text-[16px] leading-[20px] font-sans">
+              <th colSpan={2} className="p-1.5 text-center border-r border-b border-slate-300 text-black bg-blue-100 font-bold text-[16px] leading-[20px] font-sans">
                 <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </th>
               <th colSpan={2} className="p-1.5 text-center border-r border-b border-[#bdc0e8] text-black bg-[#dbeafe] font-bold text-[16px] leading-[20px] font-sans">
@@ -477,30 +485,30 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th rowSpan={2} className="p-2 min-w-[68px] text-right border-r border-slate-300 text-black font-extrabold whitespace-nowrap">
                 ZISK (€)
               </th>
-              <th rowSpan={2} className="w-[0.9cm] min-w-[0.9cm] max-w-[0.9cm] p-0 text-center align-middle border-r border-slate-300 text-black">
-                <img src="/inv.png" alt="Invoice" className="mx-auto h-[28.8px] w-[28.8px] translate-y-[0.5px] object-contain" />
+              <th rowSpan={2} className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center align-middle border-r border-slate-300 text-black overflow-hidden">
+                <img src="/inv.png" alt="Invoice" className="mx-auto h-[28.8px] w-[28.8px] max-w-full translate-y-[0.5px] object-contain" />
               </th>
-              <th rowSpan={2} className="p-2 min-w-[78px] text-center border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-2 min-w-[67px] text-center border-r border-slate-300 text-black">
                 ČÍSLO FAKTÚRY
               </th>
               <th rowSpan={2} className="p-2 min-w-[58px] border-r border-slate-300 text-black">
                 SPLATNÁ
               </th>
-              <th rowSpan={2} className="p-2 w-10 text-center text-black">
-                ÚHRADA
+              <th rowSpan={2} className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center text-black">
+                <img src="/money.png" alt="ÚHRADA" className="mx-auto max-w-none" />
               </th>
             </tr>
             <tr className="bg-slate-200 text-black font-bold select-none text-[13px] leading-[20px] border-b-2 border-slate-300 font-sans">
-              <th className="p-1.5 min-w-[90px] border-r border-slate-300 text-black bg-blue-50/80 text-center font-sans text-[13px] leading-[20px]">
+              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-blue-50/80 text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 zaclenie v UK
               </th>
-              <th className="p-1.5 min-w-[90px] border-r-2 border-slate-400 text-black bg-blue-50/80 text-center font-sans text-[13px] leading-[20px]">
+              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-blue-50/80 text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 vyclenie v EU
               </th>
-              <th className="p-1.5 min-w-[90px] border-r border-slate-300 text-black bg-emerald-50/80 text-center font-sans text-[13px] leading-[20px]">
+              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-emerald-50/80 text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 zaclenie v EU
               </th>
-              <th className="p-1.5 min-w-[90px] border-r border-slate-300 text-black bg-emerald-50/80 text-center font-sans text-[13px] leading-[20px]">
+              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-emerald-50/80 text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 vyclenie v UK
               </th>
             </tr>
@@ -528,8 +536,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 return (
                   <tr
                     key={r.id}
-                    onClick={() => setPreviewRecord(r)}
-                    className={`cursor-pointer transition-colors hover:bg-blue-50/50 ${
+                    className={`transition-colors hover:bg-blue-50/50 ${
                       isSelected ? 'bg-blue-50/80' : idx % 2 === 1 ? 'bg-slate-50/70' : 'bg-white'
                     }`}
                   >
@@ -539,29 +546,22 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleSelectRow(r.id)}
-                        onClick={(e) => e.stopPropagation()}
                         className="rounded text-blue-600 focus:ring-0 w-3.5 h-3.5 border-slate-300"
                       />
                     </td>
 
-                    {/* Copy + Edit buttons (stacked to match header reference) */}
-                    <td className="p-1 text-center border-r border-slate-200 w-10 min-w-[40px] max-w-[44px]">
-                      <div className="flex flex-col items-center justify-center gap-0.5 leading-none">
+                    {/* Copy + Edit buttons (horizontal) */}
+                    <td className="p-1 text-center border-r border-slate-200 w-[52px] min-w-[52px] max-w-[52px]">
+                      <div className="flex items-center justify-center gap-0.5">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onCopyRecord(r);
-                          }}
+                          onClick={() => onCopyRecord(r)}
                           className="text-blue-600 hover:text-blue-800 p-0.5 cursor-pointer"
                           title="Kopírovať záznam"
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditRecord(r);
-                          }}
+                          onClick={() => onEditRecord(r)}
                           className="text-blue-600 hover:text-blue-800 p-0.5 cursor-pointer"
                           title="Upraviť záznam"
                         >
@@ -570,35 +570,35 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       </div>
                     </td>
 
-                    {/* Customer */}
+                    {/* Customer — opens record detail */}
                     <td className="p-2 font-mono font-bold text-[12px] text-slate-900 border-r border-slate-200">
                       <button
                         type="button"
                         onClick={() => setPreviewRecord(r)}
                         className="text-left text-slate-900 hover:text-blue-600 cursor-pointer"
                       >
-                        {r.zakaznik}
+                        {resolveCustomerSkratka(r.zakaznik, customerDirectory)}
                       </button>
                     </td>
 
-                    {/* NEW flag */}
+                    {/* NEW — never together with OPRAVA */}
                     <td className="p-2 text-center border-r border-slate-200">
-                      {r.isNew && (
+                      {r.isNew && !r.alert && (
                         <img src="/new1.png" alt="NEW" className="h-8 w-auto mx-auto object-contain shrink-0" title="Nové colné konanie v evidencii" />
                       )}
                     </td>
 
-                    {/* Bell flag (Odoslať na fakturáciu) */}
+                    {/* EMAIL SENT — permanent after successful EmailJS notification */}
                     <td className="p-2 text-center border-r border-slate-200">
-                      {r.bell && (
-                        <Check className="w-5 h-5 text-emerald-600 stroke-[3] mx-auto" title="Odoslané na fakturáciu" />
+                      {r.invoicingEmailSentAt && (
+                        <Check className="w-5 h-5 text-emerald-600 stroke-[3] mx-auto" title="Email odoslaný" />
                       )}
                     </td>
 
-                    {/* Alert flag (Upozornenie o zmene) */}
+                    {/* OPRAVA — permanent after editing an existing record */}
                     <td className="p-2 text-center border-r border-slate-200">
                       {r.alert && (
-                        <Check className="w-5 h-5 text-emerald-600 stroke-[3] mx-auto" title="Upozornenie o zmene bolo zaznamenané" />
+                        <Check className="w-5 h-5 text-emerald-600 stroke-[3] mx-auto" title="OPRAVA" />
                       )}
                     </td>
 
@@ -612,8 +612,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       {r.spz}
                     </td>
 
-                    {/* Ref. na FA */}
-                    <td className="p-2 text-slate-700 border-r border-slate-200 text-[12px]">
+                    {/* Ref. na FA — small left indent on cell values only (header unchanged) */}
+                    <td className="pl-[1ch] pr-0 py-2 text-slate-700 border-r border-slate-200 text-[12px] text-left">
                       {r.refNaFa}
                     </td>
 
@@ -624,8 +624,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       ) : null}
                     </td>
 
-                    {/* vyclenie v EU — divider before EU→UK group */}
-                    <td className="p-2 text-center border-r-2 border-slate-400 bg-blue-50/30">
+                    {/* vyclenie v EU */}
+                    <td className="p-2 text-center border-r border-slate-200 bg-blue-50/30">
                       {getEuVyclenie(r) ? (
                         <Check className="w-5 h-5 text-emerald-600 mx-auto stroke-[3]" />
                       ) : null}
@@ -660,8 +660,13 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       {r.faKlient ? `${r.faKlient.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
-                    {/* INT. POZNAMKA */}
-                    <td className="p-2 text-slate-500 font-sans text-[11px] border-r border-slate-200 max-w-[110px] whitespace-normal break-words leading-tight" title={r.intPoznamka}>
+                    {/* INT. POZNAMKA — note text always red when present */}
+                    <td
+                      className={`p-2 font-sans text-[11px] border-r border-slate-200 max-w-[110px] whitespace-normal break-words leading-tight ${
+                        r.intPoznamka ? 'text-red-600' : 'text-slate-500'
+                      }`}
+                      title={r.intPoznamka}
+                    >
                       <div className="line-clamp-2">
                         {r.intPoznamka}
                       </div>
@@ -672,9 +677,23 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       {r.zisk ? `${r.zisk.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
-                    <td className="w-[0.9cm] min-w-[0.9cm] max-w-[0.9cm] p-0 text-center border-r border-slate-200">
+                    <td className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center border-r border-slate-200 overflow-hidden">
                       {r.invoicePdfPath && (
-                        <img src="/pin.png" alt="Faktúra PDF" className="h-8 w-auto mx-auto object-contain" />
+                        <button
+                          type="button"
+                          title="Stiahnuť faktúru"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDownloadInvoice?.(r.id);
+                          }}
+                          className="inline-flex items-center justify-center w-full h-full p-0.5 cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-0"
+                        >
+                          <img
+                            src="/pin.png"
+                            alt="Faktúra PDF"
+                            className="h-[28.8px] w-auto max-w-full mx-auto object-contain pointer-events-none"
+                          />
+                        </button>
                       )}
                     </td>
 
@@ -689,7 +708,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* ZAPLATENA / ÚHRADA */}
-                    <td className="p-2 text-center border-r border-slate-200">
+                    <td className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center border-r border-slate-200">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -700,7 +719,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                         title={r.zaplatena ? 'Zaplatené (Kliknite pre zmenu)' : 'Nezaplatené (Kliknite pre zmenu)'}
                       >
                         {r.zaplatena ? (
-                          <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                          <img src="/yes.png" alt="Zaplatené" className="max-w-none" />
                         ) : (
                           <span className="w-3.5 h-3.5 border border-slate-400 rounded-sm bg-white hover:border-slate-600 inline-block" />
                         )}
@@ -756,58 +775,21 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
         />
       )}
 
-      {/* DELETE CONFIRMATION MODAL */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden text-slate-900 animate-in fade-in zoom-in-95 duration-150">
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center border border-red-500/30">
-                  <Trash2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-base leading-tight">VYMAZAŤ ZÁZNAMY</h3>
-                  <p className="text-[11px] text-slate-400">Potvrdenie pred odstránením</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4 text-xs">
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-950">
-                <p className="font-medium">
-                  Naozaj chcete vymazať{' '}
-                  <strong className="font-bold text-red-900">
-                    {selectedIds.length} {selectedIds.length === 1 ? 'označený záznam' : 'označené záznamy'}
-                  </strong>
-                  ? Túto akciu nie je možné vrátiť späť.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-200 font-medium transition-colors cursor-pointer text-xs"
-              >
-                Zrušiť
-              </button>
-              <button
-                onClick={confirmDeleteSelected}
-                className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow-xs flex items-center gap-2 transition-all cursor-pointer text-xs"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Áno, vymazať</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        title="VYMAZAŤ ZÁZNAMY"
+        message={
+          <>
+            Naozaj chcete vymazať{' '}
+            <strong className="font-bold text-red-900">
+              {selectedIds.length} {selectedIds.length === 1 ? 'označený záznam' : 'označené záznamy'}
+            </strong>
+            ? Túto akciu nie je možné vrátiť späť.
+          </>
+        }
+        onCancel={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteSelected}
+      />
 
       {/* UZATVORIŤ MESIAC MODAL */}
       {isCloseModalOpen && (
@@ -898,5 +880,75 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
         </div>
       )}
     </div>
+
+    {/* Print-only monthly customs table (A4 portrait) */}
+    <div className="hidden print:block print-customs-sheet">
+      <header className="print-customs-header">
+        <h1>COLNÁ DATABÁZA — {currentMonthYear}</h1>
+        <p>Dátum tlače: {printDateStr}</p>
+      </header>
+      <table className="print-customs-table">
+        <thead>
+          <tr>
+            <th>Zákazník</th>
+            <th>Dátum</th>
+            <th>ŠPZ</th>
+            <th>Ref. FA</th>
+            <th>UK→EU</th>
+            <th>EU→UK</th>
+            <th className="num">FA UK</th>
+            <th className="num">FA EU</th>
+            <th className="num">FA klient</th>
+            <th>Poznámka</th>
+            <th className="num">Zisk</th>
+            <th>Číslo FA</th>
+            <th>Splatná</th>
+            <th>Úhrada</th>
+          </tr>
+        </thead>
+        <tbody>
+          {printRecords.length === 0 ? (
+            <tr>
+              <td colSpan={14}>Žiadne záznamy pre mesiac {currentMonthYear}.</td>
+            </tr>
+          ) : (
+            printRecords.map((r) => (
+              <tr key={r.id}>
+                <td>{resolveCustomerSkratka(r.zakaznik, customerDirectory)}</td>
+                <td>{formatDateStr(r.datumColnice)}</td>
+                <td>{r.spz}</td>
+                <td>{r.refNaFa}</td>
+                <td>
+                  {[getUkZaclenie(r), getEuVyclenie(r)].filter(Boolean).join('; ')}
+                </td>
+                <td>
+                  {[getEuZaclenie(r), getUkVyclenie(r)].filter(Boolean).join('; ')}
+                </td>
+                <td className="num">{formatMoney(r.faOdUkAgent || 0)}</td>
+                <td className="num">{formatMoney(r.faOdEuAgent || 0)}</td>
+                <td className="num">{formatMoney(r.faKlient || 0)}</td>
+                <td>{r.intPoznamka}</td>
+                <td className="num">{formatMoney(r.zisk || 0)}</td>
+                <td>{r.cisloFa}</td>
+                <td>{formatDateStr(r.splatna)}</td>
+                <td>{r.zaplatena ? 'Áno' : 'Nie'}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan={6} className="totals-label">SUMÁR</td>
+            <td className="num">{formatMoney(printTotalFaUk)}</td>
+            <td className="num">{formatMoney(printTotalFaEu)}</td>
+            <td className="num">{formatMoney(printTotalFaKlient)}</td>
+            <td></td>
+            <td className="num">{formatMoney(printTotalZisk)}</td>
+            <td colSpan={3}></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    </>
   );
 };
