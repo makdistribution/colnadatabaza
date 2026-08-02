@@ -1,14 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AdresaRecord, AppDocument, InfoFaRecord, LoginRecord } from '../types';
+import type { AdresaRecord, AppDocument, InfoFaRecord, LoginRecord } from '../types.js';
 import {
   INITIAL_ADRESY_RECORDS,
   INITIAL_INFO_FA_RECORDS,
   INITIAL_LOGIN_RECORDS,
-} from '../data/initialData';
+} from '../data/initialData.js';
 import {
   formatDocumentDate,
   formatDocumentSizeLabel,
-} from '../utils/appDocumentFile';
+} from '../utils/appDocumentFile.js';
 
 const DOCUMENTS_BUCKET = 'app-documents';
 const META = {

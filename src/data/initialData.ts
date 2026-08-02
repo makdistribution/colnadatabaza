@@ -1,4 +1,4 @@
-import { ColnaRecord, AdresaRecord, LoginRecord, InfoFaRecord } from '../types';
+import { ColnaRecord, AdresaRecord, LoginRecord, InfoFaRecord } from '../types.js';
 
 export const INITIAL_COLNA_RECORDS: ColnaRecord[] = [
   // 2025 Records from original database screenshot
