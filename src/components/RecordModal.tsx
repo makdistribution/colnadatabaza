@@ -418,11 +418,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     ? 'UKLADÁM…'
     : isAccountantCorrectionMode
       ? 'ULOŽIŤ A ODOSLAŤ OPRAVENÚ FAKTÚRU'
-      : willSendNotification
-        ? usesBellSend
-          ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
-          : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
-        : 'ULOŽIŤ';
+      : invoiceHandoffMode && hasUploadedInvoice
+        ? 'ULOŽIŤ A ODOSLAŤ'
+        : willSendNotification
+          ? usesBellSend
+            ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
+            : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
+          : 'ULOŽIŤ';
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

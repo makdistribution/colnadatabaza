@@ -11,6 +11,8 @@ interface QuickStatsHeaderProps {
   records: ColnaRecord[];
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  onRefreshCustoms?: () => void | Promise<void>;
+  isRefreshingCustoms?: boolean;
 }
 
 export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
@@ -20,6 +22,8 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
   records,
   searchTerm,
   setSearchTerm,
+  onRefreshCustoms,
+  isRefreshingCustoms = false,
 }) => {
   const targetYear = parseMonthYear(currentMonthYear).year;
 
@@ -72,12 +76,21 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
             </div>
           </div>
 
-          {/* Right side: Current date */}
+          {/* Right side: Current date + REFRESH */}
           <div className="flex items-center justify-center md:justify-end gap-2 w-full md:w-auto">
             <div className="bg-white border-2 border-white text-blue-950 font-mono font-bold text-xs sm:text-sm px-3.5 py-1 rounded-xl shadow-2xs flex items-center gap-2">
               <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
               <span>Dátum: {currentDateStr}</span>
             </div>
+            <button
+              type="button"
+              onClick={() => { void onRefreshCustoms?.(); }}
+              disabled={!onRefreshCustoms || isRefreshingCustoms}
+              className="bg-white border-2 border-[#000a2f] text-blue-950 font-bold text-xs sm:text-sm px-3.5 py-1 rounded-xl shadow-2xs hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wide"
+              title="Obnoviť colnú tabuľku"
+            >
+              {isRefreshingCustoms ? '…' : 'REFRESH'}
+            </button>
           </div>
 
         </div>

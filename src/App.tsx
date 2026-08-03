@@ -69,6 +69,7 @@ export default function App() {
   const [applicationPassword, setApplicationPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [applicationError, setApplicationError] = useState('');
+  const [isRefreshingCustoms, setIsRefreshingCustoms] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -171,6 +172,22 @@ export default function App() {
     setActiveTab('COLNA_DATABAZA');
     setToastMessage(`Mesiac ${monthYearToClose} bol úspešne uzatvorený. Dáta a zisk boli prenesené do REPORTY ${targetYear}. Automaticky bola vytvorená nová čisto prázdna databáza pre mesiac ${nextMY}.`);
     setTimeout(() => setToastMessage(null), 9000);
+  };
+
+  /** Reload customs table rows only — keep session, month, filters, and UI state. */
+  const handleRefreshCustoms = async () => {
+    if (isRefreshingCustoms) return;
+    setIsRefreshingCustoms(true);
+    try {
+      const bootstrap = await appApi.bootstrap();
+      setColnaRecords(bootstrap.records);
+    } catch (error) {
+      setToastMessage(
+        error instanceof Error ? error.message : 'Colnú tabuľku sa nepodarilo obnoviť.',
+      );
+    } finally {
+      setIsRefreshingCustoms(false);
+    }
   };
 
   // ZÁKAZNÍK dropdown: ONLY values from Adresár column SKRATKA (never official legal name).
@@ -397,6 +414,8 @@ export default function App() {
           records={colnaRecords}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          onRefreshCustoms={handleRefreshCustoms}
+          isRefreshingCustoms={isRefreshingCustoms}
         />
       </div>
 
