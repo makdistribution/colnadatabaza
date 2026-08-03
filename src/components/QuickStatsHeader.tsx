@@ -87,7 +87,7 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
               type="button"
               onClick={() => { void onRefreshCustoms?.(); }}
               disabled={!onRefreshCustoms || isRefreshingCustoms}
-              className="box-border w-[9.65rem] h-[2.125rem] shrink-0 bg-white border-2 border-[#000a2f] text-blue-950 font-bold text-xs sm:text-sm rounded-xl shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wide inline-flex items-center justify-center overflow-hidden"
+              className="box-border w-[10.85rem] h-[2.125rem] shrink-0 bg-white border-2 border-[#000a2f] text-blue-950 font-bold text-xs sm:text-sm rounded-xl shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wide inline-flex items-center justify-center overflow-hidden"
               title="Obnoviť colnú tabuľku"
             >
               <LoadingButtonContent
