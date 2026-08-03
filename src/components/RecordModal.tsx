@@ -416,11 +416,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     (usesBellSend ? Boolean(formData.bell) : Boolean(formData.alert));
   const saveButtonLabel = isSaving
     ? 'UKLADÁM…'
-    : willSendNotification
-      ? usesBellSend
-        ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
-        : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
-      : 'ULOŽIŤ';
+    : isAccountantCorrectionMode
+      ? 'ULOŽIŤ A ODOSLAŤ OPRAVENÚ FAKTÚRU'
+      : willSendNotification
+        ? usesBellSend
+          ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
+          : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
+        : 'ULOŽIŤ';
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -652,12 +654,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           </div>
 
           {/* Row 3: UK/EU Direction Statuses */}
-          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3.5 ${
+          <div className={`grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3.5 items-start ${
             fieldMissing('TRASA') ? 'ring-2 ring-red-500 rounded-xl p-1' : ''
           }`}>
             <div className="bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2">
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
-                TRASA{requiredMark} <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
+                TRASA <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </label>
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <button
@@ -685,6 +687,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 </button>
               </div>
             </div>
+
+            <span
+              className="flex items-center justify-center sm:items-start sm:pt-3.5 text-red-600 font-bold text-[14px] leading-none select-none"
+              aria-hidden="true"
+            >
+              *
+            </span>
 
             <div className="bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2">
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
@@ -926,9 +935,17 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase tracking-wide leading-tight">
+              <label
+                className={`block font-semibold mb-0.5 text-[11px] uppercase tracking-wide leading-tight ${
+                  isAccountantCorrectionMode ? 'text-red-600' : 'text-slate-600'
+                }`}
+              >
                 OPRAVA FAKTÚRY{' '}
-                <span className="normal-case font-normal text-slate-500">
+                <span
+                  className={`normal-case font-normal ${
+                    isAccountantCorrectionMode ? 'text-red-600' : 'text-slate-500'
+                  }`}
+                >
                   (tu nájdeš info, čo treba zmeniť v už vystavenej faktúre)
                 </span>
               </label>
@@ -937,10 +954,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 value={formData.opravaFaktury || ''}
                 onChange={(e) => setFormData({ ...formData, opravaFaktury: e.target.value })}
                 readOnly={invoiceHandoffMode}
-                className={`w-full bg-slate-50 h-[30px] rounded-md px-2.5 py-1.5 focus:ring-1 outline-none read-only:cursor-default ${
+                className={`w-full h-[30px] rounded-md px-2.5 py-1.5 focus:ring-1 outline-none read-only:cursor-default ${
                   isAccountantCorrectionMode
-                    ? 'border-2 border-red-500 text-red-600 focus:ring-red-500'
-                    : 'border border-slate-200 text-slate-900 focus:ring-blue-500'
+                    ? 'border-2 border-red-500 bg-[#ECE039] text-red-600 focus:ring-red-500'
+                    : 'border border-slate-200 bg-slate-50 text-slate-900 focus:ring-blue-500'
                 }`}
               />
             </div>
