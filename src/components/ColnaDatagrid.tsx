@@ -4,6 +4,7 @@ import { parseMonthYear, extractYearAndMonth } from '../utils/monthUtils';
 import { resolveCustomerSkratka } from '../utils/customerSkratka';
 import { RecordModal } from './RecordModal';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { LoadingButtonContent } from './LoadingButtonContent';
 
 // Helpers to extract status for the 4 split columns (UK ➔ EU and EU ➔ UK)
 const getUkZaclenie = (r: ColnaRecord): string => {
@@ -95,7 +96,7 @@ interface ColnaDatagridProps {
   onAddRecord: () => void;
   onEditRecord: (record: ColnaRecord) => void;
   onCopyRecord: (record: ColnaRecord) => void;
-  onDeleteRecords: (ids: string[]) => void;
+  onDeleteRecords: (ids: string[]) => void | Promise<void>;
   onTogglePaid: (id: string, zaplatena: boolean) => void;
   onDownloadInvoice?: (recordId: string) => void;
   onSaveRecord?: (
@@ -133,6 +134,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const [isClosingMonth, setIsClosingMonth] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingRecords, setIsDeletingRecords] = useState(false);
   const [previewRecord, setPreviewRecord] = useState<ColnaRecord | null>(null);
   const pageSize = 10;
 
@@ -236,10 +238,16 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDeleteSelected = () => {
-    onDeleteRecords(selectedIds);
-    setSelectedIds([]);
-    setIsDeleteModalOpen(false);
+  const confirmDeleteSelected = async () => {
+    if (isDeletingRecords) return;
+    setIsDeletingRecords(true);
+    try {
+      await onDeleteRecords(selectedIds);
+      setSelectedIds([]);
+      setIsDeleteModalOpen(false);
+    } finally {
+      setIsDeletingRecords(false);
+    }
   };
 
   // Totals calculations
@@ -312,14 +320,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
 
           <button
             onClick={handleDeleteSelected}
-            disabled={selectedIds.length === 0}
-            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer font-semibold ${
+            disabled={selectedIds.length === 0 || isDeletingRecords}
+            className={`px-3.5 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer font-semibold ${
               selectedIds.length > 0
                 ? 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
             }`}
           >
-            <Trash2 className="w-3.5 h-3.5" /> Vymazať {selectedIds.length > 0 && `(${selectedIds.length})`}
+            <LoadingButtonContent loading={isDeletingRecords} kind="delete">
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Vymazať {selectedIds.length > 0 && `(${selectedIds.length})`}</span>
+            </LoadingButtonContent>
           </button>
 
           <button
@@ -804,8 +815,11 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
             ? Túto akciu nie je možné vrátiť späť.
           </>
         }
-        onCancel={() => setIsDeleteModalOpen(false)}
-        onConfirm={confirmDeleteSelected}
+        isLoading={isDeletingRecords}
+        onCancel={() => {
+          if (!isDeletingRecords) setIsDeleteModalOpen(false);
+        }}
+        onConfirm={() => { void confirmDeleteSelected(); }}
       />
 
       {/* UZATVORIŤ MESIAC MODAL */}

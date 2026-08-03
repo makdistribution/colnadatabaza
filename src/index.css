@@ -101,19 +101,14 @@ html, body {
   }
 }
 
-/* REFRESH button: animate label only — button box stays fixed. */
-@keyframes refresh-text-wave {
-  0%,
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  50% {
-    opacity: 0.35;
-    transform: translateY(-1px);
+/* Shared button loading spinner (⟳) — does not affect button box size. */
+@keyframes btn-loading-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-.refresh-text-animate {
-  animation: refresh-text-wave 0.85s ease-in-out infinite;
+.btn-loading-spinner {
+  display: inline-block;
+  animation: btn-loading-spin 0.75s linear infinite;
 }

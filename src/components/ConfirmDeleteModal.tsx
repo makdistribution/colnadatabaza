@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trash2, X } from 'lucide-react';
+import { LoadingButtonContent } from './LoadingButtonContent';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface ConfirmDeleteModalProps {
   confirmLabel?: string;
   /** Single primary OK button (same chrome as delete dialog). */
   okOnly?: boolean;
+  isLoading?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -21,6 +23,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   message,
   confirmLabel = 'Áno, vymazať',
   okOnly = false,
+  isLoading = false,
   onCancel,
   onConfirm,
 }) => {
@@ -41,7 +44,8 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           </div>
           <button
             onClick={onCancel}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            disabled={isLoading}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X className="w-5 h-5" />
           </button>
@@ -57,17 +61,25 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           {!okOnly && (
             <button
               onClick={onCancel}
-              className="px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-200 font-medium transition-colors cursor-pointer text-xs"
+              disabled={isLoading}
+              className="px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-200 font-medium transition-colors cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Zrušiť
             </button>
           )}
           <button
             onClick={onConfirm}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow-xs flex items-center gap-2 transition-all cursor-pointer text-xs"
+            disabled={isLoading}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer text-xs disabled:cursor-not-allowed"
           >
-            {!okOnly && <Trash2 className="w-4 h-4" />}
-            <span>{confirmLabel}</span>
+            {okOnly ? (
+              <span>{confirmLabel}</span>
+            ) : (
+              <LoadingButtonContent loading={isLoading} kind="delete">
+                <Trash2 className="w-4 h-4" />
+                <span>{confirmLabel}</span>
+              </LoadingButtonContent>
+            )}
           </button>
         </div>
       </div>

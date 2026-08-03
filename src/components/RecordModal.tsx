@@ -17,6 +17,7 @@ import {
 import { invoiceDisplayNameFromPath } from '../utils/invoiceFile';
 import { buildCaseLink, formatNotificationTimestampParts } from '../utils/caseLink';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { LoadingButtonContent } from './LoadingButtonContent';
 import { appApi } from '../lib/appApi';
 
 interface RecordModalProps {
@@ -367,12 +368,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   };
 
   const confirmDeleteInvoice = async () => {
-    setIsInvoiceDeleteModalOpen(false);
-
     // Local-only selection (not yet saved/uploaded)
     if (invoiceFile && !formData.invoicePdfPath) {
       setInvoiceFile(null);
       if (invoiceInputRef.current) invoiceInputRef.current.value = '';
+      setIsInvoiceDeleteModalOpen(false);
       return;
     }
 
@@ -388,6 +388,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         invoicePdfPath: undefined,
         splatna: '',
       }));
+      setIsInvoiceDeleteModalOpen(false);
     } finally {
       setIsDeletingInvoice(false);
     }
@@ -437,17 +438,22 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     !invoiceHandoffMode &&
     (!readOnly || isPreviewMode) &&
     (usesBellSend ? Boolean(formData.bell) : Boolean(formData.alert));
-  const saveButtonLabel = isSaving
-    ? 'UKLADÁM…'
-    : isAccountantCorrectionMode
-      ? 'ULOŽIŤ A ODOSLAŤ OPRAVENÚ FAKTÚRU'
-      : invoiceHandoffMode && hasUploadedInvoice
-        ? 'ULOŽIŤ A ODOSLAŤ'
-        : willSendNotification
-          ? usesBellSend
-            ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
-            : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
-          : 'ULOŽIŤ';
+  const saveButtonLabel = isAccountantCorrectionMode
+    ? 'ULOŽIŤ A ODOSLAŤ OPRAVENÚ FAKTÚRU'
+    : invoiceHandoffMode && hasUploadedInvoice
+      ? 'ULOŽIŤ A ODOSLAŤ'
+      : willSendNotification
+        ? usesBellSend
+          ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
+          : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
+        : 'ULOŽIŤ';
+  const saveLoadingKind =
+    isAccountantCorrectionMode ||
+    (invoiceHandoffMode && hasUploadedInvoice) ||
+    willSendNotification
+      ? 'send'
+      : 'save';
+  const isUploadingInvoicePdf = isSaving && Boolean(invoiceFile);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -880,7 +886,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                         : 'border-dashed border-blue-400 bg-blue-50/40 hover:bg-blue-50 cursor-pointer'
                   }`}
                 >
-                  {hasUploadedInvoice ? (
+                  {isUploadingInvoicePdf ? (
+                    <span className="absolute inset-0 flex items-center justify-center gap-1 text-blue-900 font-bold text-[11px] pointer-events-none">
+                      <span aria-hidden="true">📄</span>
+                      <span className="btn-loading-spinner" aria-hidden="true">⟳</span>
+                      <span>Nahrávam...</span>
+                    </span>
+                  ) : hasUploadedInvoice ? (
                     <>
                       <img
                         src="/pin.png"
@@ -930,9 +942,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                         type="button"
                         onClick={handleDeleteInvoiceClick}
                         disabled={isDeletingInvoice}
-                        className="inline-flex w-full items-center justify-center gap-1 rounded border border-red-300 bg-white px-1.5 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50 cursor-pointer disabled:opacity-50"
+                        className="inline-flex w-full items-center justify-center gap-1 rounded border border-red-300 bg-white px-1.5 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50 cursor-pointer disabled:cursor-not-allowed"
                       >
-                        <Trash2 className="w-3 h-3" /> Delete
+                        <LoadingButtonContent loading={isDeletingInvoice} kind="delete">
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete</span>
+                        </LoadingButtonContent>
                       </button>
                     )}
                   </div>
@@ -1035,9 +1050,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             type="submit"
             form="colna-record-form"
             disabled={(readOnly && !isPreviewMode) || isSaving}
-            className="bg-[#1a65ff] hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
+            className="bg-[#1a65ff] hover:bg-blue-700 disabled:cursor-not-allowed text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
           >
-            {saveButtonLabel}
+            <LoadingButtonContent loading={isSaving} kind={saveLoadingKind}>
+              {saveButtonLabel}
+            </LoadingButtonContent>
           </button>
         </div>
 
@@ -1053,7 +1070,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             ? Túto akciu nie je možné vrátiť späť.
           </>
         }
-        onCancel={() => setIsInvoiceDeleteModalOpen(false)}
+        isLoading={isDeletingInvoice}
+        onCancel={() => {
+          if (!isDeletingInvoice) setIsInvoiceDeleteModalOpen(false);
+        }}
         onConfirm={() => { void confirmDeleteInvoice(); }}
       />
 

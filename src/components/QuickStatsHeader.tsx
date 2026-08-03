@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, Calendar } from 'lucide-react';
 import { ColnaRecord } from '../types';
 import { parseMonthYear } from '../utils/monthUtils';
+import { LoadingButtonContent } from './LoadingButtonContent';
 
 interface QuickStatsHeaderProps {
   currentMonthYear: string; // e.g. "JÚL / 2026"
@@ -89,11 +90,13 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
               className="box-border w-[7.25rem] h-[2.125rem] shrink-0 bg-white border-2 border-[#000a2f] text-blue-950 font-bold text-xs sm:text-sm rounded-xl shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wide inline-flex items-center justify-center overflow-hidden"
               title="Obnoviť colnú tabuľku"
             >
-              <span
-                className={`inline-block ${isRefreshingCustoms ? 'refresh-text-animate' : ''}`}
+              <LoadingButtonContent
+                loading={isRefreshingCustoms}
+                kind="refresh"
+                className={isRefreshingCustoms ? 'text-[10px] sm:text-[11px]' : ''}
               >
                 REFRESH
-              </span>
+              </LoadingButtonContent>
             </button>
           </div>
 
