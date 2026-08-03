@@ -13,6 +13,8 @@ export interface ColnaRecord {
   faOdEuAgent: number;
   faKlient: number;
   intPoznamka: string;
+  /** Instructions for accountant when correcting an already issued invoice. */
+  opravaFaktury: string;
   zisk: number; // Auto-calculated: faKlient - faOdUkAgent - faOdEuAgent
   cisloFa: string;
   splatna: string;

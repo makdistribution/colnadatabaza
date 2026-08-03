@@ -8,12 +8,18 @@ import {
   sendError,
   sendJson,
 } from '../src/server/apiUtils.js';
+import { unpackCustomsNotes } from '../src/utils/customsNotes.js';
 
 const isPermanentToken = (value: string) => /^[A-Za-z0-9_-]{43}$/.test(value);
 
 const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
   const storedToken = record.invoice_token_hash ? String(record.invoice_token_hash) : '';
   const invoiceToken = isPermanentToken(storedToken) ? storedToken : undefined;
+  const packed = unpackCustomsNotes(String(record.int_poznamka || ''));
+  const fromColumn =
+    record.oprava_faktury != null && record.oprava_faktury !== undefined
+      ? String(record.oprava_faktury)
+      : '';
   return {
     id: String(record.id),
     zakaznik: String(record.zakaznik || ''),
@@ -28,7 +34,8 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
     faOdUkAgent: Number(record.fa_od_uk_agent) || 0,
     faOdEuAgent: Number(record.fa_od_eu_agent) || 0,
     faKlient: Number(record.fa_klient) || 0,
-    intPoznamka: String(record.int_poznamka || ''),
+    intPoznamka: packed.intPoznamka,
+    opravaFaktury: fromColumn || packed.opravaFaktury,
     zisk: Number(record.zisk) || 0,
     cisloFa: String(record.cislo_fa || ''),
     splatna: String(record.splatna || ''),

@@ -128,6 +128,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     faOdEuAgent: 0,
     faKlient: 0,
     intPoznamka: '',
+    opravaFaktury: '',
     cisloFa: '',
     splatna: '',
     zaplatena: false,
@@ -137,6 +138,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
   const [isInvoiceDeleteModalOpen, setIsInvoiceDeleteModalOpen] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const spzInputRef = useRef<HTMLInputElement>(null);
 
@@ -169,8 +171,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         // Keep zakaznik exactly as stored in Supabase (display-only stripping is in <select> labels).
         setFormData(
           invoiceHandoffMode
-            ? { ...initialRecord, bell: false }
-            : { ...initialRecord, bell: false, alert: false },
+            ? { ...initialRecord, opravaFaktury: initialRecord.opravaFaktury || '', bell: false }
+            : {
+                ...initialRecord,
+                opravaFaktury: initialRecord.opravaFaktury || '',
+                bell: false,
+                alert: false,
+              },
         );
       }
     } else {
@@ -188,11 +195,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         faOdEuAgent: 0,
         faKlient: 0,
         intPoznamka: '',
+        opravaFaktury: '',
         cisloFa: '',
         splatna: '',
         zaplatena: false,
       });
     }
+    setMissingFields([]);
     setLinkCopied(false);
     savingLockRef.current = false;
     setIsSaving(false);
@@ -327,12 +336,32 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     setIsInvoiceDeleteModalOpen(true);
   };
 
-  const customsLocked = readOnly || invoiceHandoffMode;
-  const invoiceEditable = !readOnly;
+  /** NÁHĽAD from main table — allow late "Odoslať na fakturáciu" + save. */
+  const isPreviewMode = readOnly && !invoiceHandoffMode;
+  const customsLocked = invoiceHandoffMode || (readOnly && !isPreviewMode);
+  const invoiceEditable = !readOnly || isPreviewMode;
   /** Accountant opened an already-issued invoice for correction (not first-time invoicing). */
   const isAccountantCorrectionMode =
     invoiceHandoffMode &&
     Boolean(initialRecord?.invoicePdfPath || formData.invoicePdfPath || formData.cisloFa);
+
+  const collectMissingRequiredFields = (): string[] => {
+    const missing: string[] = [];
+    if (!(formData.zakaznik || '').trim()) missing.push('ZÁKAZNÍK');
+    if (!(formData.datumColnice || '').trim()) missing.push('DÁTUM COLNICE');
+    if (!(formData.spz || '').trim()) missing.push('ŠPZ VOZIDLA');
+    const hasRoute = Boolean(
+      (formData.ukToEu || '').trim() || (formData.euToUk || '').trim(),
+    );
+    if (!hasRoute) missing.push('TRASA');
+    if (formData.faOdUkAgent == null || Number.isNaN(Number(formData.faOdUkAgent))) {
+      missing.push('FA OD UK AGENT (€)');
+    }
+    if (formData.faOdEuAgent == null || Number.isNaN(Number(formData.faOdEuAgent))) {
+      missing.push('FA OD EU AGENT (€)');
+    }
+    return missing;
+  };
 
   const confirmDeleteInvoice = async () => {
     setIsInvoiceDeleteModalOpen(false);
@@ -379,14 +408,16 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const calculatedProfit = (Number(formData.faKlient) || 0) - (Number(formData.faOdUkAgent) || 0) - (Number(formData.faOdEuAgent) || 0);
 
   const isCreateOrCopy = !initialRecord || copyMode;
+  /** Create, copy, and NÁHĽAD late-send use bell ("Odoslať na fakturáciu"). */
+  const usesBellSend = isCreateOrCopy || isPreviewMode;
   const willSendNotification =
     !invoiceHandoffMode &&
-    !readOnly &&
-    (isCreateOrCopy ? Boolean(formData.bell) : Boolean(formData.alert));
+    (!readOnly || isPreviewMode) &&
+    (usesBellSend ? Boolean(formData.bell) : Boolean(formData.alert));
   const saveButtonLabel = isSaving
     ? 'UKLADÁM…'
     : willSendNotification
-      ? isCreateOrCopy
+      ? usesBellSend
         ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
         : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
       : 'ULOŽIŤ';
@@ -394,7 +425,21 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     // Synchronous guard — React state alone cannot block double-clicks before re-render.
-    if (savingLockRef.current || isSaving || readOnly) return;
+    if (savingLockRef.current || isSaving || (readOnly && !isPreviewMode)) return;
+
+    // Required fields for NEW / COPY (and preview save of a new-style form).
+    if (!invoiceHandoffMode && (isCreateOrCopy || isPreviewMode)) {
+      const missing = collectMissingRequiredFields();
+      if (missing.length > 0) {
+        setMissingFields(missing);
+        alert(
+          `Vyplňte povinné polia:\n• ${missing.join('\n• ')}`,
+        );
+        return;
+      }
+    }
+    setMissingFields([]);
+
     savingLockRef.current = true;
     setIsSaving(true);
     try {
@@ -419,11 +464,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
       const { id: _id, ...withoutId } = formData;
       // New + copy must never send an id (forces INSERT → new created_at → row 1).
-      // Edit keeps id so UPDATE preserves created_at / table position.
+      // Edit / preview keeps id so UPDATE preserves created_at / table position.
       const isNewOrCopy = copyMode || !initialRecord;
       await onSave(
         {
           ...(isNewOrCopy ? withoutId : formData),
+          // Preview late-send must not also fire edit "alert" email path.
+          alert: isPreviewMode ? false : formData.alert,
           zisk: calculatedProfit,
         },
         invoiceFile || undefined,
@@ -433,6 +480,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
       savingLockRef.current = false;
     }
   };
+
+  const fieldMissing = (name: string) => missingFields.includes(name);
+  const requiredMark = <span className="text-red-600"> *</span>;
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
@@ -486,12 +536,14 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
             <div className="flex-1 min-w-[240px]">
               <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
-                ZÁKAZNÍK *
+                ZÁKAZNÍK{requiredMark}
               </label>
               <select
                 value={formData.zakaznik}
                 onChange={(e) => setFormData({ ...formData, zakaznik: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 font-semibold text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                className={`w-full bg-white border rounded-md px-2.5 py-1.5 text-slate-900 font-semibold text-xs focus:ring-1 focus:ring-blue-500 outline-none ${
+                  fieldMissing('ZÁKAZNÍK') ? 'border-red-500' : 'border-slate-200'
+                }`}
                 required
               >
                 <option value=""></option>
@@ -559,26 +611,30 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-blue-600" /> DÁTUM COLNICE
+                <Calendar className="w-3 h-3 text-blue-600" /> DÁTUM COLNICE{requiredMark}
               </label>
               <input
                 type="date"
                 value={formData.datumColnice || ''}
                 onChange={(e) => setFormData({ ...formData, datumColnice: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-slate-900 focus:ring-1 focus:ring-blue-500 outline-none"
+                className={`w-full bg-slate-50 border rounded-md px-2.5 py-1 text-slate-900 focus:ring-1 focus:ring-blue-500 outline-none ${
+                  fieldMissing('DÁTUM COLNICE') ? 'border-red-500' : 'border-slate-200'
+                }`}
               />
             </div>
 
             <div>
               <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] flex items-center gap-1">
-                <Truck className="w-3 h-3 text-blue-600" /> ŠPZ VOZIDLA
+                <Truck className="w-3 h-3 text-blue-600" /> ŠPZ VOZIDLA{requiredMark}
               </label>
               <input
                 ref={spzInputRef}
                 type="text"
                 value={formData.spz || ''}
                 onChange={handleSpzChange}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-slate-900 font-mono focus:ring-1 focus:ring-blue-500 outline-none"
+                className={`w-full bg-slate-50 border rounded-md px-2.5 py-1 text-slate-900 font-mono focus:ring-1 focus:ring-blue-500 outline-none ${
+                  fieldMissing('ŠPZ VOZIDLA') ? 'border-red-500' : 'border-slate-200'
+                }`}
               />
             </div>
 
@@ -596,10 +652,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           </div>
 
           {/* Row 3: UK/EU Direction Statuses */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3.5 ${
+            fieldMissing('TRASA') ? 'ring-2 ring-red-500 rounded-xl p-1' : ''
+          }`}>
             <div className="bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2">
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
-                TRASA <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
+                TRASA{requiredMark} <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </label>
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <button
@@ -675,23 +733,27 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div>
                 <label className="block text-slate-600 font-medium mb-0.5 text-[11px]">
-                  FA OD UK AGENT (€)
+                  FA OD UK AGENT (€){requiredMark}
                 </label>
                 <AmountInput
                   value={formData.faOdUkAgent ?? 0}
                   onChange={(val) => setFormData(prev => ({ ...prev, faOdUkAgent: val }))}
-                  className="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none"
+                  className={`w-full bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none ${
+                    fieldMissing('FA OD UK AGENT (€)') ? 'border-red-500' : 'border-slate-200'
+                  }`}
                 />
               </div>
 
               <div>
                 <label className="block text-slate-600 font-medium mb-0.5 text-[11px]">
-                  FA OD EU AGENT (€)
+                  FA OD EU AGENT (€){requiredMark}
                 </label>
                 <AmountInput
                   value={formData.faOdEuAgent ?? 0}
                   onChange={(val) => setFormData(prev => ({ ...prev, faOdEuAgent: val }))}
-                  className="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none"
+                  className={`w-full bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none ${
+                    fieldMissing('FA OD EU AGENT (€)') ? 'border-red-500' : 'border-slate-200'
+                  }`}
                 />
               </div>
 
@@ -848,24 +910,40 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           </fieldset>
 
           {/* Remaining customs fields — locked in accountant view */}
-          <fieldset disabled={customsLocked} className="space-y-3">
-          {/* Row 6: Internal Note (Full width) */}
-          <div>
-            <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase tracking-wide">
-              INTERNÁ POZNÁMKA
-            </label>
-            <input
-              type="text"
-              value={formData.intPoznamka || ''}
-              onChange={(e) => setFormData({ ...formData, intPoznamka: e.target.value })}
-              className={`w-full bg-slate-50 ${
-                isAccountantCorrectionMode
-                  ? 'border-2 border-red-500 text-red-600 focus:ring-red-500'
-                  : initialRecord && !copyMode && !readOnly && !invoiceHandoffMode
-                    ? 'border-2 border-red-500 text-slate-900 focus:ring-red-500'
+          <fieldset disabled={customsLocked && !invoiceHandoffMode} className="space-y-3">
+          {/* Row 6: POZNÁMKA + OPRAVA FAKTÚRY (side by side) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase tracking-wide">
+                POZNÁMKA
+              </label>
+              <input
+                type="text"
+                value={formData.intPoznamka || ''}
+                onChange={(e) => setFormData({ ...formData, intPoznamka: e.target.value })}
+                readOnly={invoiceHandoffMode}
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 h-[30px] rounded-md px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 outline-none read-only:cursor-default"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase tracking-wide leading-tight">
+                OPRAVA FAKTÚRY{' '}
+                <span className="normal-case font-normal text-slate-500">
+                  (tu nájdeš info, čo treba zmeniť v už vystavenej faktúre)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={formData.opravaFaktury || ''}
+                onChange={(e) => setFormData({ ...formData, opravaFaktury: e.target.value })}
+                readOnly={invoiceHandoffMode}
+                className={`w-full bg-slate-50 h-[30px] rounded-md px-2.5 py-1.5 focus:ring-1 outline-none read-only:cursor-default ${
+                  isAccountantCorrectionMode
+                    ? 'border-2 border-red-500 text-red-600 focus:ring-red-500'
                     : 'border border-slate-200 text-slate-900 focus:ring-blue-500'
-              } h-[30px] rounded-md px-2.5 py-1.5 focus:ring-1 outline-none`}
-            />
+                }`}
+              />
+            </div>
           </div>
           </fieldset>
 
@@ -914,7 +992,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           <button
             type="submit"
             form="colna-record-form"
-            disabled={readOnly || isSaving}
+            disabled={(readOnly && !isPreviewMode) || isSaving}
             className="bg-[#1a65ff] hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
           >
             {saveButtonLabel}

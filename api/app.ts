@@ -28,6 +28,7 @@ import {
   upsertLoginRecord,
 } from '../src/server/directoryStore.js';
 import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs.js';
+import { packCustomsNotes, unpackCustomsNotes } from '../src/utils/customsNotes.js';
 import {
   appDocumentPathForId,
   formatDocumentSizeLabel,
@@ -102,7 +103,8 @@ const toDatabaseRecord = (record: Partial<ColnaRecord>, id: string, monthStart: 
   fa_od_uk_agent: Number(record.faOdUkAgent) || 0,
   fa_od_eu_agent: Number(record.faOdEuAgent) || 0,
   fa_klient: Number(record.faKlient) || 0,
-  int_poznamka: record.intPoznamka || '',
+  // Pack OPRAVA FAKTÚRY into int_poznamka (dedicated column may not exist yet).
+  int_poznamka: packCustomsNotes(record.intPoznamka || '', record.opravaFaktury || ''),
   zisk: Number(record.zisk) || 0,
   cislo_fa: record.cisloFa || '',
   splatna: record.splatna || null,
@@ -135,7 +137,17 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
     faOdUkAgent: Number(record.fa_od_uk_agent) || 0,
     faOdEuAgent: Number(record.fa_od_eu_agent) || 0,
     faKlient: Number(record.fa_klient) || 0,
-    intPoznamka: String(record.int_poznamka || ''),
+    ...(() => {
+      const packed = unpackCustomsNotes(String(record.int_poznamka || ''));
+      const fromColumn =
+        record.oprava_faktury != null && record.oprava_faktury !== undefined
+          ? String(record.oprava_faktury)
+          : '';
+      return {
+        intPoznamka: packed.intPoznamka,
+        opravaFaktury: fromColumn || packed.opravaFaktury,
+      };
+    })(),
     zisk: Number(record.zisk) || 0,
     cisloFa: String(record.cislo_fa || ''),
     splatna: String(record.splatna || ''),
@@ -441,13 +453,11 @@ const saveRecord = async (record: Partial<ColnaRecord> & { invoiceHandoff?: bool
   // Accountant opened the permanent email link — save invoice/data without OPRAVA.
   const isInvoiceHandoff = Boolean(record.invoiceHandoff);
   // Email is opt-in per SAVE only (never from persisted OPRAVA/bell flags alone).
-  // Create: "Odoslať na fakturáciu" (bell). Edit: "upozornenie o zmene" (alert).
-  // Invoice handoff never sends notification email.
+  // Create / late-send from NÁHĽAD: "Odoslať na fakturáciu" (bell).
+  // Edit: "upozornenie o zmene" (alert). Invoice handoff never sends.
   const wantsEmail = isInvoiceHandoff
     ? false
-    : isUpdate
-      ? Boolean(record.alert)
-      : Boolean(record.bell);
+    : Boolean(record.bell) || (isUpdate && Boolean(record.alert));
 
   if (isUpdate) {
     const { data: existing, error } = await supabase
@@ -533,7 +543,7 @@ const saveRecord = async (record: Partial<ColnaRecord> & { invoiceHandoff?: bool
   const afterEmail = await sendInvoicingEmailIfRequested(
     data,
     wantsEmail,
-    isUpdate ? 'edit' : 'new',
+    Boolean(record.bell) ? 'new' : isUpdate ? 'edit' : 'new',
   );
   return fromDatabaseRecord(afterEmail);
 };

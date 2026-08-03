@@ -98,6 +98,10 @@ interface ColnaDatagridProps {
   onDeleteRecords: (ids: string[]) => void;
   onTogglePaid: (id: string, zaplatena: boolean) => void;
   onDownloadInvoice?: (recordId: string) => void;
+  onSaveRecord?: (
+    record: Partial<ColnaRecord>,
+    invoiceFile?: File,
+  ) => void | Promise<void>;
   searchTerm: string;
   currentMonthYear: string;
   onCloseMonth: (monthYear: string, closeYear?: boolean) => Promise<void>;
@@ -115,6 +119,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   onDeleteRecords,
   onTogglePaid,
   onDownloadInvoice,
+  onSaveRecord,
   searchTerm,
   currentMonthYear,
   onCloseMonth,
@@ -768,9 +773,21 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
         <RecordModal
           isOpen={true}
           onClose={() => setPreviewRecord(null)}
-          onSave={() => {}}
+          onSave={async (record, invoiceFile) => {
+            if (!onSaveRecord) return;
+            try {
+              await onSaveRecord(record, invoiceFile);
+              setPreviewRecord(null);
+            } catch {
+              // Toast is shown by App; keep preview open for retry.
+            }
+          }}
           initialRecord={previewRecord}
-          customerList={[previewRecord.zakaznik]}
+          customerList={
+            customerDirectory.length > 0
+              ? customerDirectory.map((c) => c.skratka).filter(Boolean)
+              : [previewRecord.zakaznik]
+          }
           readOnly
         />
       )}

@@ -223,6 +223,7 @@ export default function App() {
         setIsModalOpen(true);
       }
       setToastMessage(error instanceof Error ? error.message : 'Záznam sa nepodarilo uložiť.');
+      throw error;
     }
   };
 
@@ -442,6 +443,7 @@ export default function App() {
             onDeleteRecords={handleDeleteColnaRecords}
             onTogglePaid={handleTogglePaid}
             onDownloadInvoice={handleDownloadInvoiceFromTable}
+            onSaveRecord={handleSaveColnaRecord}
             searchTerm={searchTerm}
             currentMonthYear={currentMonthYear}
             onCloseMonth={handleCloseMonth}
