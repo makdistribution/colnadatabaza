@@ -558,6 +558,9 @@ export default function App() {
           <div className="w-[90vw] h-[90vh] flex items-center justify-center rounded-2xl border border-white/60 bg-white/80 shadow-2xl backdrop-blur-xl">
             <form onSubmit={handleApplicationUnlock} className="w-full max-w-sm px-8 text-center">
               <h1 className="mb-6 text-2xl font-bold text-slate-900">Prístup do aplikácie</h1>
+              <p className="mb-2 text-center text-sm font-bold uppercase tracking-wide text-slate-900">
+                ZADAJTE HESLO
+              </p>
               <input
                 type="password"
                 value={applicationPassword}
