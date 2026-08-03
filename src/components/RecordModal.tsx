@@ -139,8 +139,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
   const [isInvoiceDeleteModalOpen, setIsInvoiceDeleteModalOpen] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [isRequiredFieldsModalOpen, setIsRequiredFieldsModalOpen] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const spzInputRef = useRef<HTMLInputElement>(null);
+  const opravaInputRef = useRef<HTMLInputElement>(null);
 
   const [linkCopied, setLinkCopied] = useState(false);
   const savingLockRef = useRef(false);
@@ -202,6 +204,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
       });
     }
     setMissingFields([]);
+    setIsRequiredFieldsModalOpen(false);
     setLinkCopied(false);
     savingLockRef.current = false;
     setIsSaving(false);
@@ -402,6 +405,26 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     });
   };
 
+  /** ÚPRAVA ZÁZNAMU COLNICE only — uppercase user input in OPRAVA FAKTÚRY. */
+  const isCustomsEditMode =
+    Boolean(initialRecord) && !copyMode && !readOnly && !invoiceHandoffMode;
+
+  const handleOpravaFakturyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectionStart = e.currentTarget.selectionStart;
+    const selectionEnd = e.currentTarget.selectionEnd;
+    const nextValue = isCustomsEditMode
+      ? e.currentTarget.value.toLocaleUpperCase('sk-SK')
+      : e.currentTarget.value;
+    setFormData((prev) => ({ ...prev, opravaFaktury: nextValue }));
+    if (isCustomsEditMode) {
+      requestAnimationFrame(() => {
+        if (opravaInputRef.current && selectionStart !== null && selectionEnd !== null) {
+          opravaInputRef.current.setSelectionRange(selectionStart, selectionEnd);
+        }
+      });
+    }
+  };
+
   if (!isOpen) return null;
 
   // Auto calculate profit
@@ -436,13 +459,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
       const missing = collectMissingRequiredFields();
       if (missing.length > 0) {
         setMissingFields(missing);
-        alert(
-          `Vyplňte povinné polia:\n• ${missing.join('\n• ')}`,
-        );
+        setIsRequiredFieldsModalOpen(true);
         return;
       }
     }
     setMissingFields([]);
+    setIsRequiredFieldsModalOpen(false);
 
     savingLockRef.current = true;
     setIsSaving(true);
@@ -952,9 +974,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 </span>
               </label>
               <input
+                ref={opravaInputRef}
                 type="text"
                 value={formData.opravaFaktury || ''}
-                onChange={(e) => setFormData({ ...formData, opravaFaktury: e.target.value })}
+                onChange={handleOpravaFakturyChange}
                 readOnly={invoiceHandoffMode}
                 className={`w-full h-[30px] rounded-md px-2.5 py-1.5 focus:ring-1 outline-none read-only:cursor-default ${
                   isAccountantCorrectionMode
@@ -1032,6 +1055,26 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         }
         onCancel={() => setIsInvoiceDeleteModalOpen(false)}
         onConfirm={() => { void confirmDeleteInvoice(); }}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isRequiredFieldsModalOpen}
+        title="CHÝBAJÚ POVINNÉ POLIA"
+        subtitle="Kontrola pred uložením"
+        okOnly
+        confirmLabel="OK"
+        message={
+          <div className="space-y-2">
+            <p>Vyplňte povinné polia:</p>
+            <ul className="list-none space-y-1">
+              {missingFields.map((field) => (
+                <li key={field}>• {field}</li>
+              ))}
+            </ul>
+          </div>
+        }
+        onCancel={() => setIsRequiredFieldsModalOpen(false)}
+        onConfirm={() => setIsRequiredFieldsModalOpen(false)}
       />
     </div>
   );

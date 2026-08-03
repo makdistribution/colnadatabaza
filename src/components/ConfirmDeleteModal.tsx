@@ -7,6 +7,8 @@ interface ConfirmDeleteModalProps {
   subtitle?: string;
   message: React.ReactNode;
   confirmLabel?: string;
+  /** Single primary OK button (same chrome as delete dialog). */
+  okOnly?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -18,6 +20,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   subtitle = 'Potvrdenie pred odstránením',
   message,
   confirmLabel = 'Áno, vymazať',
+  okOnly = false,
   onCancel,
   onConfirm,
 }) => {
@@ -46,22 +49,24 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
 
         <div className="p-5 space-y-4 text-xs">
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-950">
-            <p className="font-medium">{message}</p>
+            <div className="font-medium">{message}</div>
           </div>
         </div>
 
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-200 font-medium transition-colors cursor-pointer text-xs"
-          >
-            Zrušiť
-          </button>
+          {!okOnly && (
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-200 font-medium transition-colors cursor-pointer text-xs"
+            >
+              Zrušiť
+            </button>
+          )}
           <button
             onClick={onConfirm}
             className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow-xs flex items-center gap-2 transition-all cursor-pointer text-xs"
           >
-            <Trash2 className="w-4 h-4" />
+            {!okOnly && <Trash2 className="w-4 h-4" />}
             <span>{confirmLabel}</span>
           </button>
         </div>

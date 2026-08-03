@@ -100,3 +100,20 @@ html, body {
     text-transform: uppercase;
   }
 }
+
+/* REFRESH button: animate label only — button box stays fixed. */
+@keyframes refresh-text-wave {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.35;
+    transform: translateY(-1px);
+  }
+}
+
+.refresh-text-animate {
+  animation: refresh-text-wave 0.85s ease-in-out infinite;
+}
