@@ -364,6 +364,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const invoiceEditable = !readOnly || isPreviewMode;
   /** Accountant correction workflow — title stays OPRAVA even if PDF is deleted. */
   const isAccountantCorrectionMode = invoiceHandoffMode && correctionWorkflow;
+  /** First-time invoicing handoff — green highlight only here. */
+  const isNewInvoicingHandoff = invoiceHandoffMode && !isAccountantCorrectionMode;
+  const greenFocus =
+    'border-[#0f766e] border-[3px] focus:ring-[#0f766e]';
+  const greenPanel = 'border-[#0f766e] border-[3px]';
 
   const collectMissingRequiredFields = (): string[] => {
     const missing: string[] = [];
@@ -589,8 +594,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               <select
                 value={formData.zakaznik}
                 onChange={(e) => setFormData({ ...formData, zakaznik: e.target.value })}
-                className={`w-full bg-white border rounded-md px-2.5 py-1.5 text-slate-900 font-semibold text-xs focus:ring-1 focus:ring-blue-500 outline-none ${
-                  fieldMissing('ZÁKAZNÍK') ? 'border-red-500' : 'border-slate-200'
+                className={`w-full bg-white border rounded-md px-2.5 py-1.5 text-slate-900 font-semibold text-xs focus:ring-1 outline-none ${
+                  fieldMissing('ZÁKAZNÍK')
+                    ? 'border-red-500 focus:ring-blue-500'
+                    : isNewInvoicingHandoff
+                      ? greenFocus
+                      : 'border-slate-200 focus:ring-blue-500'
                 }`}
                 required
               >
@@ -638,25 +647,29 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   </label>
                 </>
               ) : (
-                <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 self-end pb-0.5">
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 self-center">
                   <input
                     type="checkbox"
                     checked={formData.alert}
                     onChange={(e) => setFormData({ ...formData, alert: e.target.checked })}
                     className="rounded text-blue-600 focus:ring-0 w-4 h-4 bg-white border-slate-300 shrink-0"
                   />
-                  <img
-                    src="/edit.png"
-                    alt="Edit"
-                    className="h-7 w-auto object-contain shrink-0"
-                  />
-                  <span className="text-slate-600 font-medium text-[12px] leading-[1.25] text-left">
-                    Zaznamenať zmenu a{' '}
+                  <span className="relative inline-flex h-7 w-9 shrink-0 items-center justify-start">
+                    <img
+                      src="/edit.png"
+                      alt=""
+                      className="h-7 w-auto object-contain"
+                      aria-hidden="true"
+                    />
                     <img
                       src="/mail.png"
-                      alt="Mail"
-                      className="h-4.5 w-auto inline-block align-middle mx-0.5"
+                      alt=""
+                      className="absolute -right-0.5 -top-0.5 h-[15px] w-auto object-contain"
+                      aria-hidden="true"
                     />
+                  </span>
+                  <span className="text-slate-700 font-medium text-[12px] leading-[15px] text-left">
+                    Zaznamenať zmenu a
                     <br />
                     upozornenie o zmene
                     <br />
@@ -678,8 +691,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 type="date"
                 value={formData.datumColnice || ''}
                 onChange={(e) => setFormData({ ...formData, datumColnice: e.target.value })}
-                className={`w-full bg-slate-50 border rounded-md px-2.5 py-1 text-slate-900 focus:ring-1 focus:ring-blue-500 outline-none ${
-                  fieldMissing('DÁTUM COLNICE') ? 'border-red-500' : 'border-slate-200'
+                className={`w-full bg-slate-50 border rounded-md px-2.5 py-1 text-slate-900 focus:ring-1 outline-none ${
+                  fieldMissing('DÁTUM COLNICE')
+                    ? 'border-red-500 focus:ring-blue-500'
+                    : isNewInvoicingHandoff
+                      ? greenFocus
+                      : 'border-slate-200 focus:ring-blue-500'
                 }`}
               />
             </div>
@@ -693,8 +710,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 type="text"
                 value={formData.spz || ''}
                 onChange={handleSpzChange}
-                className={`w-full bg-slate-50 border rounded-md px-2.5 py-1 text-slate-900 font-mono focus:ring-1 focus:ring-blue-500 outline-none ${
-                  fieldMissing('ŠPZ VOZIDLA') ? 'border-red-500' : 'border-slate-200'
+                className={`w-full bg-slate-50 border rounded-md px-2.5 py-1 text-slate-900 font-mono focus:ring-1 outline-none ${
+                  fieldMissing('ŠPZ VOZIDLA')
+                    ? 'border-red-500 focus:ring-blue-500'
+                    : isNewInvoicingHandoff
+                      ? greenFocus
+                      : 'border-slate-200 focus:ring-blue-500'
                 }`}
               />
             </div>
@@ -707,7 +728,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 type="text"
                 value={formData.refNaFa || ''}
                 onChange={(e) => setFormData({ ...formData, refNaFa: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-slate-900 focus:ring-1 focus:ring-blue-500 outline-none"
+                className={`w-full bg-slate-50 border rounded-md px-2.5 py-1 text-slate-900 focus:ring-1 outline-none ${
+                  isNewInvoicingHandoff && (formData.refNaFa || '').trim()
+                    ? greenFocus
+                    : 'border-slate-200 focus:ring-blue-500'
+                }`}
               />
             </div>
           </div>
@@ -716,7 +741,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           <div className={`grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3.5 items-start ${
             fieldMissing('TRASA') ? 'ring-2 ring-red-500 rounded-xl p-1' : ''
           }`}>
-            <div className="bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2">
+            <div className={`bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border space-y-2 ${
+              isNewInvoicingHandoff ? greenPanel : 'border-slate-200'
+            }`}>
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
                 TRASA <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </label>
@@ -754,7 +781,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               *
             </span>
 
-            <div className="bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2">
+            <div className={`bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border space-y-2 ${
+              isNewInvoicingHandoff ? greenPanel : 'border-slate-200'
+            }`}>
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
                 TRASA <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </label>
@@ -787,7 +816,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           </div>
 
           {/* Row 4: Financial Amounts & Live Calculated Profit */}
-          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2">
+          <div className={`bg-slate-50 p-2.5 rounded-lg border space-y-2 ${
+            isNewInvoicingHandoff ? greenPanel : 'border-slate-200'
+          }`}>
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-slate-800 flex items-center gap-1 uppercase text-[11px] tracking-wider">
                 Poplatky & Zisk
@@ -880,7 +911,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </label>
             </div>
 
-            <div className="flex items-start gap-2.5">
+            <div className="flex items-start gap-2.5 min-w-0">
               <input
                 ref={invoiceInputRef}
                 type="file"
@@ -888,31 +919,36 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 onChange={(e) => selectInvoiceFile(e.target.files?.[0])}
                 className="hidden"
               />
-              {/* Height matches upload/yellow box so label is vertically centered to that box only. */}
-              <span className="box-border flex h-[84px] w-[68px] shrink-0 translate-x-[3mm] items-center text-slate-500 font-semibold text-[11px] uppercase leading-tight">
+              <span className="box-border flex h-[84px] w-[68px] shrink-0 items-center text-slate-500 font-semibold text-[11px] uppercase leading-tight">
                 NAHRAJ VYSTAVENÚ FAKTÚRU
               </span>
-              <div className="flex min-w-0 flex-1 items-start gap-1.5">
+              <div className="flex min-w-0 flex-1 items-stretch gap-1.5">
                 <button
                   type="button"
-                  onClick={() => invoiceEditable && !hasUploadedInvoice && invoiceInputRef.current?.click()}
+                  onClick={() => {
+                    if (!invoiceEditable) return;
+                    // Empty → upload; with file → replace (no separate Replace button in layout).
+                    invoiceInputRef.current?.click();
+                  }}
                   onDragEnter={(e) => {
                     e.preventDefault();
-                    if (invoiceEditable && !hasUploadedInvoice) setIsInvoiceDragActive(true);
+                    if (invoiceEditable) setIsInvoiceDragActive(true);
                   }}
                   onDragOver={(e) => e.preventDefault()}
                   onDragLeave={() => setIsInvoiceDragActive(false)}
                   onDrop={(e) => {
                     e.preventDefault();
                     setIsInvoiceDragActive(false);
-                    if (invoiceEditable && !hasUploadedInvoice) selectInvoiceFile(e.dataTransfer.files?.[0]);
+                    if (invoiceEditable) selectInvoiceFile(e.dataTransfer.files?.[0]);
                   }}
-                  className={`relative min-w-0 flex-1 h-[84px] rounded-xl border transition-colors ${
+                  className={`relative box-border min-w-0 flex-1 h-[84px] rounded-xl transition-colors ${
                     hasUploadedInvoice
-                      ? 'border-amber-500 bg-[#ECE039] cursor-default'
-                      : isInvoiceDragActive
-                        ? 'border-dashed border-blue-600 bg-blue-50 cursor-pointer'
-                        : 'border-dashed border-blue-400 bg-blue-50/40 hover:bg-blue-50 cursor-pointer'
+                      ? 'border border-amber-500 bg-[#ECE039] cursor-pointer'
+                      : isNewInvoicingHandoff
+                        ? `border-[3px] border-solid border-[#0f766e] bg-blue-50/40 ${invoiceEditable ? 'cursor-pointer hover:bg-blue-50' : 'cursor-default'}`
+                        : isInvoiceDragActive
+                          ? 'border border-dashed border-blue-600 bg-blue-50 cursor-pointer'
+                          : `border border-dashed border-blue-400 bg-blue-50/40 ${invoiceEditable ? 'cursor-pointer hover:bg-blue-50' : 'cursor-default'}`
                   }`}
                 >
                   {isUploadingInvoicePdf ? (
@@ -926,9 +962,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                       <img
                         src="/pin.png"
                         alt="Faktúra PDF"
-                        className="absolute left-1/2 top-[38%] h-[28.8px] w-auto -translate-x-1/2 -translate-y-1/2 object-contain"
+                        className="absolute left-1/2 top-[38%] h-[28.8px] w-auto -translate-x-1/2 -translate-y-1/2 object-contain pointer-events-none"
                       />
-                      <span className="absolute bottom-1 left-2 right-2 text-center text-slate-900 font-semibold text-[9px] break-all whitespace-normal leading-tight">
+                      <span className="absolute bottom-1 left-2 right-2 text-center text-slate-900 font-semibold text-[9px] break-all whitespace-normal leading-tight pointer-events-none">
                         Current invoice: {displayedInvoiceName}
                       </span>
                     </>
@@ -941,46 +977,49 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                     </span>
                   )}
                 </button>
-                {hasUploadedInvoice && (
-                  <div className="flex w-[5.5rem] shrink-0 flex-col gap-1">
-                    <button
-                      type="button"
-                      onClick={() => { void handleOpenInvoice(); }}
-                      className="inline-flex w-full items-center justify-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                    >
-                      <ExternalLink className="w-3 h-3" /> Open
-                    </button>
-                    {invoiceEditable && (
-                      <button
-                        type="button"
-                        onClick={() => invoiceInputRef.current?.click()}
-                        className="inline-flex w-full items-center justify-center gap-1 rounded border border-blue-300 bg-blue-50 px-1.5 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-100 cursor-pointer"
-                      >
-                        <Upload className="w-3 h-3" /> Replace
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => { void handleDownloadInvoice(); }}
-                      className="inline-flex w-full items-center justify-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                    >
-                      <Download className="w-3 h-3" /> Download
-                    </button>
-                    {invoiceEditable && (
-                      <button
-                        type="button"
-                        onClick={handleDeleteInvoiceClick}
-                        disabled={isDeletingInvoice}
-                        className="inline-flex w-full items-center justify-center gap-1 rounded border border-red-300 bg-white px-1.5 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50 cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        <LoadingButtonContent loading={isDeletingInvoice} kind="delete">
-                          <Trash2 className="w-3 h-3" />
-                          <span>Delete</span>
-                        </LoadingButtonContent>
-                      </button>
-                    )}
-                  </div>
-                )}
+
+                {/* Fixed action column — always present so layout never shifts. */}
+                <div className="flex w-[5.5rem] shrink-0 flex-col justify-between gap-1 h-[84px]">
+                  <button
+                    type="button"
+                    onClick={() => { void handleOpenInvoice(); }}
+                    disabled={!hasUploadedInvoice}
+                    className={`inline-flex h-[26px] w-full items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold ${
+                      hasUploadedInvoice
+                        ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer'
+                        : 'border-slate-200 bg-white text-slate-300 cursor-not-allowed'
+                    }`}
+                  >
+                    <ExternalLink className="w-3 h-3" /> Open
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { void handleDownloadInvoice(); }}
+                    disabled={!hasUploadedInvoice}
+                    className={`inline-flex h-[26px] w-full items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold ${
+                      hasUploadedInvoice
+                        ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer'
+                        : 'border-slate-200 bg-white text-slate-300 cursor-not-allowed'
+                    }`}
+                  >
+                    <Download className="w-3 h-3" /> Download
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteInvoiceClick}
+                    disabled={!hasUploadedInvoice || !invoiceEditable || isDeletingInvoice}
+                    className={`inline-flex h-[26px] w-full items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold ${
+                      hasUploadedInvoice && invoiceEditable
+                        ? 'border-red-300 bg-white text-red-700 hover:bg-red-50 cursor-pointer disabled:cursor-not-allowed'
+                        : 'border-red-200 bg-white text-red-300 cursor-not-allowed'
+                    }`}
+                  >
+                    <LoadingButtonContent loading={isDeletingInvoice} kind="delete">
+                      <Trash2 className="w-3 h-3" />
+                      <span>Delete</span>
+                    </LoadingButtonContent>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
