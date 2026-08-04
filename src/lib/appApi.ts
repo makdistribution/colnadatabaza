@@ -28,6 +28,12 @@ export const appApi = {
       method: 'POST',
       body: JSON.stringify({ password }),
     }),
+  /** Skip password only for valid FAKTURÁCIA notification links (?invoiceToken=). */
+  unlockWithInvoiceToken: (invoiceToken: string) =>
+    request<{ authenticated: boolean }>('/api/session', {
+      method: 'POST',
+      body: JSON.stringify({ invoiceToken }),
+    }),
   bootstrap: () => request<AppBootstrap>('/api/app'),
   migrateBrowserData: (payload: {
     adresyRecords?: AdresaRecord[];

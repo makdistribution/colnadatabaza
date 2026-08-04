@@ -647,7 +647,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   </label>
                 </>
               ) : (
-                <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 self-center">
+                <label className="flex items-center cursor-pointer text-slate-700 self-center">
                   <input
                     type="checkbox"
                     checked={formData.alert}
@@ -657,21 +657,25 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   <img
                     src="/edit.png"
                     alt=""
-                    className="h-7 w-auto object-contain shrink-0"
+                    className="ml-1.5 h-7 w-auto object-contain shrink-0"
                     aria-hidden="true"
                   />
-                  <span className="text-slate-700 font-medium text-[12px] leading-[15px] text-left">
-                    Zaznamenať zmenu a{' '}
-                    <img
-                      src="/mail.png"
-                      alt=""
-                      className="inline-block h-[18px] w-auto object-contain align-middle mx-0.5"
-                      aria-hidden="true"
-                    />
-                    <br />
-                    upozornenie o zmene
-                    <br />
-                    (vo vystavených faktúrach)
+                  <span className="ml-2 flex flex-col text-slate-700 font-medium text-[12px] text-left">
+                    <span className="flex h-[15px] items-center whitespace-nowrap leading-none">
+                      Zaznamenať zmenu a
+                      <img
+                        src="/mail.png"
+                        alt=""
+                        className="ml-0.5 inline-block h-[14px] w-auto object-contain shrink-0"
+                        aria-hidden="true"
+                      />
+                    </span>
+                    <span className="flex h-[15px] items-center leading-none">
+                      upozornenie o zmene
+                    </span>
+                    <span className="flex h-[15px] items-center leading-none">
+                      (vo vystavených faktúrach)
+                    </span>
                   </span>
                 </label>
               )}

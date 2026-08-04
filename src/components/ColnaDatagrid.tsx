@@ -710,7 +710,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                           <img
                             src={invoicePin === 'corrected' ? '/pinnew.png' : '/pin.png'}
                             alt="Faktúra PDF"
-                            className="h-[28.8px] w-auto max-w-full mx-auto object-contain pointer-events-none"
+                            className="h-[31.68px] w-auto max-w-full mx-auto object-contain pointer-events-none"
                           />
                         </button>
                       )}

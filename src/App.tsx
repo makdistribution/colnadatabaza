@@ -144,14 +144,26 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      // Password is always required except notification invoice links
+      // (FAKTURÁCIA NOVEJ COLNICE / FAKTURÁCIA – OPRAVA FAKTÚRY).
+      // Existing session cookies must NOT skip the lock on refresh / reopen / new tab.
+      if (!pendingInvoiceToken) return;
+
       try {
-        const session = await appApi.getSession();
-        if (cancelled || !session.authenticated) return;
         setIsDataLoading(true);
+        await appApi.unlockWithInvoiceToken(pendingInvoiceToken);
         await loadApplicationData();
-        if (!cancelled) setIsApplicationLocked(false);
+        if (cancelled) return;
+        setIsApplicationLocked(false);
+        // Remove token from the address bar so a later refresh requires the password.
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('invoiceToken')) {
+          url.searchParams.delete('invoiceToken');
+          const next = `${url.pathname}${url.search}${url.hash}`;
+          window.history.replaceState({}, '', next);
+        }
       } catch {
-        // Stay locked; user can unlock manually.
+        // Invalid / expired notification link — stay locked; user must enter password.
       } finally {
         if (!cancelled) setIsDataLoading(false);
       }
