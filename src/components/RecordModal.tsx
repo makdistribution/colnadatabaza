@@ -654,22 +654,20 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, alert: e.target.checked })}
                     className="rounded text-blue-600 focus:ring-0 w-4 h-4 bg-white border-slate-300 shrink-0"
                   />
-                  <span className="relative inline-flex h-7 w-9 shrink-0 items-center justify-start">
-                    <img
-                      src="/edit.png"
-                      alt=""
-                      className="h-7 w-auto object-contain"
-                      aria-hidden="true"
-                    />
+                  <img
+                    src="/edit.png"
+                    alt=""
+                    className="h-7 w-auto object-contain shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="text-slate-700 font-medium text-[12px] leading-[15px] text-left">
+                    Zaznamenať zmenu a{' '}
                     <img
                       src="/mail.png"
                       alt=""
-                      className="absolute -right-0.5 -top-0.5 h-[15px] w-auto object-contain"
+                      className="inline-block h-[18px] w-auto object-contain align-middle mx-0.5"
                       aria-hidden="true"
                     />
-                  </span>
-                  <span className="text-slate-700 font-medium text-[12px] leading-[15px] text-left">
-                    Zaznamenať zmenu a
                     <br />
                     upozornenie o zmene
                     <br />
@@ -911,7 +909,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </label>
             </div>
 
-            <div className="flex items-start gap-2.5 min-w-0">
+            <div className="flex items-start gap-1 min-w-0">
               <input
                 ref={invoiceInputRef}
                 type="file"
@@ -919,7 +917,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 onChange={(e) => selectInvoiceFile(e.target.files?.[0])}
                 className="hidden"
               />
-              <span className="box-border flex h-[84px] w-[68px] shrink-0 items-center text-slate-500 font-semibold text-[11px] uppercase leading-tight">
+              <span className="box-border flex h-[84px] w-[62px] shrink-0 items-center text-slate-500 font-semibold text-[11px] uppercase leading-tight">
                 NAHRAJ VYSTAVENÚ FAKTÚRU
               </span>
               <div className="flex min-w-0 flex-1 items-stretch gap-1.5">
@@ -1044,13 +1042,17 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             <div>
               <label
                 className={`block font-semibold mb-0.5 text-[11px] uppercase tracking-wide leading-tight ${
-                  isAccountantCorrectionMode ? 'text-red-600' : 'text-slate-600'
+                  isAccountantCorrectionMode || isCustomsEditMode
+                    ? 'text-red-600'
+                    : 'text-slate-600'
                 }`}
               >
                 OPRAVA FAKTÚRY{' '}
                 <span
                   className={`normal-case font-normal ${
-                    isAccountantCorrectionMode ? 'text-red-600' : 'text-slate-500'
+                    isAccountantCorrectionMode || isCustomsEditMode
+                      ? 'text-red-600'
+                      : 'text-slate-500'
                   }`}
                 >
                   (tu nájdeš info, čo treba zmeniť v už vystavenej faktúre)
@@ -1063,7 +1065,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 onChange={handleOpravaFakturyChange}
                 readOnly={invoiceHandoffMode}
                 className={`w-full h-[30px] rounded-md px-2.5 py-1.5 focus:ring-1 outline-none read-only:cursor-default ${
-                  isAccountantCorrectionMode
+                  isAccountantCorrectionMode || isCustomsEditMode
                     ? 'border-2 border-red-500 bg-[#ECE039] text-red-600 focus:ring-red-500'
                     : 'border border-slate-200 bg-slate-50 text-slate-900 focus:ring-blue-500'
                 }`}
