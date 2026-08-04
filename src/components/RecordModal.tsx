@@ -141,6 +141,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const [isInvoiceDeleteModalOpen, setIsInvoiceDeleteModalOpen] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [isRequiredFieldsModalOpen, setIsRequiredFieldsModalOpen] = useState(false);
+  /** Sticky correction workflow for handoff session (survives PDF delete). */
+  const [correctionWorkflow, setCorrectionWorkflow] = useState(false);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const spzInputRef = useRef<HTMLInputElement>(null);
   const opravaInputRef = useRef<HTMLInputElement>(null);
@@ -210,6 +212,22 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     savingLockRef.current = false;
     setIsSaving(false);
   }, [initialRecord, isOpen, customerList, defaultDate, copyMode, invoiceHandoffMode]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setCorrectionWorkflow(false);
+      return;
+    }
+    if (
+      invoiceHandoffMode &&
+      (initialRecord?.invoiceCorrectionPending ||
+        initialRecord?.invoiceCorrected ||
+        initialRecord?.invoicePdfPath ||
+        initialRecord?.cisloFa)
+    ) {
+      setCorrectionWorkflow(true);
+    }
+  }, [isOpen, invoiceHandoffMode, initialRecord]);
 
   useEffect(() => {
     if (isOpen) {
@@ -344,10 +362,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const isPreviewMode = readOnly && !invoiceHandoffMode;
   const customsLocked = invoiceHandoffMode || (readOnly && !isPreviewMode);
   const invoiceEditable = !readOnly || isPreviewMode;
-  /** Accountant opened an already-issued invoice for correction (not first-time invoicing). */
-  const isAccountantCorrectionMode =
-    invoiceHandoffMode &&
-    Boolean(initialRecord?.invoicePdfPath || formData.invoicePdfPath || formData.cisloFa);
+  /** Accountant correction workflow — title stays OPRAVA even if PDF is deleted. */
+  const isAccountantCorrectionMode = invoiceHandoffMode && correctionWorkflow;
 
   const collectMissingRequiredFields = (): string[] => {
     const missing: string[] = [];
@@ -595,7 +611,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </div>
 
             {!invoiceHandoffMode && (
-            <div className="flex items-center justify-end gap-3 self-end pb-1 w-[235.3125px] shrink-0">
+            <div className="flex items-center justify-end gap-1.5 self-end pb-1 w-[260px] shrink-0">
               {!initialRecord || copyMode || readOnly ? (
                 <>
                   <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
@@ -622,16 +638,29 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   </label>
                 </>
               ) : (
-                <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700 -mb-[2px] mt-0 ml-0 pt-0">
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 self-end pb-0.5">
                   <input
                     type="checkbox"
                     checked={formData.alert}
                     onChange={(e) => setFormData({ ...formData, alert: e.target.checked })}
-                    className="rounded text-blue-600 focus:ring-0 w-4 h-4 bg-white border-slate-300 shrink-0 self-center -mb-[1px]"
+                    className="rounded text-blue-600 focus:ring-0 w-4 h-4 bg-white border-slate-300 shrink-0"
                   />
-                  <img src="/edit.png" alt="Edit" className="h-7 w-auto object-contain shrink-0 self-center -mt-[4px]" />
-                  <span className="text-slate-600 font-medium text-[12px] leading-tight self-center mt-0">
-                    Zaznamenať zmenu a <img src="/mail.png" alt="Mail" className="h-4.5 w-auto inline-block align-middle mx-0.5" /><br />upozornenie o zmene
+                  <img
+                    src="/edit.png"
+                    alt="Edit"
+                    className="h-7 w-auto object-contain shrink-0"
+                  />
+                  <span className="text-slate-600 font-medium text-[12px] leading-[1.25] text-left">
+                    Zaznamenať zmenu a{' '}
+                    <img
+                      src="/mail.png"
+                      alt="Mail"
+                      className="h-4.5 w-auto inline-block align-middle mx-0.5"
+                    />
+                    <br />
+                    upozornenie o zmene
+                    <br />
+                    (vo vystavených faktúrach)
                   </span>
                 </label>
               )}

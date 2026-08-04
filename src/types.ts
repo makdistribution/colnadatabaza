@@ -20,6 +20,10 @@ export interface ColnaRecord {
   splatna: string;
   zaplatena: boolean;
   invoicePdfPath?: string;
+  /** Correction notification sent — hide original pin until corrected invoice uploaded. */
+  invoiceCorrectionPending?: boolean;
+  /** Corrected invoice uploaded — show pinnew.png permanently when a PDF exists. */
+  invoiceCorrected?: boolean;
   isClosed?: boolean;
   /** Permanent case-link token (stored in Supabase). Used to build secure_link. */
   invoiceToken?: string;

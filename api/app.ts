@@ -28,7 +28,11 @@ import {
   upsertLoginRecord,
 } from '../src/server/directoryStore.js';
 import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs.js';
-import { packCustomsNotes, unpackCustomsNotes } from '../src/utils/customsNotes.js';
+import {
+  packCustomsNotes,
+  unpackCustomsNotes,
+  type InvoiceClipState,
+} from '../src/utils/customsNotes.js';
 import {
   appDocumentPathForId,
   formatDocumentSizeLabel,
@@ -103,8 +107,16 @@ const toDatabaseRecord = (record: Partial<ColnaRecord>, id: string, monthStart: 
   fa_od_uk_agent: Number(record.faOdUkAgent) || 0,
   fa_od_eu_agent: Number(record.faOdEuAgent) || 0,
   fa_klient: Number(record.faKlient) || 0,
-  // Pack OPRAVA FAKTÚRY into int_poznamka (dedicated column may not exist yet).
-  int_poznamka: packCustomsNotes(record.intPoznamka || '', record.opravaFaktury || ''),
+  // Pack OPRAVA + invoice clip flags into int_poznamka (no dedicated columns yet).
+  int_poznamka: packCustomsNotes(
+    record.intPoznamka || '',
+    record.opravaFaktury || '',
+    record.invoiceCorrected
+      ? 'corrected'
+      : record.invoiceCorrectionPending
+        ? 'pending'
+        : 'none',
+  ),
   zisk: Number(record.zisk) || 0,
   cislo_fa: record.cisloFa || '',
   splatna: record.splatna || null,
@@ -146,6 +158,8 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
       return {
         intPoznamka: packed.intPoznamka,
         opravaFaktury: fromColumn || packed.opravaFaktury,
+        invoiceCorrectionPending: packed.invoiceClipState === 'pending',
+        invoiceCorrected: packed.invoiceClipState === 'corrected',
       };
     })(),
     zisk: Number(record.zisk) || 0,
@@ -450,6 +464,7 @@ const saveRecord = async (record: Partial<ColnaRecord> & { invoiceHandoff?: bool
   let permanentToken = '';
   let existingIsNew = false;
   let existingAlert = false;
+  let clipState: InvoiceClipState = 'none';
   // Accountant opened the permanent email link — save invoice/data without OPRAVA.
   const isInvoiceHandoff = Boolean(record.invoiceHandoff);
   // Email is opt-in per SAVE only (never from persisted OPRAVA/bell flags alone).
@@ -462,7 +477,7 @@ const saveRecord = async (record: Partial<ColnaRecord> & { invoiceHandoff?: bool
   if (isUpdate) {
     const { data: existing, error } = await supabase
       .from('customs_records')
-      .select('month_start, is_closed, invoice_token_hash, is_new, alert, invoice_pdf_path')
+      .select('month_start, is_closed, invoice_token_hash, is_new, alert, invoice_pdf_path, int_poznamka')
       .eq('id', id)
       .single();
     throwIfError(error);
@@ -472,9 +487,19 @@ const saveRecord = async (record: Partial<ColnaRecord> & { invoiceHandoff?: bool
     isClosed = Boolean(existing.is_closed);
     existingIsNew = Boolean(existing.is_new);
     existingAlert = Boolean(existing.alert);
+    const existingClip = unpackCustomsNotes(String(existing.int_poznamka || '')).invoiceClipState;
+    clipState = existingClip;
     // Accountant save with invoice already on record → clear NEW permanently.
     if (isInvoiceHandoff && existing.invoice_pdf_path) {
       existingIsNew = false;
+    }
+    // Correction notification sent → hide original pin until corrected invoice is uploaded.
+    if (!isInvoiceHandoff && Boolean(record.alert) && wantsEmail && clipState !== 'corrected') {
+      clipState = 'pending';
+    }
+    // Handoff in correction workflow keeps corrected permanently; pending until upload completes.
+    if (isInvoiceHandoff && clipState === 'corrected') {
+      clipState = 'corrected';
     }
     const existingToken = existing.invoice_token_hash ? String(existing.invoice_token_hash) : '';
     // Never replace a valid permanent token. Backfill only when missing/legacy hash.
@@ -493,7 +518,16 @@ const saveRecord = async (record: Partial<ColnaRecord> & { invoiceHandoff?: bool
   // - update: never restore NEW; never clear NEW here (cleared only after accountant invoice save)
   // - invoice handoff: preserve NEW/OPRAVA (accountant does not edit customs flags)
   const databaseRecord = {
-    ...toDatabaseRecord({ ...record, isClosed }, id, targetMonth),
+    ...toDatabaseRecord(
+      {
+        ...record,
+        isClosed,
+        invoiceCorrectionPending: clipState === 'pending',
+        invoiceCorrected: clipState === 'corrected',
+      },
+      id,
+      targetMonth,
+    ),
     invoice_token_hash: permanentToken,
     is_new: isUpdate ? existingIsNew : Boolean(record.isNew ?? true),
     alert: isUpdate ? (isInvoiceHandoff ? existingAlert : true) : false,
@@ -590,8 +624,26 @@ const completeInvoiceUpload = async (
     throw new Error('Nahraná faktúra sa v úložisku nenašla.');
   }
 
+  const { data: existingRow, error: existingError } = await supabase
+    .from('customs_records')
+    .select('int_poznamka')
+    .eq('id', recordId)
+    .single();
+  throwIfError(existingError);
+  const existingPacked = unpackCustomsNotes(String(existingRow.int_poznamka || ''));
+  let nextClip: InvoiceClipState = existingPacked.invoiceClipState;
+  // Correction workflow upload → permanent pinnew.png state.
+  if (nextClip === 'pending' || nextClip === 'corrected') {
+    nextClip = 'corrected';
+  }
+
   const updatePayload: Record<string, unknown> = {
     invoice_pdf_path: invoicePath,
+    int_poznamka: packCustomsNotes(
+      existingPacked.intPoznamka,
+      existingPacked.opravaFaktury,
+      nextClip,
+    ),
     updated_at: new Date().toISOString(),
   };
   // NEW is removed only after accountant upload + successful save.

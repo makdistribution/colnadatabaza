@@ -5,6 +5,7 @@ import { resolveCustomerSkratka } from '../utils/customerSkratka';
 import { RecordModal } from './RecordModal';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { LoadingButtonContent } from './LoadingButtonContent';
+import { resolveInvoicePinIcon } from '../utils/customsNotes';
 
 // Helpers to extract status for the 4 split columns (UK ➔ EU and EU ➔ UK)
 const getUkZaclenie = (r: ColnaRecord): string => {
@@ -549,12 +550,14 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
             ) : (
               paginatedRecords.map((r, idx) => {
                 const isSelected = selectedIds.includes(r.id);
+                const invoicePin = resolveInvoicePinIcon(r);
                 return (
                   <tr
                     key={r.id}
-                    className={`transition-colors hover:bg-blue-50/50 ${
+                    className={`h-[1.3cm] max-h-[1.3cm] [&>td]:h-[1.3cm] [&>td]:max-h-[1.3cm] [&>td]:overflow-hidden [&>td]:align-middle transition-colors hover:bg-blue-50/50 ${
                       isSelected ? 'bg-blue-50/80' : idx % 2 === 1 ? 'bg-slate-50/70' : 'bg-white'
                     }`}
+                    style={{ height: '1.3cm' }}
                   >
                     {/* Checkbox */}
                     <td className="p-2 text-center border-r border-slate-200">
@@ -693,8 +696,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       {r.zisk ? `${r.zisk.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
-                    <td className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center border-r border-slate-200 overflow-hidden">
-                      {r.invoicePdfPath && (
+                    <td className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center border-r border-slate-200 overflow-hidden h-[1.3cm] max-h-[1.3cm]">
+                      {invoicePin !== 'none' && (
                         <button
                           type="button"
                           title="Stiahnuť faktúru"
@@ -705,7 +708,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                           className="inline-flex items-center justify-center w-full h-full p-0.5 cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-0"
                         >
                           <img
-                            src="/pin.png"
+                            src={invoicePin === 'corrected' ? '/pinnew.png' : '/pin.png'}
                             alt="Faktúra PDF"
                             className="h-[28.8px] w-auto max-w-full mx-auto object-contain pointer-events-none"
                           />

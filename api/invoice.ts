@@ -36,6 +36,8 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
     faKlient: Number(record.fa_klient) || 0,
     intPoznamka: packed.intPoznamka,
     opravaFaktury: fromColumn || packed.opravaFaktury,
+    invoiceCorrectionPending: packed.invoiceClipState === 'pending',
+    invoiceCorrected: packed.invoiceClipState === 'corrected',
     zisk: Number(record.zisk) || 0,
     cisloFa: String(record.cislo_fa || ''),
     splatna: String(record.splatna || ''),
