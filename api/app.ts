@@ -38,7 +38,7 @@ import {
   formatDocumentSizeLabel,
   sanitizeAppDocumentFileName,
 } from '../src/utils/appDocumentFile.js';
-import { invoicePathForRecord, sanitizeInvoiceFileName } from '../src/utils/invoiceFile.js';
+import { extractInvoiceNumberFromFileName, invoicePathForRecord, sanitizeInvoiceFileName } from '../src/utils/invoiceFile.js';
 
 type ActionBody = {
   action?:
@@ -639,6 +639,7 @@ const completeInvoiceUpload = async (
 
   const updatePayload: Record<string, unknown> = {
     invoice_pdf_path: invoicePath,
+    cislo_fa: extractInvoiceNumberFromFileName(fileName),
     int_poznamka: packCustomsNotes(
       existingPacked.intPoznamka,
       existingPacked.opravaFaktury,
@@ -688,6 +689,7 @@ const deleteInvoice = async (recordId: string) => {
     .update({
       invoice_pdf_path: null,
       splatna: null,
+      cislo_fa: '',
       updated_at: new Date().toISOString(),
     })
     .eq('id', recordId)

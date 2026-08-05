@@ -14,7 +14,7 @@ import {
   ExternalLink,
   Check,
 } from 'lucide-react';
-import { invoiceDisplayNameFromPath } from '../utils/invoiceFile';
+import { extractInvoiceNumberFromFileName, invoiceDisplayNameFromPath } from '../utils/invoiceFile';
 import { buildCaseLink, formatNotificationTimestampParts } from '../utils/caseLink';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { LoadingButtonContent } from './LoadingButtonContent';
@@ -287,6 +287,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const selectInvoiceFile = (file?: File) => {
     if (file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
       setInvoiceFile(file);
+      const invoiceNumber = extractInvoiceNumberFromFileName(file.name);
+      setFormData((prev) => ({ ...prev, cisloFa: invoiceNumber }));
     }
   };
 
@@ -393,6 +395,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     if (invoiceFile && !formData.invoicePdfPath) {
       setInvoiceFile(null);
       if (invoiceInputRef.current) invoiceInputRef.current.value = '';
+      setFormData((prev) => ({ ...prev, cisloFa: '' }));
       setIsInvoiceDeleteModalOpen(false);
       return;
     }
@@ -407,6 +410,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
       setFormData((prev) => ({
         ...prev,
         invoicePdfPath: undefined,
+        cisloFa: '',
         splatna: '',
       }));
       setIsInvoiceDeleteModalOpen(false);
@@ -883,8 +887,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               <input
                 type="text"
                 value={formData.cisloFa || ''}
-                onChange={(e) => setFormData({ ...formData, cisloFa: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 font-mono focus:ring-1 focus:ring-blue-500 outline-none"
+                readOnly
+                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 font-mono focus:ring-1 focus:ring-blue-500 outline-none read-only:cursor-default"
               />
             </div>
 

@@ -9,6 +9,16 @@ export const sanitizeInvoiceFileName = (fileName: string): string => {
   return withPdf.slice(0, 180);
 };
 
+/**
+ * Extract ČÍSLO FAKTÚRY from the fixed accountant filename format:
+ * mak_distribution_s_r_o-20260093.pdf → 20260093
+ */
+export const extractInvoiceNumberFromFileName = (fileName: string): string => {
+  const base = (fileName.split(/[\\/]/).pop() || fileName).trim();
+  const match = base.match(/-(\d+)\.pdf$/i);
+  return match?.[1] || '';
+};
+
 export const invoicePathForRecord = (recordId: string, fileName: string): string =>
   `records/${recordId}/${sanitizeInvoiceFileName(fileName)}`;
 
