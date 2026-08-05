@@ -758,17 +758,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <td colSpan={13} className="p-2.5 text-right uppercase tracking-wider font-sans border-r border-slate-300 text-[16px] font-bold">
                 SUMÁR:
               </td>
-              <td className="p-2.5 text-right border-r border-slate-300 text-slate-800 text-[14px]">
+              <td className="p-2.5 text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900">
                 {totalFaUkAgent.toFixed(2).replace('.', ',')}
               </td>
-              <td className="p-2.5 text-right border-r border-slate-300 text-slate-800 text-[14px]">
+              <td className="p-2.5 text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900">
                 {totalFaEuAgent.toFixed(2).replace('.', ',')}
               </td>
-              <td className="p-2.5 text-right border-r border-slate-300 text-blue-900 font-black text-[14px] bg-blue-100/50">
+              <td className="p-2.5 text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900 bg-blue-100/50">
                 {totalFaKlient.toFixed(2).replace('.', ',')}
               </td>
               <td className="p-2.5 border-r border-slate-300"></td>
-              <td className="p-2.5 text-right border-r border-slate-300 text-emerald-900 font-black text-sm bg-emerald-100/60">
+              <td className="p-2.5 text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900 bg-emerald-100/60">
                 {totalZisk.toFixed(2).replace('.', ',')}
               </td>
               <td className="p-2.5 border-r border-slate-300"></td>

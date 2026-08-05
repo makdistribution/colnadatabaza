@@ -10,6 +10,20 @@ interface InvoicingEmail {
 
 const EDIT_NOTIFICATION_TEMPLATE_ID = 'template_myjr2fb';
 
+/** Current local calendar date for EmailJS templates (Europe/Bratislava → DD.MM.YYYY). */
+const formatEmailDate = (date = new Date()): string => {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Bratislava',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).formatToParts(date);
+  const day = parts.find((part) => part.type === 'day')?.value || '';
+  const month = parts.find((part) => part.type === 'month')?.value || '';
+  const year = parts.find((part) => part.type === 'year')?.value || '';
+  return `${day}.${month}.${year}`;
+};
+
 const requiredEnvironmentValue = (name: string) => {
   const value = process.env[name];
   if (!value) throw new Error(`Missing ${name}.`);
@@ -50,6 +64,7 @@ export const sendInvoicingEmail = async (email: InvoicingEmail) => {
       invoice_reference: email.invoiceReference,
       // Existing EmailJS template variable — full permanent case link (clickable URL text).
       secure_link: secureLink,
+      emailDate: formatEmailDate(),
     },
   };
 
