@@ -14,9 +14,55 @@ const DOCUMENTS_BUCKET = 'app-documents';
 const META = {
   customers: 'meta/customer_directory.json',
   logins: 'meta/login_credentials.json',
+  loginOrder: 'meta/login_credentials_order.json',
   infoFa: 'meta/invoice_info_records.json',
   documents: 'meta/app_documents.json',
 } as const;
+
+export type LoginOrderMap = { I: string[]; II: string[] };
+
+const emptyLoginOrder = (): LoginOrderMap => ({ I: [], II: [] });
+
+const normalizeLoginOrder = (value: unknown): LoginOrderMap => {
+  const raw = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  const asIds = (list: unknown) =>
+    Array.isArray(list) ? list.map((id) => String(id || '')).filter(Boolean) : [];
+  return { I: asIds(raw.I), II: asIds(raw.II) };
+};
+
+export const sortLoginRecordsByOrder = (
+  records: LoginRecord[],
+  order: LoginOrderMap,
+): LoginRecord[] => {
+  const byId = new Map(records.map((record) => [record.id, record]));
+  const ordered: LoginRecord[] = [];
+  const used = new Set<string>();
+
+  for (const category of ['I', 'II'] as const) {
+    for (const id of order[category] || []) {
+      const record = byId.get(id);
+      if (!record || record.kategoria !== category || used.has(id)) continue;
+      ordered.push(record);
+      used.add(id);
+    }
+  }
+
+  for (const category of ['I', 'II'] as const) {
+    for (const record of records) {
+      if (record.kategoria !== category || used.has(record.id)) continue;
+      ordered.push(record);
+      used.add(record.id);
+    }
+  }
+
+  return ordered;
+};
+
+const buildLoginOrderFromRecords = (records: LoginRecord[]): LoginOrderMap => ({
+  I: records.filter((record) => record.kategoria === 'I').map((record) => record.id),
+  II: records.filter((record) => record.kategoria === 'II').map((record) => record.id),
+});
+
 
 const throwIfError = (error: { message: string } | null) => {
   if (error) throw new Error(error.message);
@@ -162,6 +208,57 @@ const writeJsonArray = async (
   throwIfError(error);
 };
 
+const readJsonValue = async <T>(
+  supabase: SupabaseClient,
+  path: string,
+): Promise<T | null> => {
+  const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET).download(path);
+  if (error) {
+    if (
+      /not found|Object not found|404/i.test(error.message) ||
+      (error as { statusCode?: string }).statusCode === '404'
+    ) {
+      return null;
+    }
+    throw new Error(error.message);
+  }
+  const text = await data.text();
+  if (!text.trim()) return null;
+  return JSON.parse(text) as T;
+};
+
+const writeJsonValue = async (supabase: SupabaseClient, path: string, value: unknown) => {
+  const { error } = await supabase.storage.from(DOCUMENTS_BUCKET).upload(
+    path,
+    new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }),
+    { upsert: true, contentType: 'application/json' },
+  );
+  throwIfError(error);
+};
+
+const readLoginOrder = async (supabase: SupabaseClient): Promise<LoginOrderMap> => {
+  const stored = await readJsonValue<unknown>(supabase, META.loginOrder);
+  return stored ? normalizeLoginOrder(stored) : emptyLoginOrder();
+};
+
+const writeLoginOrder = async (supabase: SupabaseClient, order: LoginOrderMap) => {
+  await writeJsonValue(supabase, META.loginOrder, normalizeLoginOrder(order));
+};
+
+const applyStoredLoginOrder = async (
+  supabase: SupabaseClient,
+  records: LoginRecord[],
+): Promise<LoginRecord[]> => {
+  const stored = await readLoginOrder(supabase);
+  const hasStored = stored.I.length > 0 || stored.II.length > 0;
+  if (!hasStored) {
+    const seeded = buildLoginOrderFromRecords(records);
+    await writeLoginOrder(supabase, seeded);
+    return records;
+  }
+  return sortLoginRecordsByOrder(records, stored);
+};
+
 const ensureStorageSeeded = async (supabase: SupabaseClient) => {
   const customers = await readJsonArray<AdresaRecord>(supabase, META.customers);
   if (customers === null) {
@@ -191,7 +288,7 @@ const loadFromStorage = async (supabase: SupabaseClient) => {
   ]);
   return {
     adresyRecords: customers || [],
-    loginRecords: logins || [],
+    loginRecords: await applyStoredLoginOrder(supabase, logins || []),
     infoFaRecords: infos || [],
     documents: (documents || []).map(fromAppDocumentRow),
   };
@@ -313,7 +410,10 @@ const loadFromTables = async (supabase: SupabaseClient) => {
 
   return {
     adresyRecords: (customers.data || []).map(fromCustomerDirectoryRow),
-    loginRecords: (logins.data || []).map(fromLoginCredentialsRow),
+    loginRecords: await applyStoredLoginOrder(
+      supabase,
+      (logins.data || []).map(fromLoginCredentialsRow),
+    ),
     infoFaRecords: (infos.data || []).map(fromInvoiceInfoRow),
     documents: (documents.data || []).map(fromAppDocumentRow),
   };
@@ -460,13 +560,22 @@ export const upsertLoginRecord = async (
       .from('login_credentials')
       .upsert(toLoginCredentialsRow(record), { onConflict: 'id' });
     throwIfError(error);
-    return record;
+  } else {
+    const list = (await readJsonArray<LoginRecord>(supabase, META.logins)) || [];
+    const idx = list.findIndex((item) => item.id === record.id);
+    if (idx >= 0) list[idx] = record;
+    else list.unshift(record);
+    await writeJsonArray(supabase, META.logins, list);
   }
-  const list = (await readJsonArray<LoginRecord>(supabase, META.logins)) || [];
-  const idx = list.findIndex((item) => item.id === record.id);
-  if (idx >= 0) list[idx] = record;
-  else list.unshift(record);
-  await writeJsonArray(supabase, META.logins, list);
+
+  const order = await readLoginOrder(supabase);
+  const category = record.kategoria === 'II' ? 'II' : 'I';
+  const otherCategory = category === 'I' ? 'II' : 'I';
+  order[otherCategory] = order[otherCategory].filter((id) => id !== record.id);
+  if (!order[category].includes(record.id)) {
+    order[category] = [...order[category], record.id];
+  }
+  await writeLoginOrder(supabase, order);
   return record;
 };
 
@@ -475,14 +584,68 @@ export const deleteLoginRecord = async (supabase: SupabaseClient, id: string) =>
   if (mode === 'tables') {
     const { error } = await supabase.from('login_credentials').delete().eq('id', id);
     throwIfError(error);
-    return;
+  } else {
+    const list = (await readJsonArray<LoginRecord>(supabase, META.logins)) || [];
+    await writeJsonArray(
+      supabase,
+      META.logins,
+      list.filter((item) => item.id !== id),
+    );
   }
-  const list = (await readJsonArray<LoginRecord>(supabase, META.logins)) || [];
-  await writeJsonArray(
-    supabase,
-    META.logins,
-    list.filter((item) => item.id !== id),
-  );
+
+  const order = await readLoginOrder(supabase);
+  order.I = order.I.filter((itemId) => itemId !== id);
+  order.II = order.II.filter((itemId) => itemId !== id);
+  await writeLoginOrder(supabase, order);
+};
+
+export const reorderLoginRecords = async (
+  supabase: SupabaseClient,
+  orderInput: LoginOrderMap,
+): Promise<LoginOrderMap> => {
+  const mode = await detectMode(supabase);
+  const records =
+    mode === 'tables'
+      ? (
+          await (async () => {
+            const { data, error } = await supabase.from('login_credentials').select('*');
+            throwIfError(error);
+            return (data || []).map(fromLoginCredentialsRow);
+          })()
+        )
+      : (await readJsonArray<LoginRecord>(supabase, META.logins)) || [];
+
+  const validIds = new Set(records.map((record) => record.id));
+  const sanitized: LoginOrderMap = {
+    I: (orderInput.I || []).filter((id) => {
+      const record = records.find((item) => item.id === id);
+      return Boolean(record && record.kategoria === 'I' && validIds.has(id));
+    }),
+    II: (orderInput.II || []).filter((id) => {
+      const record = records.find((item) => item.id === id);
+      return Boolean(record && record.kategoria === 'II' && validIds.has(id));
+    }),
+  };
+
+  // Keep any missing ids at the end of their category.
+  for (const record of records) {
+    const category = record.kategoria === 'II' ? 'II' : 'I';
+    if (!sanitized[category].includes(record.id)) {
+      sanitized[category].push(record.id);
+    }
+  }
+
+  await writeLoginOrder(supabase, sanitized);
+
+  if (mode !== 'tables') {
+    await writeJsonArray(
+      supabase,
+      META.logins,
+      sortLoginRecordsByOrder(records, sanitized),
+    );
+  }
+
+  return sanitized;
 };
 
 export const upsertInfoFaRecord = async (

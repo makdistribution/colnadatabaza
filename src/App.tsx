@@ -338,6 +338,18 @@ export default function App() {
     }
   };
 
+  const handleReorderLoginRecords = async (loginOrder: { I: string[]; II: string[] }) => {
+    try {
+      const { bootstrap } = await appApi.reorderLoginRecords(loginOrder);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(
+        error instanceof Error ? error.message : 'Poradie prihlasovacích údajov sa nepodarilo uložiť.',
+      );
+      throw error;
+    }
+  };
+
   // CRUD for Info FA
   const handleSaveInfoFaRecord = async (record: InfoFaRecord) => {
     try {
@@ -498,6 +510,7 @@ export default function App() {
             searchTerm={searchTerm}
             onSaveRecord={handleSaveLoginRecord}
             onDeleteRecord={handleDeleteLoginRecord}
+            onReorderRecords={handleReorderLoginRecords}
           />
         )}
 

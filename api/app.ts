@@ -22,10 +22,12 @@ import {
   getAppDocumentMeta,
   loadDirectoryBootstrap,
   migrateBrowserDirectoryData,
+  reorderLoginRecords,
   upsertAdresaRecord,
   upsertAppDocumentMeta,
   upsertInfoFaRecord,
   upsertLoginRecord,
+  type LoginOrderMap,
 } from '../src/server/directoryStore.js';
 import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs.js';
 import {
@@ -56,6 +58,7 @@ type ActionBody = {
     | 'deleteAdresaRecord'
     | 'saveLoginRecord'
     | 'deleteLoginRecord'
+    | 'reorderLoginRecords'
     | 'saveInfoFaRecord'
     | 'deleteInfoFaRecord'
     | 'prepareDocumentUpload'
@@ -65,6 +68,7 @@ type ActionBody = {
   record?: Partial<ColnaRecord> & { invoiceHandoff?: boolean };
   adresaRecord?: AdresaRecord;
   loginRecord?: LoginRecord;
+  loginOrder?: LoginOrderMap;
   infoFaRecord?: InfoFaRecord;
   adresyRecords?: AdresaRecord[];
   loginRecords?: LoginRecord[];
@@ -862,6 +866,12 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     if (body.action === 'deleteLoginRecord' && body.id) {
       await deleteLoginRecord(supabase, body.id);
       sendJson(response, 200, { success: true, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'reorderLoginRecords' && body.loginOrder) {
+      await reorderLoginRecords(supabase, body.loginOrder);
+      sendJson(response, 200, { bootstrap: await loadBootstrapData() });
       return;
     }
 

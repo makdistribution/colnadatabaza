@@ -140,6 +140,11 @@ export const appApi = {
       method: 'POST',
       body: JSON.stringify({ action: 'deleteLoginRecord', id }),
     }),
+  reorderLoginRecords: (loginOrder: { I: string[]; II: string[] }) =>
+    request<{ bootstrap: AppBootstrap }>('/api/app', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'reorderLoginRecords', loginOrder }),
+    }),
   saveInfoFaRecord: (infoFaRecord: InfoFaRecord) =>
     request<{ bootstrap: AppBootstrap }>('/api/app', {
       method: 'POST',
