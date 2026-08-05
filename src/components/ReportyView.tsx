@@ -141,7 +141,10 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
       hasSearchMatches: displayRecords.length > 0,
     };
   }).filter((g) => reportedMonths.has(g.monthIndex + 1))
-    .filter((g) => !searchTerm || g.hasSearchMatches);
+    .filter((g) => !searchTerm || g.hasSearchMatches)
+    // Newest month at top, oldest (JANUARY) at bottom — years stay unchanged.
+    .slice()
+    .reverse();
 
   const totalYearProfit = yearReports.reduce((acc, report) => {
     if (applyJuly2026YearCorrection && report.month === 7) {
