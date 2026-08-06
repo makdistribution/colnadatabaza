@@ -38,7 +38,7 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
         <div className="w-full grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-6 gap-y-3 text-xs">
           {/* Left: Search */}
           <div className="flex items-center justify-start w-full">
-            <div className="relative w-full max-w-[15.5rem] sm:w-60 sm:max-w-none">
+            <div className="relative w-full max-w-[calc(15.5rem-0.5cm)] sm:w-[calc(15rem-0.5cm)] sm:max-w-none">
               <input
                 type="text"
                 value={searchTerm}
@@ -69,7 +69,7 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
               type="button"
               onClick={() => { void onRefreshCustoms?.(); }}
               disabled={!onRefreshCustoms || isRefreshingCustoms}
-              className="box-border w-[10.85rem] h-[2.125rem] shrink-0 bg-white border-2 border-[#000a2f] text-blue-950 font-bold text-xs sm:text-sm rounded-xl shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wide inline-flex items-center justify-center overflow-hidden"
+              className="box-border w-[calc(10.85rem-2cm)] h-[2.125rem] shrink-0 bg-white border-2 border-[#000a2f] text-blue-950 font-bold text-xs sm:text-sm rounded-xl shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed cursor-pointer uppercase tracking-wide inline-flex items-center justify-center overflow-hidden"
               title="Obnoviť colnú tabuľku"
             >
               <LoadingButtonContent

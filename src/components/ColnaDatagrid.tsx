@@ -474,10 +474,10 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th rowSpan={2} className="px-0 py-2 min-w-[54px] text-center border-r border-slate-300 font-sans text-black">
                 REF. NA FAKTÚRU
               </th>
-              <th colSpan={2} className="p-1.5 text-center border-r border-b border-slate-300 text-black bg-blue-100 font-bold text-[16px] leading-[20px] font-sans">
+              <th colSpan={2} className="p-1.5 text-center border-r border-b border-slate-300 text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans">
                 <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </th>
-              <th colSpan={2} className="p-1.5 text-center border-r border-b border-[#bdc0e8] text-black bg-[#dbeafe] font-bold text-[16px] leading-[20px] font-sans">
+              <th colSpan={2} className="p-1.5 text-center border-r border-b border-[#bdc0e8] text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans">
                 <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </th>
               <th rowSpan={2} className="p-2 min-w-[78px] text-right border-r border-slate-300 font-sans text-black">
@@ -519,21 +519,21 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               </th>
             </tr>
             <tr className="bg-slate-200 text-black font-bold select-none text-[13px] leading-[20px] border-b-2 border-slate-300 font-sans">
-              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-blue-50/80 text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
+              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 zaclenie v UK
               </th>
-              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-blue-50/80 text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
+              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 vyclenie v EU
               </th>
-              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-emerald-50/80 text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
+              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 zaclenie v EU
               </th>
-              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-emerald-50/80 text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
+              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 vyclenie v UK
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 font-mono text-[12px] text-slate-800">
+          <tbody className="divide-y divide-slate-200 font-mono text-[13px] text-slate-800">
             {paginatedRecords.length === 0 ? (
               <tr>
                 <td colSpan={22} className="p-10 text-center font-sans">
@@ -557,10 +557,10 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 return (
                   <tr
                     key={r.id}
-                    className={`h-[1.3cm] max-h-[1.3cm] [&>td]:h-[1.3cm] [&>td]:max-h-[1.3cm] [&>td]:overflow-hidden [&>td]:align-middle transition-colors hover:bg-blue-50/50 ${
+                    className={`h-[1.6cm] max-h-[1.6cm] [&>td]:h-[1.6cm] [&>td]:max-h-[1.6cm] [&>td]:overflow-hidden [&>td]:align-middle transition-colors hover:bg-blue-50/50 ${
                       isSelected ? 'bg-blue-50/80' : idx % 2 === 1 ? 'bg-slate-50/70' : 'bg-white'
                     }`}
-                    style={{ height: '1.3cm' }}
+                    style={{ height: '1.6cm' }}
                   >
                     {/* Checkbox */}
                     <td className="p-2 text-center border-r border-slate-200">
@@ -593,7 +593,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* Customer — opens record detail */}
-                    <td className="p-2 font-mono font-bold text-[12px] text-slate-900 border-r border-slate-200">
+                    <td className="p-2 font-mono font-bold text-[13px] text-slate-900 border-r border-slate-200">
                       <button
                         type="button"
                         onClick={() => setPreviewRecord(r)}
@@ -625,66 +625,66 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* Datum Colnice */}
-                    <td className="px-1 py-2 text-slate-700 border-r border-slate-200 font-mono text-[12px] whitespace-nowrap">
+                    <td className="px-1 py-2 text-slate-700 border-r border-slate-200 font-mono text-[13px] whitespace-nowrap">
                       {formatDateStr(r.datumColnice)}
                     </td>
 
                     {/* SPZ */}
-                    <td className="p-2 font-bold text-slate-800 border-r border-slate-200 font-mono text-[12px]">
+                    <td className="p-2 font-bold text-slate-800 border-r border-slate-200 font-mono text-[13px]">
                       {r.spz}
                     </td>
 
                     {/* Ref. na FA — small left indent on cell values only (header unchanged) */}
-                    <td className="pl-[1ch] pr-0 py-2 text-slate-700 border-r border-slate-200 text-[12px] text-left">
+                    <td className="pl-[1ch] pr-0 py-2 text-slate-700 border-r border-slate-200 text-[13px] text-left">
                       {r.refNaFa}
                     </td>
 
                     {/* zaclenie v UK */}
-                    <td className="p-2 text-center border-r border-slate-200 bg-blue-50/30">
+                    <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getUkZaclenie(r) ? (
                         <Check className="w-5 h-5 text-emerald-600 mx-auto stroke-[3]" />
                       ) : null}
                     </td>
 
                     {/* vyclenie v EU */}
-                    <td className="p-2 text-center border-r border-slate-200 bg-blue-50/30">
+                    <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getEuVyclenie(r) ? (
                         <Check className="w-5 h-5 text-emerald-600 mx-auto stroke-[3]" />
                       ) : null}
                     </td>
 
                     {/* zaclenie v EU */}
-                    <td className="p-2 text-center border-r border-slate-200 bg-emerald-50/30">
+                    <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getEuZaclenie(r) ? (
                         <Check className="w-5 h-5 text-emerald-600 mx-auto stroke-[3]" />
                       ) : null}
                     </td>
 
                     {/* vyclenie v UK */}
-                    <td className="p-2 text-center border-r border-slate-200 bg-emerald-50/30">
+                    <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getUkVyclenie(r) ? (
                         <Check className="w-5 h-5 text-emerald-600 mx-auto stroke-[3]" />
                       ) : null}
                     </td>
 
                     {/* FA OD UK AGENT */}
-                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[12px] leading-[16px]">
+                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[13px] leading-[16px]">
                       {r.faOdUkAgent ? `${r.faOdUkAgent.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
                     {/* FA OD EU AGENT */}
-                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[12px] leading-[16px]">
+                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[13px] leading-[16px]">
                       {r.faOdEuAgent ? `${r.faOdEuAgent.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
                     {/* FA KLIENT */}
-                    <td className="p-2 text-right border-r border-slate-200 font-bold text-blue-800 bg-blue-50/30 text-[12px] leading-[16px]">
+                    <td className="p-2 text-right border-r border-slate-200 font-bold text-blue-800 bg-blue-50/30 text-[13px] leading-[16px]">
                       {r.faKlient ? `${r.faKlient.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
                     {/* INT. POZNAMKA — note text always red when present */}
                     <td
-                      className={`p-2 font-sans text-[11px] border-r border-slate-200 max-w-[110px] whitespace-normal break-words leading-tight ${
+                      className={`p-2 font-sans text-[12px] border-r border-slate-200 max-w-[110px] whitespace-normal break-words leading-tight ${
                         r.intPoznamka ? 'text-red-600' : 'text-slate-500'
                       }`}
                       title={r.intPoznamka}
@@ -699,7 +699,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       {r.zisk ? `${r.zisk.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
-                    <td className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center border-r border-slate-200 overflow-hidden h-[1.3cm] max-h-[1.3cm]">
+                    <td className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center border-r border-slate-200 overflow-hidden h-[1.6cm] max-h-[1.6cm]">
                       {invoicePin !== 'none' && (
                         <button
                           type="button"

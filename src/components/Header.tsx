@@ -290,7 +290,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Currency Exchange Converter (GBP ↔ EUR) */}
         <div className="hidden xl:flex items-center gap-1 bg-slate-50 border border-slate-200 p-1 rounded-lg shrink-0 shadow-2xs" title="Prepočet GBP ↔ EUR">
-          <div className="relative flex items-center bg-slate-100 border border-slate-300 rounded-md px-2.5 h-7 w-36">
+          <div className="relative flex items-center bg-slate-100 border border-slate-300 rounded-md px-2.5 h-7 w-[calc(9rem-0.5cm)]">
             <input
               type="text"
               value={gbpVal}
@@ -303,7 +303,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <ArrowLeftRight className="w-3.5 h-3.5 text-blue-600 shrink-0 mx-0.5" />
 
-          <div className="relative flex items-center bg-slate-100 border border-slate-300 rounded-md px-2.5 h-7 w-36">
+          <div className="relative flex items-center bg-slate-100 border border-slate-300 rounded-md px-2.5 h-7 w-[calc(9rem-0.5cm)]">
             <input
               type="text"
               value={eurVal}
