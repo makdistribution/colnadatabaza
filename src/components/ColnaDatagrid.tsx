@@ -308,7 +308,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     <div className="bg-white border-2 border-slate-400 rounded-xl shadow-xs overflow-hidden my-2 print:hidden">
       
       {/* Top Filter & Action Bar — layout matches abc.png reference */}
-      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs">
+      <div className="bg-slate-50 px-3.5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-xs">
         
         {/* Left: Add / Delete / Close month */}
         <div className="flex flex-wrap items-center gap-2">
@@ -502,13 +502,11 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 ZISK (€)
               </th>
               <th rowSpan={2} className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center align-middle border-r border-slate-300 text-black overflow-hidden">
-                <span className="flex h-full w-full items-center justify-center">
-                  <img
-                    src="/inv.png"
-                    alt="Invoice"
-                    className="h-[34.56px] w-[34.56px] max-w-full object-contain"
-                  />
-                </span>
+                <img
+                  src="/inv.png"
+                  alt="Invoice"
+                  className="mx-auto block h-[34.56px] w-[34.56px] max-w-full object-contain"
+                />
               </th>
               <th rowSpan={2} className="p-2 min-w-[67px] text-center border-r border-slate-300 text-black">
                 ČÍSLO FAKTÚRY

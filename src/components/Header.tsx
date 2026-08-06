@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Main Bar with Table Styling */}
       <div className="w-full px-3 sm:px-6 lg:px-8">
-        <div className="bg-white border-2 border-slate-300 rounded-2xl shadow-xs px-3 sm:px-5 h-14 flex items-center justify-between gap-3">
+        <div className="bg-white border-2 border-slate-300 rounded-2xl shadow-xs px-3 sm:px-5 h-14 flex items-center justify-between gap-2.5">
         {/* Brand */}
         <div className="flex items-center gap-3 shrink-0">
           <button 
@@ -153,8 +153,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Center Links — even spacing matching abc.png */}
-        <div className="flex items-center gap-2 text-xs py-1 min-w-0">
+        {/* Center Links — ~8–10px gaps matching abc.png */}
+        <div className="flex items-center gap-2.5 text-xs py-1 min-w-0">
           {/* Main Table Button */}
           <button
             onClick={() => setActiveTab('COLNA_DATABAZA')}
