@@ -7,6 +7,7 @@ import {
   JULY_2026_OVERRIDE_REVENUE,
   JULY_2026_REPORT_RECORDS,
 } from '../data/july2026ReportOverride';
+import { formatDueDateDisplay } from '../utils/dueDate';
 import { BarChart3, ChevronDown, ChevronRight, TrendingUp, Check, Clock } from 'lucide-react';
 
 const hasUkZaclenie = (r: ColnaRecord) => {
@@ -384,7 +385,7 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                               {r.cisloFa}
                             </td>
                             <td className="p-2 text-black border-r border-slate-300">
-                              {formatDateStr(r.splatna)}
+                              {formatDueDateDisplay(r.splatna)}
                             </td>
                             <td className="p-2 text-center">
                               {r.zaplatena ? (

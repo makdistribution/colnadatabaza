@@ -241,8 +241,13 @@ export default function App() {
         if (invoiceFile) {
           const uploadResult = await appApi.uploadInvoice(handoffId, invoiceFile, {
             clearNewBadge: true,
+            splatna: partialRecord.splatna,
           });
           savedRecord = uploadResult.record;
+          // Keep save payload in sync with auto-calculated due date from upload.
+          if (savedRecord.splatna) {
+            partialRecord.splatna = savedRecord.splatna;
+          }
           options?.onUploadComplete?.();
           applyBootstrap(uploadResult.bootstrap);
         }
@@ -263,6 +268,8 @@ export default function App() {
         const uploadResult = await appApi.uploadInvoice(savedRecord.id, invoiceFile, {
           // NEW clears only after accountant upload + successful save.
           clearNewBadge: Boolean(partialRecord.invoiceHandoff),
+          // Keep the due date already saved on the record (do not recalculate).
+          splatna: savedRecord.splatna || partialRecord.splatna,
         });
         savedRecord = uploadResult.record;
         options?.onUploadComplete?.();

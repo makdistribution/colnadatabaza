@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AdresaRecord, ColnaRecord } from '../types';
 import { parseMonthYear, extractYearAndMonth } from '../utils/monthUtils';
 import { resolveCustomerSkratka } from '../utils/customerSkratka';
+import { formatDueDateDisplay } from '../utils/dueDate';
 import { RecordModal } from './RecordModal';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { LoadingButtonContent } from './LoadingButtonContent';
@@ -291,7 +292,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     const rows = filteredRecords.map(r => [
       `"${r.zakaznik}"`, `"${formatDateStr(r.datumColnice)}"`, `"${r.spz}"`, `"${r.refNaFa}"`,
       `"${getUkZaclenie(r)}"`, `"${getEuVyclenie(r)}"`, `"${getEuZaclenie(r)}"`, `"${getUkVyclenie(r)}"`, r.faOdUkAgent, r.faOdEuAgent, r.faKlient,
-      r.zisk, `"${r.cisloFa}"`, `"${formatDateStr(r.splatna)}"`, r.zaplatena ? 'Áno' : 'Nie'
+      r.zisk, `"${r.cisloFa}"`, `"${formatDueDateDisplay(r.splatna)}"`, r.zaplatena ? 'Áno' : 'Nie'
     ]);
     const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -518,7 +519,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 <img src="/money.png" alt="ÚHRADA" className="mx-auto max-w-none" />
               </th>
             </tr>
-            <tr className="bg-slate-200 text-black font-bold select-none text-[13px] leading-[20px] border-b-2 border-slate-300 font-sans">
+            <tr className="bg-slate-200 text-black font-bold select-none text-[13px] leading-[20px] border-b-2 border-slate-400 font-sans">
               <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 zaclenie v UK
               </th>
@@ -726,7 +727,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
 
                     {/* SPLATNA */}
                     <td className="p-2 text-slate-700 border-r border-slate-200">
-                      {formatDateStr(r.splatna)}
+                      {formatDueDateDisplay(r.splatna)}
                     </td>
 
                     {/* ZAPLATENA / ÚHRADA */}
@@ -755,7 +756,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
 
           {/* Totals Row */}
           <tfoot>
-            <tr className="bg-[#dae3ed] text-slate-900 font-bold font-mono text-xs border-t-2 border-slate-300">
+            <tr className="bg-[#dae3ed] text-slate-900 font-bold font-mono text-xs border-t-2 border-slate-400">
               <td colSpan={13} className="p-2.5 text-right uppercase tracking-wider font-sans border-r border-slate-300 text-[16px] font-bold">
                 SUMÁR:
               </td>
@@ -967,7 +968,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 <td>{r.intPoznamka}</td>
                 <td className="num">{formatMoney(r.zisk || 0)}</td>
                 <td>{r.cisloFa}</td>
-                <td>{formatDateStr(r.splatna)}</td>
+                <td>{formatDueDateDisplay(r.splatna)}</td>
                 <td>{r.zaplatena ? 'Áno' : 'Nie'}</td>
               </tr>
             ))

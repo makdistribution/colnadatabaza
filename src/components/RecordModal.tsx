@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { extractInvoiceNumberFromFileName, invoiceDisplayNameFromPath } from '../utils/invoiceFile';
 import { buildCaseLink, formatNotificationTimestampParts } from '../utils/caseLink';
+import { calculateInvoiceDueDate, formatDueDateDisplay } from '../utils/dueDate';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { LoadingButtonContent } from './LoadingButtonContent';
 import { appApi } from '../lib/appApi';
@@ -143,6 +144,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   /** True only while the PDF bytes are uploading (handoff UPLOAD FILE box animation). */
   const [isUploadingInvoice, setIsUploadingInvoice] = useState(false);
+  /** Visible DÁTUM SPLATNOSTI text — always DD.MM.YYYY while editing. */
+  const [splatnaInput, setSplatnaInput] = useState('');
   const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
   const [isInvoiceDeleteModalOpen, setIsInvoiceDeleteModalOpen] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
@@ -223,6 +226,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     savingLockRef.current = false;
     setIsSaving(false);
     setIsUploadingInvoice(false);
+    setSplatnaInput(formatDueDateDisplay(initialRecord?.splatna || ''));
   }, [initialRecord, isOpen, customerList, defaultDate, copyMode, invoiceHandoffMode]);
 
   useEffect(() => {
@@ -314,7 +318,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     if (file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
       setInvoiceFile(file);
       const invoiceNumber = extractInvoiceNumberFromFileName(file.name);
-      setFormData((prev) => ({ ...prev, cisloFa: invoiceNumber }));
+      // New invoice → due date = invoice (upload) date + 15 calendar days.
+      const dueIso = calculateInvoiceDueDate(new Date());
+      setFormData((prev) => ({ ...prev, cisloFa: invoiceNumber, splatna: dueIso }));
+      setSplatnaInput(formatDueDateDisplay(dueIso));
     }
   };
 
@@ -421,7 +428,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     if (invoiceFile && !formData.invoicePdfPath) {
       setInvoiceFile(null);
       if (invoiceInputRef.current) invoiceInputRef.current.value = '';
-      setFormData((prev) => ({ ...prev, cisloFa: '' }));
+      setFormData((prev) => ({ ...prev, cisloFa: '', splatna: '' }));
+      setSplatnaInput('');
       setIsInvoiceDeleteModalOpen(false);
       return;
     }
@@ -439,6 +447,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         cisloFa: '',
         splatna: '',
       }));
+      setSplatnaInput('');
       setIsInvoiceDeleteModalOpen(false);
     } finally {
       setIsDeletingInvoice(false);
@@ -898,9 +907,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               <h4 className="font-bold text-slate-800 flex items-center gap-1 uppercase text-[11px] tracking-wider">
                 Poplatky & Zisk
               </h4>
-              <div className="bg-emerald-100 border border-emerald-300 px-3 py-0.5 rounded-md flex items-center gap-2">
-                <span className="font-bold text-emerald-900 text-[11px]">VYPOČÍTANÝ ZISK:</span>
-                <span className="text-xs font-black font-mono text-emerald-700 -mt-[2px]">{calculatedProfit.toFixed(2)} €</span>
+              <div className="bg-emerald-100 border border-emerald-300 px-3 py-0.5 rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                <span className="font-bold text-emerald-900 text-[11px] leading-none">VYPOČÍTANÝ ZISK:</span>
+                <span className="text-xs font-black font-mono text-emerald-700 leading-none">{calculatedProfit.toFixed(2)} €</span>
               </div>
             </div>
 
@@ -967,10 +976,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   DÁTUM SPLATNOSTI
                 </label>
                 <input
-                  type="date"
-                  value={formData.splatna || ''}
-                  onChange={(e) => setFormData({ ...formData, splatna: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 focus:ring-1 focus:ring-blue-500 outline-none"
+                  type="text"
+                  readOnly
+                  value={formatDueDateDisplay(formData.splatna || splatnaInput)}
+                  placeholder="DD.MM.YYYY"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
                 />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">

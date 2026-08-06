@@ -7,8 +7,8 @@ import type {
   LoginRecord,
 } from '../types';
 import { supabase } from './supabase';
-import { calculateInvoiceDueDate } from '../utils/dueDate';
 import { sanitizeAppDocumentFileName } from '../utils/appDocumentFile';
+import { calculateInvoiceDueDate } from '../utils/dueDate';
 
 const request = async <T>(url: string, options?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
@@ -52,7 +52,7 @@ export const appApi = {
   uploadInvoice: async (
     recordId: string,
     file: File,
-    options?: { clearNewBadge?: boolean },
+    options?: { clearNewBadge?: boolean; splatna?: string },
   ) => {
     if (!(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
       throw new Error('Nahrať je možné iba PDF súbor.');
@@ -77,13 +77,15 @@ export const appApi = {
       });
     if (error) throw new Error(error.message);
 
+    // New invoice upload: always persist due date = invoice date + 15 calendar days.
+    const splatna = String(options?.splatna || calculateInvoiceDueDate()).trim();
     return request<{ record: ColnaRecord; bootstrap: AppBootstrap }>('/api/app', {
       method: 'POST',
       body: JSON.stringify({
         action: 'completeInvoiceUpload',
         id: recordId,
         invoicePath: prepared.invoicePath,
-        splatna: calculateInvoiceDueDate(),
+        splatna,
         clearNewBadge: Boolean(options?.clearNewBadge),
       }),
     });
