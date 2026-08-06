@@ -214,6 +214,18 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   }, [initialRecord, isOpen, customerList, defaultDate, copyMode, invoiceHandoffMode]);
 
   useEffect(() => {
+    if (!isOpen || !invoiceHandoffMode) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [isOpen, invoiceHandoffMode]);
+
+  useEffect(() => {
     if (!isOpen) {
       setCorrectionWorkflow(false);
       return;
@@ -465,25 +477,43 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     (usesBellSend ? Boolean(formData.bell) : Boolean(formData.alert));
   const saveButtonLabel = isAccountantCorrectionMode
     ? 'ULOŽIŤ A ODOSLAŤ OPRAVENÚ FAKTÚRU'
-    : invoiceHandoffMode && hasUploadedInvoice
+    : isNewInvoicingHandoff
       ? 'ULOŽIŤ A ODOSLAŤ'
-      : willSendNotification
+    : willSendNotification
         ? usesBellSend
           ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
           : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
         : 'ULOŽIŤ';
   const saveLoadingKind =
     isAccountantCorrectionMode ||
-    (invoiceHandoffMode && hasUploadedInvoice) ||
+    isNewInvoicingHandoff ||
     willSendNotification
       ? 'send'
       : 'save';
   const isUploadingInvoicePdf = isSaving && Boolean(invoiceFile);
+  const handoffRequiresInvoice = invoiceHandoffMode && !hasUploadedInvoice;
+
+  const formatHandoffDate = (value?: string) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '…………';
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+      const [y, m, d] = raw.slice(0, 10).split('-');
+      return `${d}.${m}.${y}`;
+    }
+    return raw;
+  };
+  const handoffDateLabel = formatHandoffDate(formData.datumColnice);
+  const handoffSpzLabel = (formData.spz || '').trim() || '…………';
+  const handoffUkToEuText =
+    `Fakturujeme Vám poplatok za sprostredkovanie col. konania pri preprave z UK zo dňa ${handoffDateLabel} / ŠPZ: ${handoffSpzLabel}`;
+  const handoffEuToUkText =
+    `Fakturujeme Vám poplatok za sprostredkovanie col. konania pri preprave do UK zo dňa ${handoffDateLabel} / ŠPZ: ${handoffSpzLabel}`;
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     // Synchronous guard — React state alone cannot block double-clicks before re-render.
     if (savingLockRef.current || isSaving || (readOnly && !isPreviewMode)) return;
+    if (handoffRequiresInvoice) return;
 
     // Required fields for NEW / COPY (and preview save of a new-style form).
     if (!invoiceHandoffMode && (isCreateOrCopy || isPreviewMode)) {
@@ -577,8 +607,16 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           </div>
           
           <button 
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
+            type="button"
+            onClick={invoiceHandoffMode ? undefined : onClose}
+            disabled={invoiceHandoffMode}
+            className={`text-slate-400 p-1 rounded-md transition-colors ${
+              invoiceHandoffMode
+                ? 'cursor-not-allowed opacity-40'
+                : 'hover:text-slate-700 hover:bg-slate-100 cursor-pointer'
+            }`}
+            title={invoiceHandoffMode ? 'Najprv nahrajte faktúru a uložte záznam' : 'Zavrieť'}
+            aria-disabled={invoiceHandoffMode}
           >
             <X className="w-5 h-5" />
           </button>
@@ -1120,6 +1158,52 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </span>
             </div>
           </div>
+
+          {invoiceHandoffMode && (
+            isNewInvoicingHandoff ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="rounded-md border border-slate-300 bg-white px-2.5 py-2 min-h-[52px]">
+                  <div className="font-bold text-blue-600 text-[11px] mb-1 uppercase tracking-wide">
+                    UK → EU
+                  </div>
+                  <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
+                    {handoffUkToEuText}
+                  </p>
+                </div>
+                <div className="rounded-md border border-slate-300 bg-white px-2.5 py-2 min-h-[52px]">
+                  <div className="font-bold text-emerald-600 text-[11px] mb-1 uppercase tracking-wide">
+                    EU → UK
+                  </div>
+                  <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
+                    {handoffEuToUkText}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-stretch gap-2">
+                  <span className="w-[4.75rem] shrink-0 pt-2 font-bold text-blue-600 text-[11px] uppercase tracking-wide">
+                    UK → EU
+                  </span>
+                  <div className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2.5 py-2">
+                    <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
+                      {handoffUkToEuText}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-stretch gap-2">
+                  <span className="w-[4.75rem] shrink-0 pt-2 font-bold text-emerald-600 text-[11px] uppercase tracking-wide">
+                    EU → UK
+                  </span>
+                  <div className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2.5 py-2">
+                    <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
+                      {handoffEuToUkText}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )
+          )}
         </form>
 
         {/* Bottom Action Footer — submit via form= so Enter and click share one handler */}
@@ -1127,8 +1211,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           <button
             type="submit"
             form="colna-record-form"
-            disabled={(readOnly && !isPreviewMode) || isSaving}
-            className="bg-[#1a65ff] hover:bg-blue-700 disabled:cursor-not-allowed text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
+            disabled={(readOnly && !isPreviewMode) || isSaving || handoffRequiresInvoice}
+            className="bg-[#1a65ff] hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
           >
             <LoadingButtonContent loading={isSaving} kind={saveLoadingKind}>
               {saveButtonLabel}
