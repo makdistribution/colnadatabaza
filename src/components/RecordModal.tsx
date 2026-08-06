@@ -508,6 +508,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     `Fakturujeme Vám poplatok za sprostredkovanie col. konania pri preprave z UK zo dňa ${handoffDateLabel} / ŠPZ: ${handoffSpzLabel}`;
   const handoffEuToUkText =
     `Fakturujeme Vám poplatok za sprostredkovanie col. konania pri preprave do UK zo dňa ${handoffDateLabel} / ŠPZ: ${handoffSpzLabel}`;
+  const isUkToEuRouteActive = isUkZaclenieSelected || isEuVyclenieSelected;
+  const isEuToUkRouteActive = isEuZaclenieSelected || isUkVyclenieSelected;
+  // Only one invoice text may be visible; prefer EU→UK when it is the sole selection.
+  const showEuToUkInvoice = isEuToUkRouteActive && !isUkToEuRouteActive;
+  const showUkToEuInvoice = isUkToEuRouteActive && !showEuToUkInvoice;
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -786,7 +791,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             fieldMissing('TRASA') ? 'ring-2 ring-red-500 rounded-xl p-1' : ''
           }`}>
             <div className={`bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border space-y-2 ${
-              isNewInvoicingHandoff ? greenPanel : 'border-slate-200'
+              isNewInvoicingHandoff && showUkToEuInvoice ? greenPanel : 'border-slate-200'
             }`}>
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
                 TRASA <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
@@ -826,7 +831,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </span>
 
             <div className={`bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border space-y-2 ${
-              isNewInvoicingHandoff ? greenPanel : 'border-slate-200'
+              isNewInvoicingHandoff && showEuToUkInvoice ? greenPanel : 'border-slate-200'
             }`}>
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
                 TRASA <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
@@ -1112,7 +1117,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 readOnly={invoiceHandoffMode}
                 className={`w-full h-[30px] rounded-md px-2.5 py-1.5 focus:ring-1 outline-none read-only:cursor-default ${
                   isAccountantCorrectionMode || isCustomsEditMode
-                    ? 'border-2 border-red-500 bg-[#ECE039] text-red-600 focus:ring-red-500'
+                    ? 'border-[3px] border-red-500 bg-[#ECE039] text-red-600 focus:ring-red-500'
                     : 'border border-slate-200 bg-slate-50 text-slate-900 focus:ring-blue-500'
                 }`}
               />
@@ -1160,49 +1165,40 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           </div>
 
           {invoiceHandoffMode && (
-            isNewInvoicingHandoff ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="rounded-md border border-slate-300 bg-white px-2.5 py-2 min-h-[52px]">
-                  <div className="font-bold text-blue-600 text-[11px] mb-1 uppercase tracking-wide">
-                    UK → EU
-                  </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-[5.75rem] shrink-0 inline-flex items-center justify-start gap-1" aria-label="UK to EU">
+                  <img src="/uk1.png" alt="" className="w-5 h-5 object-contain" aria-hidden="true" />
+                  <span className="font-extrabold text-slate-900 text-[14px] leading-none">→</span>
+                  <img src="/eu1.png" alt="" className="w-5 h-5 object-contain" aria-hidden="true" />
+                </span>
+                <div
+                  className={`box-border min-w-0 flex-1 rounded-md bg-white px-2.5 py-2 min-h-[36px] ${
+                    showUkToEuInvoice ? greenPanel : 'border border-slate-300'
+                  }`}
+                >
                   <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
-                    {handoffUkToEuText}
-                  </p>
-                </div>
-                <div className="rounded-md border border-slate-300 bg-white px-2.5 py-2 min-h-[52px]">
-                  <div className="font-bold text-emerald-600 text-[11px] mb-1 uppercase tracking-wide">
-                    EU → UK
-                  </div>
-                  <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
-                    {handoffEuToUkText}
+                    {showUkToEuInvoice ? handoffUkToEuText : '\u00A0'}
                   </p>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-stretch gap-2">
-                  <span className="w-[4.75rem] shrink-0 pt-2 font-bold text-blue-600 text-[11px] uppercase tracking-wide">
-                    UK → EU
-                  </span>
-                  <div className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2.5 py-2">
-                    <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
-                      {handoffUkToEuText}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-stretch gap-2">
-                  <span className="w-[4.75rem] shrink-0 pt-2 font-bold text-emerald-600 text-[11px] uppercase tracking-wide">
-                    EU → UK
-                  </span>
-                  <div className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2.5 py-2">
-                    <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
-                      {handoffEuToUkText}
-                    </p>
-                  </div>
+              <div className="flex items-center gap-2">
+                <span className="w-[5.75rem] shrink-0 inline-flex items-center justify-start gap-1" aria-label="EU to UK">
+                  <img src="/eu1.png" alt="" className="w-5 h-5 object-contain" aria-hidden="true" />
+                  <span className="font-extrabold text-slate-900 text-[14px] leading-none">→</span>
+                  <img src="/uk1.png" alt="" className="w-5 h-5 object-contain" aria-hidden="true" />
+                </span>
+                <div
+                  className={`box-border min-w-0 flex-1 rounded-md bg-white px-2.5 py-2 min-h-[36px] ${
+                    showEuToUkInvoice ? greenPanel : 'border border-slate-300'
+                  }`}
+                >
+                  <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
+                    {showEuToUkInvoice ? handoffEuToUkText : '\u00A0'}
+                  </p>
                 </div>
               </div>
-            )
+            </div>
           )}
         </form>
 
