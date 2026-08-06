@@ -536,6 +536,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     setIsSaving(true);
     try {
       // Accountant view: save only invoice fields; never mark OPRAVA / send notification.
+      // isSaving stays true for the full await (upload + save); modal closes only after success.
       if (invoiceHandoffMode) {
         if (!initialRecord?.id) return;
         await onSave(
@@ -567,6 +568,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         },
         invoiceFile || undefined,
       );
+    } catch {
+      // Parent shows toast; keep modal open for retry. Spinner stops in finally.
     } finally {
       setIsSaving(false);
       savingLockRef.current = false;
@@ -1168,9 +1171,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-[5.75rem] shrink-0 inline-flex items-center justify-start gap-1" aria-label="UK to EU">
-                  <img src="/uk1.png" alt="" className="w-5 h-5 object-contain" aria-hidden="true" />
-                  <span className="font-extrabold text-slate-900 text-[14px] leading-none">→</span>
-                  <img src="/eu1.png" alt="" className="w-5 h-5 object-contain" aria-hidden="true" />
+                  <img src="/uk1.png" alt="" className="inline-block w-5 h-5 object-contain" aria-hidden="true" /> ➔ <img src="/eu1.png" alt="" className="inline-block w-5 h-5 object-contain" aria-hidden="true" />
                 </span>
                 <div
                   className={`box-border min-w-0 flex-1 rounded-md bg-white px-2.5 py-2 min-h-[36px] ${
@@ -1184,9 +1185,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-[5.75rem] shrink-0 inline-flex items-center justify-start gap-1" aria-label="EU to UK">
-                  <img src="/eu1.png" alt="" className="w-5 h-5 object-contain" aria-hidden="true" />
-                  <span className="font-extrabold text-slate-900 text-[14px] leading-none">→</span>
-                  <img src="/uk1.png" alt="" className="w-5 h-5 object-contain" aria-hidden="true" />
+                  <img src="/eu1.png" alt="" className="inline-block w-5 h-5 object-contain" aria-hidden="true" /> ➔ <img src="/uk1.png" alt="" className="inline-block w-5 h-5 object-contain" aria-hidden="true" />
                 </span>
                 <div
                   className={`box-border min-w-0 flex-1 rounded-md bg-white px-2.5 py-2 min-h-[36px] ${

@@ -230,6 +230,29 @@ export default function App() {
   ) => {
     let savedRecord: ColnaRecord | null = null;
     try {
+      const isInvoiceHandoff = Boolean(partialRecord.invoiceHandoff);
+      const handoffId = partialRecord.id ? String(partialRecord.id) : '';
+
+      // Accountant handoff: start PDF upload immediately (spinner already running in modal),
+      // then save; close only after every step succeeds.
+      if (isInvoiceHandoff && handoffId) {
+        if (invoiceFile) {
+          const uploadResult = await appApi.uploadInvoice(handoffId, invoiceFile, {
+            clearNewBadge: true,
+          });
+          savedRecord = uploadResult.record;
+          applyBootstrap(uploadResult.bootstrap);
+        }
+        const saveResult = await appApi.saveRecord(partialRecord);
+        savedRecord = saveResult.record;
+        applyBootstrap(saveResult.bootstrap);
+        setIsModalOpen(false);
+        setEditingColnaRecord(null);
+        setIsCopyMode(false);
+        setIsInvoiceHandoff(false);
+        return;
+      }
+
       const saveResult = await appApi.saveRecord(partialRecord);
       savedRecord = saveResult.record;
       applyBootstrap(saveResult.bootstrap);
