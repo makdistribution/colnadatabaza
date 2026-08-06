@@ -487,7 +487,7 @@ export default function App() {
       )}
 
       {/* Main Workspace */}
-      <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-2 overflow-x-hidden print:p-0 print:overflow-visible" style={{ backgroundColor: '#000a2f' }}>
+      <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-1.5 overflow-x-hidden print:p-0 print:overflow-visible" style={{ backgroundColor: '#000a2f' }}>
         {activeTab === 'COLNA_DATABAZA' && (
           <ColnaDatagrid
             records={colnaRecords}
