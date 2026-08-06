@@ -227,6 +227,7 @@ export default function App() {
   const handleSaveColnaRecord = async (
     partialRecord: Partial<ColnaRecord> & { invoiceHandoff?: boolean },
     invoiceFile?: File,
+    options?: { onUploadComplete?: () => void },
   ) => {
     let savedRecord: ColnaRecord | null = null;
     try {
@@ -235,12 +236,14 @@ export default function App() {
 
       // Accountant handoff: start PDF upload immediately (spinner already running in modal),
       // then save; close only after every step succeeds.
+      // onUploadComplete stops the UPLOAD FILE box animation only — blue button keeps spinning.
       if (isInvoiceHandoff && handoffId) {
         if (invoiceFile) {
           const uploadResult = await appApi.uploadInvoice(handoffId, invoiceFile, {
             clearNewBadge: true,
           });
           savedRecord = uploadResult.record;
+          options?.onUploadComplete?.();
           applyBootstrap(uploadResult.bootstrap);
         }
         const saveResult = await appApi.saveRecord(partialRecord);
@@ -262,6 +265,7 @@ export default function App() {
           clearNewBadge: Boolean(partialRecord.invoiceHandoff),
         });
         savedRecord = uploadResult.record;
+        options?.onUploadComplete?.();
         applyBootstrap(uploadResult.bootstrap);
       }
       // Close dialog after successful save; table already refreshed via bootstrap.

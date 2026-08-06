@@ -23,7 +23,11 @@ import { appApi } from '../lib/appApi';
 interface RecordModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (record: Partial<ColnaRecord>, invoiceFile?: File) => void | Promise<void>;
+  onSave: (
+    record: Partial<ColnaRecord>,
+    invoiceFile?: File,
+    options?: { onUploadComplete?: () => void },
+  ) => void | Promise<void>;
   onDeleteInvoice?: (recordId: string) => Promise<void>;
   initialRecord?: ColnaRecord | null;
   customerList: string[];
@@ -137,6 +141,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [isInvoiceDragActive, setIsInvoiceDragActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  /** True only while the PDF bytes are uploading (handoff UPLOAD FILE box animation). */
+  const [isUploadingInvoice, setIsUploadingInvoice] = useState(false);
   const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
   const [isInvoiceDeleteModalOpen, setIsInvoiceDeleteModalOpen] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
@@ -151,6 +157,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const savingLockRef = useRef(false);
 
   useEffect(() => {
+    // Never reset form / clear the save spinner while an upload+save is in flight.
+    // applyBootstrap after PDF upload re-renders the parent and would otherwise
+    // stop the blue button spinner for several seconds before save finishes.
+    if (savingLockRef.current) return;
+
     if (initialRecord) {
       if (copyMode) {
         const {
@@ -211,6 +222,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     setLinkCopied(false);
     savingLockRef.current = false;
     setIsSaving(false);
+    setIsUploadingInvoice(false);
   }, [initialRecord, isOpen, customerList, defaultDate, copyMode, invoiceHandoffMode]);
 
   useEffect(() => {
@@ -243,9 +255,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      if (savingLockRef.current) return;
       setInvoiceFile(null);
       setIsInvoiceDragActive(false);
       setIsSaving(false);
+      setIsUploadingInvoice(false);
     }
   }, [isOpen]);
 
@@ -490,7 +504,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     willSendNotification
       ? 'send'
       : 'save';
-  const isUploadingInvoicePdf = isSaving && Boolean(invoiceFile);
+  const isUploadingInvoicePdf = isUploadingInvoice;
   const handoffRequiresInvoice = invoiceHandoffMode && !hasUploadedInvoice;
 
   const formatHandoffDate = (value?: string) => {
@@ -534,6 +548,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
     savingLockRef.current = true;
     setIsSaving(true);
+    // Upload-box animation starts together with the blue button spinner.
+    if (invoiceFile) setIsUploadingInvoice(true);
     try {
       // Accountant view: save only invoice fields; never mark OPRAVA / send notification.
       // isSaving stays true for the full await (upload + save); modal closes only after success.
@@ -551,6 +567,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             bell: false,
           } as Partial<ColnaRecord> & { invoiceHandoff?: boolean },
           invoiceFile || undefined,
+          {
+            onUploadComplete: () => setIsUploadingInvoice(false),
+          },
         );
         return;
       }
@@ -567,11 +586,15 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           zisk: calculatedProfit,
         },
         invoiceFile || undefined,
+        {
+          onUploadComplete: () => setIsUploadingInvoice(false),
+        },
       );
     } catch {
       // Parent shows toast; keep modal open for retry. Spinner stops in finally.
     } finally {
       setIsSaving(false);
+      setIsUploadingInvoice(false);
       savingLockRef.current = false;
     }
   };
