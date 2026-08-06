@@ -534,7 +534,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 font-mono text-[13px] text-slate-800">
+          <tbody className="divide-y divide-slate-200 font-mono text-[14px] text-slate-800">
             {paginatedRecords.length === 0 ? (
               <tr>
                 <td colSpan={22} className="p-10 text-center font-sans">
@@ -594,11 +594,11 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* Customer — opens record detail */}
-                    <td className="p-2 font-mono font-bold text-[13px] text-slate-900 border-r border-slate-200">
+                    <td className="p-2 font-mono font-bold text-[14px] text-slate-900 border-r border-slate-200">
                       <button
                         type="button"
                         onClick={() => setPreviewRecord(r)}
-                        className="text-left text-slate-900 hover:text-blue-600 cursor-pointer"
+                        className="text-left text-slate-900 hover:text-blue-600 cursor-pointer font-mono text-[14px]"
                       >
                         {resolveCustomerSkratka(r.zakaznik, customerDirectory)}
                       </button>
@@ -626,17 +626,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* Datum Colnice */}
-                    <td className="px-1 py-2 text-slate-700 border-r border-slate-200 font-mono text-[13px] whitespace-nowrap">
+                    <td className="px-1 py-2 text-slate-700 border-r border-slate-200 font-mono text-[14px] whitespace-nowrap">
                       {formatDateStr(r.datumColnice)}
                     </td>
 
                     {/* SPZ */}
-                    <td className="p-2 font-bold text-slate-800 border-r border-slate-200 font-mono text-[13px]">
+                    <td className="p-2 font-bold text-slate-800 border-r border-slate-200 font-mono text-[14px]">
                       {r.spz}
                     </td>
 
                     {/* Ref. na FA — small left indent on cell values only (header unchanged) */}
-                    <td className="pl-[1ch] pr-0 py-2 text-slate-700 border-r border-slate-200 text-[13px] text-left">
+                    <td className="pl-[1ch] pr-0 py-2 text-slate-700 border-r border-slate-200 font-mono text-[14px] text-left">
                       {r.refNaFa}
                     </td>
 
@@ -669,23 +669,23 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* FA OD UK AGENT */}
-                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[13px] leading-[16px]">
+                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[14px] leading-[16px]">
                       {r.faOdUkAgent ? `${r.faOdUkAgent.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
                     {/* FA OD EU AGENT */}
-                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[13px] leading-[16px]">
+                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[14px] leading-[16px]">
                       {r.faOdEuAgent ? `${r.faOdEuAgent.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
                     {/* FA KLIENT */}
-                    <td className="p-2 text-right border-r border-slate-200 font-bold text-blue-800 bg-blue-50/30 text-[13px] leading-[16px]">
+                    <td className="p-2 text-right border-r border-slate-200 font-bold text-blue-800 bg-blue-50/30 font-mono text-[14px] leading-[16px]">
                       {r.faKlient ? `${r.faKlient.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
                     {/* INT. POZNAMKA — note text always red when present */}
                     <td
-                      className={`p-2 font-sans text-[12px] border-r border-slate-200 max-w-[110px] whitespace-normal break-words leading-tight ${
+                      className={`p-2 font-mono text-[14px] border-r border-slate-200 max-w-[110px] whitespace-normal break-words leading-tight ${
                         r.intPoznamka ? 'text-red-600' : 'text-slate-500'
                       }`}
                       title={r.intPoznamka}
@@ -696,7 +696,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* ZISK */}
-                    <td className="p-2 text-right border-r border-slate-200 font-extrabold text-emerald-700 bg-emerald-50/50">
+                    <td className="p-2 text-right border-r border-slate-200 font-extrabold text-emerald-700 bg-emerald-50/50 font-mono text-[14px]">
                       {r.zisk ? `${r.zisk.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
@@ -721,12 +721,12 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* CISLO FA */}
-                    <td className="p-2 text-slate-700 border-r border-slate-200 font-medium">
+                    <td className="p-2 text-slate-700 border-r border-slate-200 font-medium font-mono text-[14px]">
                       {r.cisloFa}
                     </td>
 
                     {/* SPLATNA */}
-                    <td className="p-2 text-slate-700 border-r border-slate-200">
+                    <td className="p-2 text-slate-700 border-r border-slate-200 font-mono text-[14px]">
                       {formatDueDateDisplay(r.splatna)}
                     </td>
 
@@ -866,9 +866,9 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                   <span className="text-[10px] text-slate-500 block uppercase font-sans">Celkovo záznamov</span>
                   <strong className="text-base text-slate-900">{monthRecords.length}</strong>
                 </div>
-                <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg text-center">
-                  <span className="text-[10px] text-emerald-700 block uppercase font-sans">Vypočítaný zisk</span>
-                  <strong className="text-base text-emerald-800">{monthTotalProfit.toFixed(2).replace('.', ',')} €</strong>
+                <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg flex items-center justify-center gap-2 whitespace-nowrap">
+                  <span className="text-[10px] text-emerald-700 uppercase font-sans leading-none self-center">Vypočítaný zisk</span>
+                  <strong className="text-base text-emerald-800 font-mono leading-none self-center">{monthTotalProfit.toFixed(2).replace('.', ',')} €</strong>
                 </div>
               </div>
 

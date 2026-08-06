@@ -27,6 +27,16 @@ export const Header: React.FC<HeaderProps> = ({
   activeReportYear = availableYears[0] ?? 0,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [colnicaDropdownOpen, setColnicaDropdownOpen] = useState(false);
+
+  const colnicaTabs = [
+    'COLNICA_GB_VAT_EORI',
+    'COLNICA_EU_VAT_EORI',
+    'COLNICA_GB_TARIFF',
+    'COLNICA_EU_TARIFF',
+    'COLNICA_REX',
+  ];
+  const isColnicaActive = colnicaTabs.includes(activeTab);
 
   // Currency Converter state (GBP ↔ EUR with exchange rate ~1.18)
   const RATE = 1.18; // 1 GBP = 1.18 EUR
@@ -171,7 +181,10 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Dropdown Menu for Fakturácia, Login, Adresy */}
           <div className="relative shrink-0">
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
+              onClick={() => {
+                setDropdownOpen(!dropdownOpen);
+                setColnicaDropdownOpen(false);
+              }}
               className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 cursor-pointer border-[3px] border-[#07538e] whitespace-nowrap shrink-0 ${
                 ['ADRESY', 'LOGIN_UDAJE', 'INFO_FA'].includes(activeTab) || activeTab.startsWith('REPORTY_')
                   ? 'bg-amber-100/70 text-slate-900 shadow-xs font-bold'
@@ -286,6 +299,68 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-[#45556c] whitespace-nowrap">ZOLLAPS</span>
             <ExternalLink className="w-3 h-3 text-[#45556c] opacity-60 shrink-0" />
           </a>
+
+          {/* COLNICA dropdown — same style as FAKTURÁCIA • LOGIN • ADRESY */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => {
+                setColnicaDropdownOpen(!colnicaDropdownOpen);
+                setDropdownOpen(false);
+              }}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 cursor-pointer border-[3px] border-[#07538e] whitespace-nowrap shrink-0 ${
+                isColnicaActive
+                  ? 'bg-amber-100/70 text-slate-900 shadow-xs font-bold'
+                  : 'bg-white text-[#45556c] hover:bg-slate-50'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span className="whitespace-nowrap">COLNICA</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform shrink-0 ${colnicaDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {colnicaDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setColnicaDropdownOpen(false)}
+                />
+                <div className="absolute left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl py-1 z-50 divide-y divide-slate-500 text-slate-700">
+                  <div className="py-1">
+                    <button
+                      onClick={() => { setActiveTab('COLNICA_GB_VAT_EORI'); setColnicaDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
+                    >
+                      <span>GB VAT/EORI CHECKER</span>
+                    </button>
+                    <button
+                      onClick={() => { setActiveTab('COLNICA_EU_VAT_EORI'); setColnicaDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
+                    >
+                      <span>EU VAT/EORI CHECKER</span>
+                    </button>
+                    <button
+                      onClick={() => { setActiveTab('COLNICA_GB_TARIFF'); setColnicaDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
+                    >
+                      <span>GB ONLINE TARIFF</span>
+                    </button>
+                    <button
+                      onClick={() => { setActiveTab('COLNICA_EU_TARIFF'); setColnicaDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
+                    >
+                      <span>EU ONLINE TARIFF</span>
+                    </button>
+                    <button
+                      onClick={() => { setActiveTab('COLNICA_REX'); setColnicaDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
+                    >
+                      <span>REX CHECKER</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Currency Exchange Converter (GBP ↔ EUR) */}

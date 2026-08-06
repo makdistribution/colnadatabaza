@@ -94,4 +94,15 @@ export interface InfoFaRecord {
   doleziteAlert?: boolean;
 }
 
-export type ActiveTab = 'COLNA_DATABAZA' | 'ADRESY' | 'LOGIN_UDAJE' | 'INFO_FA' | 'SUBORY' | string;
+export type ActiveTab =
+  | 'COLNA_DATABAZA'
+  | 'ADRESY'
+  | 'LOGIN_UDAJE'
+  | 'INFO_FA'
+  | 'SUBORY'
+  | 'COLNICA_GB_VAT_EORI'
+  | 'COLNICA_EU_VAT_EORI'
+  | 'COLNICA_GB_TARIFF'
+  | 'COLNICA_EU_TARIFF'
+  | 'COLNICA_REX'
+  | string;

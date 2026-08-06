@@ -19,6 +19,7 @@ import { LoginUdajeView } from './components/LoginUdajeView';
 import { InfoFaView } from './components/InfoFaView';
 import { ReportyView } from './components/ReportyView';
 import { SuboryView } from './components/SuboryView';
+import { ColnicaEmptyView } from './components/ColnicaEmptyView';
 import { appApi } from './lib/appApi';
 
 const BROWSER_DATA_KEYS = [
@@ -575,6 +576,22 @@ export default function App() {
             onDelete={handleDeleteDocument}
             onDownload={handleDownloadDocument}
           />
+        )}
+
+        {activeTab === 'COLNICA_GB_VAT_EORI' && (
+          <ColnicaEmptyView title="GB VAT/EORI CHECKER" />
+        )}
+        {activeTab === 'COLNICA_EU_VAT_EORI' && (
+          <ColnicaEmptyView title="EU VAT/EORI CHECKER" />
+        )}
+        {activeTab === 'COLNICA_GB_TARIFF' && (
+          <ColnicaEmptyView title="GB ONLINE TARIFF" />
+        )}
+        {activeTab === 'COLNICA_EU_TARIFF' && (
+          <ColnicaEmptyView title="EU ONLINE TARIFF" />
+        )}
+        {activeTab === 'COLNICA_REX' && (
+          <ColnicaEmptyView title="REX CHECKER" />
         )}
       </main>
 

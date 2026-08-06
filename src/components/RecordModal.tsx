@@ -907,9 +907,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               <h4 className="font-bold text-slate-800 flex items-center gap-1 uppercase text-[11px] tracking-wider">
                 Poplatky & Zisk
               </h4>
-              <div className="bg-emerald-100 border border-emerald-300 px-3 py-0.5 rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap">
-                <span className="font-bold text-emerald-900 text-[11px] leading-none">VYPOČÍTANÝ ZISK:</span>
-                <span className="text-xs font-black font-mono text-emerald-700 leading-none">{calculatedProfit.toFixed(2)} €</span>
+              <div className="bg-emerald-100 border border-emerald-300 px-3 py-0.5 rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap leading-none">
+                <span className="font-bold text-emerald-900 text-[11px] leading-none self-center">VYPOČÍTANÝ ZISK:</span>
+                <span className="text-xs font-black font-mono text-emerald-700 leading-none self-center">{calculatedProfit.toFixed(2)} €</span>
               </div>
             </div>
 
