@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html {
+  overflow-y: auto;
+  scrollbar-gutter: auto;
+}
+
 html, body {
   overflow-x: hidden;
   max-width: 100vw;

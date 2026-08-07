@@ -473,7 +473,9 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 ŠPZ 🚛
               </th>
               <th rowSpan={2} className="px-0 py-2 min-w-[54px] text-center border-r border-slate-300 font-sans text-black">
-                REF. NA FAKTÚRU
+                REF. NA
+                <br />
+                FAKTÚRU
               </th>
               <th colSpan={2} className="p-1.5 text-center border-r border-b border-slate-300 text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans">
                 <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
@@ -510,7 +512,9 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 />
               </th>
               <th rowSpan={2} className="p-2 min-w-[67px] text-center border-r border-slate-300 text-black">
-                ČÍSLO FAKTÚRY
+                ČÍSLO
+                <br />
+                FAKTÚRY
               </th>
               <th rowSpan={2} className="p-2 min-w-[58px] border-r border-slate-300 text-black">
                 SPLATNÁ
@@ -614,14 +618,14 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     {/* EMAIL SENT — permanent after successful EmailJS notification */}
                     <td className="p-2 text-center border-r border-slate-200">
                       {r.invoicingEmailSentAt && (
-                        <img src="/yes.png" alt="Email odoslaný" title="Email odoslaný" className="h-5 w-5 mx-auto object-contain" />
+                        <img src="/yes.png" alt="Email odoslaný" title="Email odoslaný" className="mx-auto max-w-none object-contain" />
                       )}
                     </td>
 
                     {/* OPRAVA — permanent after editing an existing record */}
                     <td className="p-2 text-center border-r border-slate-200">
                       {r.alert && (
-                        <img src="/yes.png" alt="OPRAVA" title="OPRAVA" className="h-5 w-5 mx-auto object-contain" />
+                        <img src="/yes.png" alt="OPRAVA" title="OPRAVA" className="mx-auto max-w-none object-contain" />
                       )}
                     </td>
 
@@ -643,28 +647,28 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     {/* zaclenie v UK */}
                     <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getUkZaclenie(r) ? (
-                        <img src="/yes.png" alt="" className="h-5 w-5 mx-auto object-contain" />
+                        <img src="/yes.png" alt="" className="mx-auto max-w-none object-contain" />
                       ) : null}
                     </td>
 
                     {/* vyclenie v EU */}
                     <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getEuVyclenie(r) ? (
-                        <img src="/yes.png" alt="" className="h-5 w-5 mx-auto object-contain" />
+                        <img src="/yes.png" alt="" className="mx-auto max-w-none object-contain" />
                       ) : null}
                     </td>
 
                     {/* zaclenie v EU */}
                     <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getEuZaclenie(r) ? (
-                        <img src="/yes.png" alt="" className="h-5 w-5 mx-auto object-contain" />
+                        <img src="/yes.png" alt="" className="mx-auto max-w-none object-contain" />
                       ) : null}
                     </td>
 
                     {/* vyclenie v UK */}
                     <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getUkVyclenie(r) ? (
-                        <img src="/yes.png" alt="" className="h-5 w-5 mx-auto object-contain" />
+                        <img src="/yes.png" alt="" className="mx-auto max-w-none object-contain" />
                       ) : null}
                     </td>
 
