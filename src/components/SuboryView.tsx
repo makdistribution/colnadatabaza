@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Folder, Upload, FileText, Download, Trash2, CheckCircle, Save } from 'lucide-react';
+import { Folder, Upload, FileText, Download, Trash2, Save } from 'lucide-react';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import type { AppDocument } from '../types';
 
@@ -117,7 +117,7 @@ export const SuboryView: React.FC<SuboryViewProps> = ({
                 </label>
                 {uploadSucceeded ? (
                   <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 px-4 py-2.5 rounded-lg text-xs font-medium flex items-center gap-2 min-w-0">
-                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <img src="/yes.png" alt="" className="h-4 w-4 object-contain shrink-0" />
                     <span className="truncate">Súbor bol úspešne uložený!</span>
                   </div>
                 ) : selectedFile ? (

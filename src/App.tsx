@@ -482,7 +482,7 @@ export default function App() {
       {toastMessage && (
         <div className="bg-emerald-600 text-white px-4 py-3 border-b border-emerald-500 shadow-md flex items-center justify-between font-medium text-xs animate-in slide-in-from-top duration-200 print:hidden">
           <div className="flex items-center gap-2.5">
-            <span className="bg-emerald-700 p-1 rounded-md">✓</span>
+            <img src="/yes.png" alt="" className="h-5 w-5 object-contain shrink-0" />
             <span>{toastMessage}</span>
           </div>
           <button 

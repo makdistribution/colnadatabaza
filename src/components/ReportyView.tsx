@@ -8,7 +8,7 @@ import {
   JULY_2026_REPORT_RECORDS,
 } from '../data/july2026ReportOverride';
 import { formatDueDateDisplay } from '../utils/dueDate';
-import { BarChart3, ChevronDown, ChevronRight, TrendingUp, Check, Clock } from 'lucide-react';
+import { BarChart3, ChevronDown, ChevronRight, TrendingUp, Clock } from 'lucide-react';
 
 const hasUkZaclenie = (r: ColnaRecord) => {
   const lower = (r.ukToEu || '').toLowerCase();
@@ -355,16 +355,16 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                               {r.refNaFa}
                             </td>
                             <td className="p-2 text-center border-r border-slate-300 bg-blue-50/30">
-                              {hasUkZaclenie(r) ? <Check className="w-4 h-4 text-emerald-600 mx-auto stroke-[3]" /> : null}
+                              {hasUkZaclenie(r) ? <img src="/yes.png" alt="" className="h-4 w-4 mx-auto object-contain" /> : null}
                             </td>
                             <td className="p-2 text-center border-r border-slate-300 bg-blue-50/30">
-                              {hasEuVyclenie(r) ? <Check className="w-4 h-4 text-emerald-600 mx-auto stroke-[3]" /> : null}
+                              {hasEuVyclenie(r) ? <img src="/yes.png" alt="" className="h-4 w-4 mx-auto object-contain" /> : null}
                             </td>
                             <td className="p-2 text-center border-r border-slate-300 bg-emerald-50/30">
-                              {hasEuZaclenie(r) ? <Check className="w-4 h-4 text-emerald-600 mx-auto stroke-[3]" /> : null}
+                              {hasEuZaclenie(r) ? <img src="/yes.png" alt="" className="h-4 w-4 mx-auto object-contain" /> : null}
                             </td>
                             <td className="p-2 text-center border-r border-slate-300 bg-emerald-50/30">
-                              {hasUkVyclenie(r) ? <Check className="w-4 h-4 text-emerald-600 mx-auto stroke-[3]" /> : null}
+                              {hasUkVyclenie(r) ? <img src="/yes.png" alt="" className="h-4 w-4 mx-auto object-contain" /> : null}
                             </td>
                             <td className="p-2 text-right border-r border-slate-300 text-black">
                               {(r.faOdUkAgent || 0).toFixed(2).replace('.', ',')}
@@ -389,7 +389,7 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                             </td>
                             <td className="p-2 text-center">
                               {r.zaplatena ? (
-                                <Check className="w-4 h-4 text-emerald-600 mx-auto stroke-[3]" />
+                                <img src="/yes.png" alt="Zaplatené" className="h-4 w-4 mx-auto object-contain" />
                               ) : null}
                             </td>
                           </tr>

@@ -6,11 +6,9 @@ import {
   Eye,
   EyeOff,
   Copy,
-  Check,
   Plus,
   Trash2,
   Edit3,
-  ShieldCheck,
   X,
   Save,
   Lock,
@@ -208,7 +206,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
             title="Kopírovať heslo"
           >
             {copiedId === r.id ? (
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <img src="/yes.png" alt="Skopírované" className="h-3.5 w-3.5 object-contain" />
             ) : (
               <Copy className="w-3.5 h-3.5" />
             )}
@@ -385,7 +383,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
               <Plus className="w-4 h-4" /> Pridať prístup
             </button>
             <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-full font-mono font-bold flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Zašifrované v relácii
+              <img src="/yes.png" alt="" className="h-3.5 w-3.5 object-contain" /> Zašifrované v relácii
             </span>
           </div>
         </div>

@@ -74,7 +74,6 @@ import {
   Trash2, 
   Edit3,
   Copy,
-  Check, 
   Bell, 
   AlertTriangle, 
   ChevronLeft, 
@@ -85,7 +84,6 @@ import {
   Download,
   Filter,
   Lock,
-  CheckCircle2,
   Calendar,
   X,
   FileCheck,
@@ -310,8 +308,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     <>
     <div className="bg-white border-2 border-slate-400 rounded-xl shadow-xs overflow-hidden my-2 print:hidden">
       
-      {/* Top Filter & Action Bar — layout matches abc.png reference */}
-      <div className="bg-slate-50 px-3.5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-xs">
+      {/* Top Filter & Action Bar — layout matches abc.png reference; bottom pad −2mm vs table */}
+      <div className="bg-slate-50 px-3.5 pt-3 pb-[calc(0.75rem-2mm)] border-b border-slate-200 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-xs">
         
         {/* Left: Add / Delete / Close month */}
         <div className="flex flex-wrap items-center gap-2">
@@ -616,14 +614,14 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     {/* EMAIL SENT — permanent after successful EmailJS notification */}
                     <td className="p-2 text-center border-r border-slate-200">
                       {r.invoicingEmailSentAt && (
-                        <Check className="w-5 h-5 text-emerald-600 stroke-[3] mx-auto" title="Email odoslaný" />
+                        <img src="/yes.png" alt="Email odoslaný" title="Email odoslaný" className="h-5 w-5 mx-auto object-contain" />
                       )}
                     </td>
 
                     {/* OPRAVA — permanent after editing an existing record */}
                     <td className="p-2 text-center border-r border-slate-200">
                       {r.alert && (
-                        <Check className="w-5 h-5 text-emerald-600 stroke-[3] mx-auto" title="OPRAVA" />
+                        <img src="/yes.png" alt="OPRAVA" title="OPRAVA" className="h-5 w-5 mx-auto object-contain" />
                       )}
                     </td>
 
@@ -633,40 +631,40 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* SPZ */}
-                    <td className="p-2 font-bold text-slate-800 border-r border-slate-200 font-mono text-[14px]">
+                    <td className="p-2 font-bold text-slate-800 border-r border-slate-200 font-mono text-[13px] text-left">
                       {r.spz}
                     </td>
 
                     {/* Ref. na FA — small left indent on cell values only (header unchanged) */}
-                    <td className="pl-[1ch] pr-0 py-2 text-slate-700 border-r border-slate-200 font-mono text-[14px] text-left">
+                    <td className="pl-[1ch] pr-0 py-2 text-slate-700 border-r border-slate-200 font-mono text-[13px] text-left">
                       {r.refNaFa}
                     </td>
 
                     {/* zaclenie v UK */}
                     <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getUkZaclenie(r) ? (
-                        <Check className="w-5 h-5 text-emerald-600 mx-auto stroke-[3]" />
+                        <img src="/yes.png" alt="" className="h-5 w-5 mx-auto object-contain" />
                       ) : null}
                     </td>
 
                     {/* vyclenie v EU */}
                     <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getEuVyclenie(r) ? (
-                        <Check className="w-5 h-5 text-emerald-600 mx-auto stroke-[3]" />
+                        <img src="/yes.png" alt="" className="h-5 w-5 mx-auto object-contain" />
                       ) : null}
                     </td>
 
                     {/* zaclenie v EU */}
                     <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getEuZaclenie(r) ? (
-                        <Check className="w-5 h-5 text-emerald-600 mx-auto stroke-[3]" />
+                        <img src="/yes.png" alt="" className="h-5 w-5 mx-auto object-contain" />
                       ) : null}
                     </td>
 
                     {/* vyclenie v UK */}
                     <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       {getUkVyclenie(r) ? (
-                        <Check className="w-5 h-5 text-emerald-600 mx-auto stroke-[3]" />
+                        <img src="/yes.png" alt="" className="h-5 w-5 mx-auto object-contain" />
                       ) : null}
                     </td>
 
@@ -778,34 +776,34 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
             )}
           </tbody>
 
-          {/* Totals Row */}
+          {/* Totals Row — height reduced by exactly 2mm vs previous p-2.5 */}
           <tfoot>
             <tr className="bg-[#dae3ed] text-slate-900 font-bold font-mono text-xs border-t-2 border-slate-400">
-              <td colSpan={13} className="p-2.5 text-right uppercase tracking-wider font-sans border-r border-slate-300 text-[16px] font-bold">
+              <td colSpan={13} className="px-2.5 py-[calc(0.625rem-1mm)] text-right uppercase tracking-wider font-sans border-r border-slate-300 text-[16px] font-bold">
                 SUMÁR:
               </td>
-              <td className="p-2.5 text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900">
+              <td className="px-2.5 py-[calc(0.625rem-1mm)] text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900">
                 {totalFaUkAgent.toFixed(2).replace('.', ',')}
               </td>
-              <td className="p-2.5 text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900">
+              <td className="px-2.5 py-[calc(0.625rem-1mm)] text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900">
                 {totalFaEuAgent.toFixed(2).replace('.', ',')}
               </td>
-              <td className="p-2.5 text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900 bg-blue-100/50">
+              <td className="px-2.5 py-[calc(0.625rem-1mm)] text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900 bg-blue-100/50">
                 {totalFaKlient.toFixed(2).replace('.', ',')}
               </td>
-              <td className="p-2.5 border-r border-slate-300"></td>
-              <td className="p-2.5 text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900 bg-emerald-100/60">
+              <td className="px-2.5 py-[calc(0.625rem-1mm)] border-r border-slate-300"></td>
+              <td className="px-2.5 py-[calc(0.625rem-1mm)] text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900 bg-emerald-100/60">
                 {totalZisk.toFixed(2).replace('.', ',')}
               </td>
-              <td className="p-2.5 border-r border-slate-300"></td>
-              <td colSpan={3} className="p-2.5"></td>
+              <td className="px-2.5 py-[calc(0.625rem-1mm)] border-r border-slate-300"></td>
+              <td colSpan={3} className="px-2.5 py-[calc(0.625rem-1mm)]"></td>
             </tr>
           </tfoot>
         </table>
       </div>
 
-      {/* Footer watermark */}
-      <div className="bg-slate-50 py-2.5 px-4 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+      {/* Footer watermark — height reduced by exactly 3mm vs previous py-2.5 */}
+      <div className="bg-slate-50 py-[calc(0.625rem-1.5mm)] px-4 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500 font-medium">
         <div>
           Zobrazených {paginatedRecords.length} z {filteredRecords.length} záznamov
         </div>
@@ -903,7 +901,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
 
               <div className="space-y-2 text-slate-600 leading-relaxed text-[11px] bg-slate-50 p-3 rounded-lg border border-slate-200">
                 <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <img src="/yes.png" alt="" className="h-4 w-4 object-contain shrink-0 mt-0.5" />
                   <span>Všetky konania a ich zisky budú bezpečne zarchivované v záložke <strong>REPORTY {parseMonthYear(currentMonthYear).year}</strong>.</span>
                 </div>
                 <div className="flex items-start gap-2">
@@ -939,7 +937,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-xs flex items-center gap-2 transition-all cursor-pointer text-xs disabled:cursor-wait disabled:opacity-70"
               >
-                <Check className="w-4 h-4" />
+                <img src="/yes.png" alt="" className="h-4 w-4 object-contain" />
                 <span>{isClosingMonth ? 'Uzatváram…' : 'Potvrdiť & Uzatvoriť mesiac'}</span>
               </button>
             </div>
