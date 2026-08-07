@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AdresaRecord } from '../types';
-import { Plus, Trash2, Edit3, Search, Building2, Save, X, Phone, Mail, MapPin } from 'lucide-react';
+import { Plus, Trash2, Edit3, Building2, Save, X, Phone, Mail, MapPin } from 'lucide-react';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 export const ALL_EUROPEAN_COUNTRIES = [
@@ -59,26 +59,36 @@ interface AdresyViewProps {
   records: AdresaRecord[];
   onSaveRecord: (record: AdresaRecord) => void;
   onDeleteRecord: (id: string) => void;
+  /** Global header search — sole search for this page. */
+  searchTerm?: string;
 }
 
 export const AdresyView: React.FC<AdresyViewProps> = ({
   records,
   onSaveRecord,
-  onDeleteRecord
+  onDeleteRecord,
+  searchTerm = '',
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [editingRecord, setEditingRecord] = useState<AdresaRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AdresaRecord | null>(null);
 
-  const filtered = records.filter(r => 
-    !searchTerm ||
-    r.nazovFirmy.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (r.skratka || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.ico.includes(searchTerm) ||
-    r.icDph.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const needle = searchTerm.trim().toLowerCase();
+  const filtered = records.filter((r) => {
+    if (!needle) return true;
+    return (
+      r.nazovFirmy.toLowerCase().includes(needle) ||
+      (r.skratka || '').toLowerCase().includes(needle) ||
+      (r.registrovanaAdresa || '').toLowerCase().includes(needle) ||
+      (r.krajina || '').toLowerCase().includes(needle) ||
+      r.ico.toLowerCase().includes(needle) ||
+      (r.dic || '').toLowerCase().includes(needle) ||
+      r.icDph.toLowerCase().includes(needle) ||
+      (r.telefonneCislo || '').toLowerCase().includes(needle) ||
+      r.email.toLowerCase().includes(needle) ||
+      (r.poznamka || '').toLowerCase().includes(needle)
+    );
+  });
 
   const handleOpenAdd = () => {
     setEditingRecord({
@@ -132,16 +142,6 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white border border-slate-200 text-slate-900 text-xs rounded-lg px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 w-48 sm:w-64"
-            />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2" />
-          </div>
-
           <button
             onClick={handleOpenAdd}
             className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"

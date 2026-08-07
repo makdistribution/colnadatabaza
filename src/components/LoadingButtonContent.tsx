@@ -15,6 +15,8 @@ interface LoadingButtonContentProps {
   kind: LoadingButtonKind;
   children: React.ReactNode;
   className?: string;
+  /** When true, show only the spinner while loading (no emoji / loading text). */
+  spinnerOnly?: boolean;
 }
 
 /**
@@ -26,6 +28,7 @@ export const LoadingButtonContent: React.FC<LoadingButtonContentProps> = ({
   kind,
   children,
   className = '',
+  spinnerOnly = false,
 }) => {
   const copy = LOADING_COPY[kind];
   return (
@@ -41,11 +44,19 @@ export const LoadingButtonContent: React.FC<LoadingButtonContentProps> = ({
           className="absolute inset-0 inline-flex items-center justify-center gap-1 whitespace-nowrap"
           aria-live="polite"
         >
-          <span aria-hidden="true">{copy.emoji}</span>
-          <span className="btn-loading-spinner" aria-hidden="true">
-            ⟳
-          </span>
-          <span>{copy.text}</span>
+          {spinnerOnly ? (
+            <span className="btn-loading-spinner" aria-hidden="true">
+              ⟳
+            </span>
+          ) : (
+            <>
+              <span aria-hidden="true">{copy.emoji}</span>
+              <span className="btn-loading-spinner" aria-hidden="true">
+                ⟳
+              </span>
+              <span>{copy.text}</span>
+            </>
+          )}
         </span>
       )}
     </span>

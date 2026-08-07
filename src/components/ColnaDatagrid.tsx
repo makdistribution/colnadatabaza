@@ -105,6 +105,7 @@ interface ColnaDatagridProps {
     record: Partial<ColnaRecord>,
     invoiceFile?: File,
   ) => void | Promise<void>;
+  onCustomerInvoiceEmailSent?: (record: ColnaRecord) => void;
   searchTerm: string;
   currentMonthYear: string;
   onCloseMonth: (monthYear: string, closeYear?: boolean) => Promise<void>;
@@ -123,6 +124,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   onTogglePaid,
   onDownloadInvoice,
   onSaveRecord,
+  onCustomerInvoiceEmailSent,
   searchTerm,
   currentMonthYear,
   onCloseMonth,
@@ -701,23 +703,45 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     <td className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center border-r border-slate-200 overflow-hidden h-[1.6cm] max-h-[1.6cm]">
-                      {invoicePin !== 'none' && (
-                        <button
-                          type="button"
-                          title="Stiahnuť faktúru"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDownloadInvoice?.(r.id);
-                          }}
-                          className="inline-flex items-center justify-center w-full h-full p-0.5 cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-0"
-                        >
-                          <img
-                            src={invoicePin === 'corrected' ? '/pinnew.png' : '/pin.png'}
-                            alt="Faktúra PDF"
-                            className="h-[44px] w-auto max-w-full mx-auto object-contain pointer-events-none"
-                          />
-                        </button>
-                      )}
+                      <div className="inline-flex items-center justify-center gap-0.5 w-full h-full px-0.5">
+                        {r.customerInvoiceEmailSentAt && (
+                          <span
+                            className="relative inline-block overflow-hidden shrink-0"
+                            style={{ width: 28, height: 40 }}
+                            title="Faktúra odoslaná emailom"
+                          >
+                            {/* confi.png is a source sheet; show only the green confirmation badge */}
+                            <img
+                              src="/confi.png"
+                              alt="Faktúra odoslaná emailom"
+                              className="absolute max-w-none pointer-events-none"
+                              style={{
+                                width: 110,
+                                height: 112,
+                                left: -52,
+                                top: -67,
+                              }}
+                            />
+                          </span>
+                        )}
+                        {invoicePin !== 'none' && (
+                          <button
+                            type="button"
+                            title="Stiahnuť faktúru"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDownloadInvoice?.(r.id);
+                            }}
+                            className="inline-flex items-center justify-center p-0.5 cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-0"
+                          >
+                            <img
+                              src={invoicePin === 'corrected' ? '/pinnew.png' : '/pin.png'}
+                              alt="Faktúra PDF"
+                              className="h-[44px] w-auto max-w-full mx-auto object-contain pointer-events-none"
+                            />
+                          </button>
+                        )}
+                      </div>
                     </td>
 
                     {/* CISLO FA */}
@@ -800,12 +824,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               // Toast is shown by App; keep preview open for retry.
             }
           }}
+          onCustomerInvoiceEmailSent={(record) => {
+            onCustomerInvoiceEmailSent?.(record);
+            setPreviewRecord(null);
+          }}
           initialRecord={previewRecord}
           customerList={
             customerDirectory.length > 0
               ? customerDirectory.map((c) => c.skratka).filter(Boolean)
               : [previewRecord.zakaznik]
           }
+          customerDirectory={customerDirectory}
           readOnly
         />
       )}

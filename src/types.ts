@@ -29,6 +29,8 @@ export interface ColnaRecord {
   invoiceToken?: string;
   /** Last EmailJS notification time (ISO from Supabase). */
   invoicingEmailSentAt?: string;
+  /** Customer invoice email sent via Brevo (ISO timestamp; packed in int_poznamka). */
+  customerInvoiceEmailSentAt?: string;
 }
 
 export interface MonthlyReport {

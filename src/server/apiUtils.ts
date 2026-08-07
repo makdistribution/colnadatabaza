@@ -1,6 +1,16 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { resolve } from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createClient } from '@supabase/supabase-js';
+import { config as loadEnv } from 'dotenv';
+
+/**
+ * Local API routes (vercel dev) only receive Vercel "Development" dashboard vars.
+ * APP_ACCESS_PASSWORD and other secrets live in .env.local (and Production on Vercel).
+ * Load .env then .env.local without overriding already-set process.env values.
+ */
+loadEnv({ path: resolve(process.cwd(), '.env') });
+loadEnv({ path: resolve(process.cwd(), '.env.local') });
 
 export type ApiRequest = IncomingMessage & {
   body?: unknown;

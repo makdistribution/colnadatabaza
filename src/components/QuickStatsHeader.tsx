@@ -1,7 +1,8 @@
 import React from 'react';
-import { Search, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { ColnaRecord } from '../types';
 import { LoadingButtonContent } from './LoadingButtonContent';
+import { ClearableSearchInput } from './ClearableSearchInput';
 
 interface QuickStatsHeaderProps {
   currentMonthYear: string; // e.g. "JÚL / 2026"
@@ -38,15 +39,13 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
         <div className="w-full grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-6 gap-y-3 text-xs">
           {/* Left: Search */}
           <div className="flex items-center justify-start w-full">
-            <div className="relative w-full max-w-[calc(15.5rem-0.5cm)] sm:w-[calc(15rem-0.5cm)] sm:max-w-none">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-[2.125rem] bg-white border border-slate-300 text-slate-900 text-xs rounded-lg pl-8 pr-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-              />
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            </div>
+            <ClearableSearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              className="w-full max-w-[calc(15.5rem-0.5cm)] sm:w-[calc(15rem-0.5cm)] sm:max-w-none"
+              inputClassName="w-full h-[2.125rem] bg-white border border-slate-300 text-slate-900 text-xs rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              iconPosition="left"
+            />
           </div>
 
           {/* Center: Month banner */}
@@ -75,7 +74,7 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
               <LoadingButtonContent
                 loading={isRefreshingCustoms}
                 kind="refresh"
-                className={isRefreshingCustoms ? 'text-[10px] sm:text-[11px]' : ''}
+                spinnerOnly
               >
                 REFRESH
               </LoadingButtonContent>

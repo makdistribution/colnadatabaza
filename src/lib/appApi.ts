@@ -100,6 +100,21 @@ export const appApi = {
       method: 'POST',
       body: JSON.stringify({ action: 'getInvoiceDownloadUrl', id: recordId }),
     }),
+  sendCustomerInvoiceEmail: (recordId: string, htmlBody: string) =>
+    request<{ record: ColnaRecord; bootstrap: AppBootstrap }>('/api/app', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'sendCustomerInvoiceEmail', id: recordId, htmlBody }),
+    }),
+  getEmailSignature: () =>
+    request<{ html: string }>('/api/app', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'getEmailSignature' }),
+    }),
+  saveEmailSignature: (signatureHtml: string) =>
+    request<{ html: string }>('/api/app', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveEmailSignature', signatureHtml }),
+    }),
   resolveInvoiceToken: (token: string) =>
     request<{ record: ColnaRecord }>(`/api/invoice?token=${encodeURIComponent(token)}`),
   deleteRecords: (ids: string[]) =>

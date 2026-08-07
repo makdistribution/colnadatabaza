@@ -522,6 +522,13 @@ export default function App() {
             onTogglePaid={handleTogglePaid}
             onDownloadInvoice={handleDownloadInvoiceFromTable}
             onSaveRecord={handleSaveColnaRecord}
+            onCustomerInvoiceEmailSent={(record) => {
+              setColnaRecords((prev) =>
+                prev.map((r) => (r.id === record.id ? { ...r, ...record } : r)),
+              );
+              setToastMessage('Faktúra bola úspešne odoslaná emailom.');
+              setActiveTab('COLNA_DATABAZA');
+            }}
             searchTerm={searchTerm}
             currentMonthYear={currentMonthYear}
             onCloseMonth={handleCloseMonth}
@@ -534,6 +541,7 @@ export default function App() {
         {activeTab === 'ADRESY' && (
           <AdresyView
             records={adresyRecords}
+            searchTerm={searchTerm}
             onSaveRecord={handleSaveAdresaRecord}
             onDeleteRecord={handleDeleteAdresaRecord}
           />

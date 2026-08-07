@@ -50,7 +50,7 @@ export const InfoFaView: React.FC<InfoFaViewProps> = ({
           <thead>
             <tr className="bg-[#dae3ed] text-black uppercase font-bold tracking-wider border-b-2 border-slate-600 text-[16px]">
               <th className="p-2.5 w-16 text-center border-r-2 border-slate-400 text-black text-[16px]">Akcia</th>
-              <th className="p-2.5 min-w-[200px] border-r-2 border-slate-400 text-black text-[16px]">Pravidlo / Typ</th>
+              <th className="p-2.5 min-w-[200px] border-r-2 border-slate-400 text-black text-[16px]">Pravidlo</th>
               <th className="p-2.5 min-w-[400px]"></th>
             </tr>
           </thead>

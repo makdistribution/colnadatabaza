@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ColnaRecord } from '../types';
+import { AdresaRecord, ColnaRecord } from '../types';
 import {
   X,
   AlertTriangle,
@@ -18,6 +18,7 @@ import { extractInvoiceNumberFromFileName, invoiceDisplayNameFromPath } from '..
 import { buildCaseLink, formatNotificationTimestampParts } from '../utils/caseLink';
 import { calculateInvoiceDueDate, formatDueDateDisplay } from '../utils/dueDate';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { InvoiceEmailModal } from './InvoiceEmailModal';
 import { LoadingButtonContent } from './LoadingButtonContent';
 import { appApi } from '../lib/appApi';
 
@@ -30,8 +31,12 @@ interface RecordModalProps {
     options?: { onUploadComplete?: () => void },
   ) => void | Promise<void>;
   onDeleteInvoice?: (recordId: string) => Promise<void>;
+  /** Called after customer invoice email was sent successfully via Brevo. */
+  onCustomerInvoiceEmailSent?: (record: ColnaRecord) => void;
   initialRecord?: ColnaRecord | null;
   customerList: string[];
+  /** Full customer directory — used to resolve email for invoice send. */
+  customerDirectory?: AdresaRecord[];
   readOnly?: boolean;
   defaultDate?: string;
   copyMode?: boolean;
@@ -105,8 +110,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   onClose,
   onSave,
   onDeleteInvoice,
+  onCustomerInvoiceEmailSent,
   initialRecord,
   customerList,
+  customerDirectory = [],
   readOnly = false,
   defaultDate,
   copyMode = false,
@@ -157,6 +164,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const opravaInputRef = useRef<HTMLInputElement>(null);
 
   const [linkCopied, setLinkCopied] = useState(false);
+  const [isInvoiceEmailModalOpen, setIsInvoiceEmailModalOpen] = useState(false);
+  const [isSendingCustomerInvoiceEmail, setIsSendingCustomerInvoiceEmail] = useState(false);
+  const [customerInvoiceEmailError, setCustomerInvoiceEmailError] = useState<string | null>(null);
   const savingLockRef = useRef(false);
 
   useEffect(() => {
@@ -172,6 +182,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           invoicePdfPath: _pdf,
           invoiceToken: _token,
           invoicingEmailSentAt: _sent,
+          customerInvoiceEmailSentAt: _customerSent,
           ...copied
         } = initialRecord;
         // Copy is a new record — notification must be opt-in for this SAVE.
@@ -328,6 +339,31 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const hasUploadedInvoice = !!(invoiceFile || formData.invoicePdfPath);
   const displayedInvoiceName =
     invoiceFile?.name || invoiceDisplayNameFromPath(formData.invoicePdfPath) || '';
+
+  const resolveCustomerEmail = () => {
+    const name = String(formData.zakaznik || '').trim();
+    if (!name) return '';
+    const bySkratka = customerDirectory.find((d) => String(d.skratka || '').trim() === name);
+    if (bySkratka?.email) return String(bySkratka.email).trim();
+    const byOfficial = customerDirectory.find((d) => String(d.nazovFirmy || '').trim() === name);
+    return String(byOfficial?.email || '').trim();
+  };
+
+  const handleSendCustomerInvoiceEmail = async (htmlBody: string) => {
+    if (!formData.id || isSendingCustomerInvoiceEmail) return;
+    setIsSendingCustomerInvoiceEmail(true);
+    setCustomerInvoiceEmailError(null);
+    try {
+      const result = await appApi.sendCustomerInvoiceEmail(formData.id, htmlBody);
+      setIsInvoiceEmailModalOpen(false);
+      onCustomerInvoiceEmailSent?.(result.record);
+      onClose();
+    } catch (err) {
+      setCustomerInvoiceEmailError(err instanceof Error ? err.message : 'Odoslanie emailu zlyhalo.');
+    } finally {
+      setIsSendingCustomerInvoiceEmail(false);
+    }
+  };
   const permanentCaseLink = copyMode ? '' : buildCaseLink(formData.invoiceToken);
   const notificationTimestampParts = copyMode
     ? null
@@ -397,6 +433,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const isPreviewMode = readOnly && !invoiceHandoffMode;
   const customsLocked = invoiceHandoffMode || (readOnly && !isPreviewMode);
   const invoiceEditable = !readOnly || isPreviewMode;
+  /**
+   * NÁHĽAD workflow:
+   * - Invoice PDF uploaded → send.png + email text only
+   * - No invoice PDF → original "Odoslať na fakturáciu" controls
+   */
+  const showSendInvoiceButton =
+    isPreviewMode && !!(formData.invoicePdfPath || invoiceFile);
   /** Accountant correction workflow — title stays OPRAVA even if PDF is deleted. */
   const isAccountantCorrectionMode = invoiceHandoffMode && correctionWorkflow;
   /** First-time invoicing handoff — green highlight only here. */
@@ -667,16 +710,16 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           {/* Customs fields — locked in accountant view */}
           <fieldset disabled={customsLocked} className="space-y-3">
           
-          {/* Row 1: Customer & Flags */}
-          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex-1 min-w-[240px]">
-              <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
-                ZÁKAZNÍK{requiredMark}
-              </label>
+          {/* Row 1: Customer & Flags — toolbar shares the select row so centres match the dropdown arrow */}
+          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+              ZÁKAZNÍK{requiredMark}
+            </label>
+            <div className="flex flex-wrap items-center gap-3">
               <select
                 value={formData.zakaznik}
                 onChange={(e) => setFormData({ ...formData, zakaznik: e.target.value })}
-                className={`w-full bg-white border rounded-md px-2.5 py-1.5 text-slate-900 font-semibold text-xs focus:ring-1 outline-none ${
+                className={`flex-1 min-w-[240px] bg-white border rounded-md px-2.5 py-1.5 text-slate-900 font-semibold text-xs focus:ring-1 outline-none ${
                   fieldMissing('ZÁKAZNÍK')
                     ? 'border-red-500 focus:ring-blue-500'
                     : isNewInvoicingHandoff
@@ -699,42 +742,74 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 ))}
                 <option value="Iný zákazník">+ Pridať nového zákazníka</option>
               </select>
-            </div>
 
             {!invoiceHandoffMode && (
-            <div className="flex items-center justify-end gap-1.5 self-end pb-1 w-[260px] shrink-0">
+            <div className="flex items-center justify-end shrink-0">
+              {showSendInvoiceButton ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomerInvoiceEmailError(null);
+                    setIsInvoiceEmailModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 cursor-pointer bg-transparent border-0 p-0 hover:opacity-90"
+                  title="Odoslať faktúru zákazníkovi"
+                >
+                  {/* send.png black bg: SVG knockout — mix-blend-screen skips first paint under modal backdrop-blur. */}
+                  <svg width="0" height="0" className="absolute" aria-hidden="true" focusable="false">
+                    <filter id="send-png-knockout-black" colorInterpolationFilters="sRGB">
+                      <feColorMatrix
+                        type="matrix"
+                        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  3 3 3 0 -0.1"
+                      />
+                    </filter>
+                  </svg>
+                  <img
+                    src="/send.png"
+                    alt="Odoslať faktúru"
+                    className="h-[47.6px] w-auto object-contain pointer-events-none shrink-0"
+                    style={{ filter: 'url(#send-png-knockout-black)' }}
+                  />
+                  <span className="flex flex-col items-start justify-center text-left text-[12px] font-semibold text-slate-700 leading-[1.15]">
+                    <span>Odoslať</span>
+                    <span>faktúru</span>
+                    <span>zákazníkovi</span>
+                  </span>
+                </button>
+              ) : (
+              <div className="inline-flex items-center gap-2.5 shrink-0">
               {!initialRecord || copyMode || readOnly ? (
                 <>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
+                  <label className="inline-flex items-center gap-2.5 m-0 p-0 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.isNew}
                       onChange={(e) => setFormData({ ...formData, isNew: e.target.checked })}
-                      className="rounded text-blue-600 focus:ring-0 w-4 h-4 bg-white border-slate-300 shrink-0"
+                      className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 shrink-0"
                     />
-                    <img src="/new1.png" alt="NEW" className="h-6.5 w-auto object-contain shrink-0" title="Nové colné konanie v evidencii" />
+                    <img src="/new1.png" alt="NEW" className="h-6.5 w-auto object-contain shrink-0 block" title="Nové colné konanie v evidencii" />
                   </label>
 
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700 ml-1">
+                  <label className="inline-flex items-center gap-2.5 m-0 p-0 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.bell}
                       onChange={(e) => setFormData({ ...formData, bell: e.target.checked })}
-                      className="rounded text-blue-600 focus:ring-0 w-4 h-4 bg-white border-slate-300 shrink-0"
+                      className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 shrink-0"
                     />
-                    <img src="/mail.png" alt="Mail" className="h-6.5 w-auto object-contain shrink-0" />
-                    <span className="text-slate-600 font-medium text-[12px] whitespace-nowrap">
+                    <img src="/mail.png" alt="Mail" className="h-6.5 w-auto object-contain shrink-0 block" />
+                    <span className="inline-flex items-center h-6.5 text-slate-600 font-medium text-[12px] whitespace-nowrap leading-none">
                       Odoslať na fakturáciu
                     </span>
                   </label>
                 </>
               ) : (
-                <label className="flex items-center cursor-pointer text-slate-700 self-center">
+                <label className="flex items-center cursor-pointer text-slate-700">
                   <input
                     type="checkbox"
                     checked={formData.alert}
                     onChange={(e) => setFormData({ ...formData, alert: e.target.checked })}
-                    className="rounded text-blue-600 focus:ring-0 w-4 h-4 bg-white border-slate-300 shrink-0"
+                    className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 shrink-0"
                   />
                   <img
                     src="/edit.png"
@@ -761,8 +836,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   </span>
                 </label>
               )}
+              </div>
+              )}
             </div>
             )}
+            </div>
           </div>
 
           {/* Row 2: Transport & Direction Grid */}
@@ -1285,6 +1363,22 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         }
         onCancel={() => setIsRequiredFieldsModalOpen(false)}
         onConfirm={() => setIsRequiredFieldsModalOpen(false)}
+      />
+
+      <InvoiceEmailModal
+        isOpen={isInvoiceEmailModalOpen}
+        toEmail={resolveCustomerEmail()}
+        invoiceNumber={String(formData.cisloFa || '').trim()}
+        attachmentName={displayedInvoiceName}
+        isSending={isSendingCustomerInvoiceEmail}
+        sendError={customerInvoiceEmailError}
+        onCancel={() => {
+          if (!isSendingCustomerInvoiceEmail) {
+            setIsInvoiceEmailModalOpen(false);
+            setCustomerInvoiceEmailError(null);
+          }
+        }}
+        onSend={(htmlBody) => { void handleSendCustomerInvoiceEmail(htmlBody); }}
       />
     </div>
   );

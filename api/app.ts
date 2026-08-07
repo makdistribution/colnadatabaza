@@ -30,6 +30,7 @@ import {
   type LoginOrderMap,
 } from '../src/server/directoryStore.js';
 import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs.js';
+import { sendCustomerInvoiceEmail } from '../src/server/brevo.js';
 import {
   packCustomsNotes,
   unpackCustomsNotes,
@@ -40,7 +41,7 @@ import {
   formatDocumentSizeLabel,
   sanitizeAppDocumentFileName,
 } from '../src/utils/appDocumentFile.js';
-import { extractInvoiceNumberFromFileName, invoicePathForRecord, sanitizeInvoiceFileName } from '../src/utils/invoiceFile.js';
+import { extractInvoiceNumberFromFileName, invoiceDisplayNameFromPath, invoicePathForRecord, sanitizeInvoiceFileName } from '../src/utils/invoiceFile.js';
 
 type ActionBody = {
   action?:
@@ -53,6 +54,9 @@ type ActionBody = {
     | 'completeInvoiceUpload'
     | 'deleteInvoice'
     | 'getInvoiceDownloadUrl'
+    | 'sendCustomerInvoiceEmail'
+    | 'getEmailSignature'
+    | 'saveEmailSignature'
     | 'migrateBrowserData'
     | 'saveAdresaRecord'
     | 'deleteAdresaRecord'
@@ -84,6 +88,8 @@ type ActionBody = {
   zaplatena?: boolean;
   clearNewBadge?: boolean;
   closeYear?: boolean;
+  htmlBody?: string;
+  signatureHtml?: string;
 };
 
 const INVOICE_BUCKET = 'invoice-pdfs';
@@ -120,6 +126,7 @@ const toDatabaseRecord = (record: Partial<ColnaRecord>, id: string, monthStart: 
       : record.invoiceCorrectionPending
         ? 'pending'
         : 'none',
+    record.customerInvoiceEmailSentAt || null,
   ),
   zisk: Number(record.zisk) || 0,
   cislo_fa: record.cisloFa || '',
@@ -164,6 +171,7 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
         opravaFaktury: fromColumn || packed.opravaFaktury,
         invoiceCorrectionPending: packed.invoiceClipState === 'pending',
         invoiceCorrected: packed.invoiceClipState === 'corrected',
+        customerInvoiceEmailSentAt: packed.customerInvoiceEmailSentAt,
       };
     })(),
     zisk: Number(record.zisk) || 0,
@@ -648,6 +656,7 @@ const completeInvoiceUpload = async (
       existingPacked.intPoznamka,
       existingPacked.opravaFaktury,
       nextClip,
+      existingPacked.customerInvoiceEmailSentAt || null,
     ),
     updated_at: new Date().toISOString(),
   };
@@ -723,6 +732,116 @@ const getInvoiceDownloadUrl = async (recordId: string) => {
   return { url: data.signedUrl, fileName };
 };
 
+const sendCustomerInvoiceEmailAction = async (recordId: string, htmlBody?: string) => {
+  const supabase = getSupabaseAdmin();
+  const { data: recordRow, error: recordError } = await supabase
+    .from('customs_records')
+    .select('*')
+    .eq('id', recordId)
+    .single();
+  throwIfError(recordError);
+
+  const record = fromDatabaseRecord(recordRow);
+  const storagePath = record.invoicePdfPath ? String(record.invoicePdfPath) : '';
+  if (!storagePath) throw new Error('Faktúra nie je nahratá.');
+
+  const invoiceNumber = String(record.cisloFa || '').trim()
+    || extractInvoiceNumberFromFileName(storagePath.split('/').pop() || '');
+  if (!invoiceNumber) throw new Error('Chýba číslo faktúry.');
+
+  const customerName = String(record.zakaznik || '').trim();
+  const { data: adresy, error: adresyError } = await supabase
+    .from('customer_directory')
+    .select('skratka, nazov_firmy, email');
+  throwIfError(adresyError);
+
+  const directory = (adresy || []).map((row) => ({
+    skratka: String(row.skratka || '').trim(),
+    nazovFirmy: String(row.nazov_firmy || '').trim(),
+    email: String(row.email || '').trim(),
+  }));
+  const customer =
+    directory.find((d) => d.skratka === customerName)
+    || directory.find((d) => d.nazovFirmy === customerName);
+  const toEmail = String(customer?.email || '').trim();
+  if (!toEmail) {
+    throw new Error('Email zákazníka sa nenašiel v adresári. Doplňte email v ADRESÁR ZÁKAZNÍKOV.');
+  }
+
+  const { data: pdfBlob, error: downloadError } = await supabase.storage
+    .from(INVOICE_BUCKET)
+    .download(storagePath);
+  throwIfError(downloadError);
+  if (!pdfBlob) throw new Error('Nepodarilo sa stiahnuť faktúru PDF.');
+
+  const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
+  const attachmentFileName = invoiceDisplayNameFromPath(storagePath) || 'invoice.pdf';
+
+  await sendCustomerInvoiceEmail({
+    toEmail,
+    toName: customer?.nazovFirmy || customerName,
+    invoiceNumber,
+    attachmentFileName,
+    attachmentBase64: pdfBuffer.toString('base64'),
+    htmlBody: String(htmlBody || ''),
+  });
+
+  const sentAt = new Date().toISOString();
+  const existingPacked = unpackCustomsNotes(String(recordRow.int_poznamka || ''));
+  const { data, error } = await supabase
+    .from('customs_records')
+    .update({
+      int_poznamka: packCustomsNotes(
+        existingPacked.intPoznamka,
+        existingPacked.opravaFaktury,
+        existingPacked.invoiceClipState,
+        sentAt,
+      ),
+      updated_at: sentAt,
+    })
+    .eq('id', recordId)
+    .select('*')
+    .single();
+  throwIfError(error);
+  return fromDatabaseRecord(data);
+};
+
+const EMAIL_SIGNATURE_PATH = 'settings/customer-invoice-email-signature.html';
+
+const getEmailSignature = async () => {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .download(EMAIL_SIGNATURE_PATH);
+  if (error) {
+    // Missing signature is a normal first-time state.
+    if (/not found|404|Object not found/i.test(error.message || '')) {
+      return { html: '' };
+    }
+    throw new Error(error.message);
+  }
+  if (!data) return { html: '' };
+  const html = await data.text();
+  return { html: String(html || '') };
+};
+
+const saveEmailSignature = async (signatureHtml: string) => {
+  const html = String(signatureHtml || '').trim();
+  if (!html) throw new Error('Podpis je prázdny.');
+  if (html.length > 500_000) throw new Error('Podpis je príliš veľký.');
+
+  const supabase = getSupabaseAdmin();
+  const bytes = new TextEncoder().encode(html);
+  const { error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .upload(EMAIL_SIGNATURE_PATH, bytes, {
+      contentType: 'text/html; charset=utf-8',
+      upsert: true,
+    });
+  throwIfError(error);
+  return { html };
+};
+
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (!isAuthorized(request)) {
     sendJson(response, 401, { error: 'Unauthorized.' });
@@ -775,6 +894,22 @@ export default async function handler(request: ApiRequest, response: ApiResponse
 
     if (body.action === 'getInvoiceDownloadUrl' && body.id) {
       sendJson(response, 200, await getInvoiceDownloadUrl(body.id));
+      return;
+    }
+
+    if (body.action === 'sendCustomerInvoiceEmail' && body.id) {
+      const record = await sendCustomerInvoiceEmailAction(body.id, body.htmlBody);
+      sendJson(response, 200, { record, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'getEmailSignature') {
+      sendJson(response, 200, await getEmailSignature());
+      return;
+    }
+
+    if (body.action === 'saveEmailSignature' && typeof body.signatureHtml === 'string') {
+      sendJson(response, 200, await saveEmailSignature(body.signatureHtml));
       return;
     }
 
