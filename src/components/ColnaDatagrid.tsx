@@ -3,10 +3,13 @@ import { AdresaRecord, ColnaRecord } from '../types';
 import { parseMonthYear, extractYearAndMonth } from '../utils/monthUtils';
 import { resolveCustomerSkratka } from '../utils/customerSkratka';
 import { formatDueDateDisplay } from '../utils/dueDate';
+import { invoiceDisplayNameFromPath } from '../utils/invoiceFile';
 import { RecordModal } from './RecordModal';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { LoadingButtonContent } from './LoadingButtonContent';
+import { InvoiceEmailModal } from './InvoiceEmailModal';
 import { resolveInvoicePinIcon } from '../utils/customsNotes';
+import { appApi } from '../lib/appApi';
 
 // Helpers to extract status for the 4 split columns (UK ➔ EU and EU ➔ UK)
 const getUkZaclenie = (r: ColnaRecord): string => {
@@ -138,6 +141,9 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingRecords, setIsDeletingRecords] = useState(false);
   const [previewRecord, setPreviewRecord] = useState<ColnaRecord | null>(null);
+  const [invoiceEmailRecord, setInvoiceEmailRecord] = useState<ColnaRecord | null>(null);
+  const [isSendingCustomerInvoiceEmail, setIsSendingCustomerInvoiceEmail] = useState(false);
+  const [customerInvoiceEmailError, setCustomerInvoiceEmailError] = useState<string | null>(null);
   const pageSize = 10;
 
   const targetYear = parseMonthYear(currentMonthYear).year;
@@ -269,6 +275,30 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     return `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
   })();
   const formatMoney = (value: number) => value.toFixed(2).replace('.', ',');
+
+  const resolveCustomerEmail = (record: ColnaRecord) => {
+    const name = String(record.zakaznik || '').trim();
+    if (!name) return '';
+    const bySkratka = customerDirectory.find((d) => String(d.skratka || '').trim() === name);
+    if (bySkratka?.email) return String(bySkratka.email).trim();
+    const byOfficial = customerDirectory.find((d) => String(d.nazovFirmy || '').trim() === name);
+    return String(byOfficial?.email || '').trim();
+  };
+
+  const handleSendCustomerInvoiceEmail = async (htmlBody: string) => {
+    if (!invoiceEmailRecord?.id || isSendingCustomerInvoiceEmail) return;
+    setIsSendingCustomerInvoiceEmail(true);
+    setCustomerInvoiceEmailError(null);
+    try {
+      const result = await appApi.sendCustomerInvoiceEmail(invoiceEmailRecord.id, htmlBody);
+      setInvoiceEmailRecord(null);
+      onCustomerInvoiceEmailSent?.(result.record);
+    } catch (err) {
+      setCustomerInvoiceEmailError(err instanceof Error ? err.message : 'Odoslanie emailu zlyhalo.');
+    } finally {
+      setIsSendingCustomerInvoiceEmail(false);
+    }
+  };
 
   // Format date DD.MM.YYYY (without spaces after dots)
   const formatDateStr = (dateStr: string) => {
@@ -451,7 +481,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                   className="rounded text-blue-600 focus:ring-0 w-3.5 h-3.5 border-slate-400"
                 />
               </th>
-              <th rowSpan={2} className="p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="Copy / Edit">
+              <th rowSpan={2} className="p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="Copy / Edit / Odoslať FA emailom">
                 <img src="/edit1.png" alt="Akcia" className="mx-auto h-6 w-auto object-contain" />
               </th>
               <th rowSpan={2} className="p-2 min-w-[calc(172px-4mm)] border-r border-slate-300 text-black" title="Meno zákazníka">
@@ -508,7 +538,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 <img
                   src="/inv.png"
                   alt="Invoice"
-                  className="mx-auto block h-[34.56px] w-[34.56px] max-w-full object-contain"
+                  className="mx-auto block object-contain max-w-none shrink-0"
+                  style={{ width: '40px', height: '40px' }}
                 />
               </th>
               <th rowSpan={2} className="box-border py-2 px-1 w-[84px] min-w-[84px] max-w-[84px] text-center border-r border-slate-300 text-black" title="Číslo faktúry">
@@ -523,7 +554,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 <img
                   src="/invsend.png"
                   alt="Faktúra odoslaná zákazníkovi"
-                  className="mx-auto block h-[34.56px] w-[34.56px] max-w-full object-contain"
+                  className="mx-auto block object-contain max-w-none shrink-0"
+                  style={{ width: '40px', height: '40px' }}
                 />
               </th>
               <th rowSpan={2} className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center text-black" title="Stav úhrady">
@@ -584,23 +616,47 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       />
                     </td>
 
-                    {/* Copy + Edit buttons (horizontal) */}
-                    <td className="p-1 text-center border-r border-slate-200 w-[52px] min-w-[52px] max-w-[52px]">
-                      <div className="flex items-center justify-center gap-0.5">
+                    {/* Copy + Edit + @ (send customer invoice email) */}
+                    <td className="p-0 text-center border-r border-slate-200 w-[52px] min-w-[52px] max-w-[52px]">
+                      <div className="flex flex-col items-center justify-center gap-0 leading-none py-0">
                         <button
+                          type="button"
                           onClick={() => onCopyRecord(r)}
-                          className="text-blue-600 hover:text-blue-800 p-0.5 cursor-pointer"
+                          className="text-blue-600 hover:text-blue-800 p-0 cursor-pointer inline-flex items-center justify-center"
                           title="Kopírovať záznam"
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => onEditRecord(r)}
-                          className="text-blue-600 hover:text-blue-800 p-0.5 cursor-pointer"
+                          className="text-blue-600 hover:text-blue-800 p-0 cursor-pointer inline-flex items-center justify-center"
                           title="Upraviť záznam"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
+                        {r.invoicePdfPath ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCustomerInvoiceEmailError(null);
+                              setInvoiceEmailRecord(r);
+                            }}
+                            className="text-blue-600 hover:text-blue-800 p-0 cursor-pointer inline-flex items-center justify-center font-bold text-[14px] leading-none"
+                            title="Odoslať FA emailom"
+                          >
+                            @
+                          </button>
+                        ) : (
+                          <span
+                            className="text-slate-300 p-0 inline-flex items-center justify-center font-bold text-[14px] leading-none select-none pointer-events-none"
+                            aria-disabled="true"
+                            title="Najprv nahrajte faktúru"
+                          >
+                            @
+                          </span>
+                        )}
                       </div>
                     </td>
 
@@ -763,8 +819,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       {formatDueDateDisplay(r.splatna)}
                     </td>
 
-                    {/* @ — placeholder column (no functionality yet) */}
-                    <td className="p-2 w-[15mm] min-w-[15mm] max-w-[15mm] box-border text-center border-r border-slate-200"></td>
+                    {/* Faktúra odoslaná zákazníkovi — yes.png after successful customer invoice email */}
+                    <td className="p-2 w-[15mm] min-w-[15mm] max-w-[15mm] box-border text-center border-r border-slate-200">
+                      {r.customerInvoiceEmailSentAt ? (
+                        <img
+                          src="/yes.png"
+                          alt="Odoslané zákazníkovi emailom"
+                          title="Odoslané zákazníkovi emailom"
+                          className="mx-auto max-w-none object-contain"
+                        />
+                      ) : null}
+                    </td>
 
                     {/* ZAPLATENA / ÚHRADA */}
                     <td className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center border-r border-slate-200">
@@ -836,10 +901,6 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               // Toast is shown by App; keep preview open for retry.
             }
           }}
-          onCustomerInvoiceEmailSent={(record) => {
-            onCustomerInvoiceEmailSent?.(record);
-            setPreviewRecord(null);
-          }}
           initialRecord={previewRecord}
           customerList={
             customerDirectory.length > 0
@@ -850,6 +911,22 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
           readOnly
         />
       )}
+
+      <InvoiceEmailModal
+        isOpen={!!invoiceEmailRecord}
+        toEmail={invoiceEmailRecord ? resolveCustomerEmail(invoiceEmailRecord) : ''}
+        invoiceNumber={String(invoiceEmailRecord?.cisloFa || '').trim()}
+        attachmentName={invoiceDisplayNameFromPath(invoiceEmailRecord?.invoicePdfPath)}
+        isSending={isSendingCustomerInvoiceEmail}
+        sendError={customerInvoiceEmailError}
+        onCancel={() => {
+          if (!isSendingCustomerInvoiceEmail) {
+            setInvoiceEmailRecord(null);
+            setCustomerInvoiceEmailError(null);
+          }
+        }}
+        onSend={(htmlBody) => { void handleSendCustomerInvoiceEmail(htmlBody); }}
+      />
 
       <ConfirmDeleteModal
         isOpen={isDeleteModalOpen}
