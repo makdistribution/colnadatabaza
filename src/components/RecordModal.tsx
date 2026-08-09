@@ -709,7 +709,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <option value="Iný zákazník">+ Pridať nového zákazníka</option>
               </select>
 
-            {!invoiceHandoffMode && (
+            {!invoiceHandoffMode && !(isPreviewMode && hasUploadedInvoice) && (
             <div className="flex items-center justify-end shrink-0">
               <div className="inline-flex items-center gap-2.5 shrink-0">
               {!initialRecord || copyMode || readOnly ? (
@@ -731,8 +731,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                       onChange={(e) => setFormData({ ...formData, bell: e.target.checked })}
                       className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 shrink-0"
                     />
-                    <img src="/mail.png" alt="Mail" className="h-6.5 w-auto object-contain shrink-0 block" />
-                    <span className="inline-flex items-center h-6.5 text-slate-600 font-medium text-[12px] whitespace-nowrap leading-none">
+                    <img
+                      src="/mail.png"
+                      alt="Mail"
+                      className="object-contain shrink-0 block max-w-none"
+                      style={{ width: 48, height: 56 }}
+                    />
+                    <span className="inline-flex items-center text-slate-600 font-medium text-[12px] whitespace-nowrap leading-none">
                       Odoslať na fakturáciu
                     </span>
                   </label>
@@ -748,7 +753,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   <img
                     src="/edit.png"
                     alt=""
-                    className="ml-1.5 h-7 w-auto object-contain shrink-0"
+                    className="ml-1.5 object-contain shrink-0 max-w-none"
+                    style={{ width: 48, height: 56 }}
                     aria-hidden="true"
                   />
                   <span className="ml-2 flex flex-col text-slate-700 font-medium text-[12px] text-left">

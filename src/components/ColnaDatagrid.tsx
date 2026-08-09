@@ -482,7 +482,12 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 />
               </th>
               <th rowSpan={2} className="p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="Copy / Edit / Odoslať FA emailom">
-                <img src="/edit1.png" alt="Akcia" className="mx-auto h-6 w-auto object-contain" />
+                <img
+                  src="/edit1.png"
+                  alt="Akcia"
+                  className="mx-auto block object-contain max-w-full max-h-full"
+                  style={{ width: 'calc(52px - 0.5rem)', height: 'auto' }}
+                />
               </th>
               <th rowSpan={2} className="p-2 min-w-[calc(172px-4mm)] border-r border-slate-300 text-black" title="Meno zákazníka">
                 ZÁKAZNÍK
@@ -554,8 +559,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 <img
                   src="/invsend.png"
                   alt="Faktúra odoslaná zákazníkovi"
-                  className="mx-auto block object-contain max-w-none shrink-0"
-                  style={{ width: '40px', height: '40px' }}
+                  className="mx-auto block object-contain max-w-full"
+                  style={{ width: 'calc(15mm - 1rem)', height: 'auto' }}
                 />
               </th>
               <th rowSpan={2} className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center text-black" title="Stav úhrady">
@@ -616,25 +621,27 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       />
                     </td>
 
-                    {/* Copy + Edit + @ (send customer invoice email) */}
+                    {/* Copy + Edit (horizontal) with @ centred underneath */}
                     <td className="p-0 text-center border-r border-slate-200 w-[52px] min-w-[52px] max-w-[52px]">
                       <div className="flex flex-col items-center justify-center gap-0 leading-none py-0">
-                        <button
-                          type="button"
-                          onClick={() => onCopyRecord(r)}
-                          className="text-blue-600 hover:text-blue-800 p-0 cursor-pointer inline-flex items-center justify-center"
-                          title="Kopírovať záznam"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onEditRecord(r)}
-                          className="text-blue-600 hover:text-blue-800 p-0 cursor-pointer inline-flex items-center justify-center"
-                          title="Upraviť záznam"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex flex-row items-center justify-center gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => onCopyRecord(r)}
+                            className="text-blue-600 hover:text-blue-800 p-0 cursor-pointer inline-flex items-center justify-center"
+                            title="Kopírovať záznam"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onEditRecord(r)}
+                            className="text-blue-600 hover:text-blue-800 p-0 cursor-pointer inline-flex items-center justify-center"
+                            title="Upraviť záznam"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                         {r.invoicePdfPath ? (
                           <button
                             type="button"
