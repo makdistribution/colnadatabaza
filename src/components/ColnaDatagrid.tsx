@@ -451,57 +451,57 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                   className="rounded text-blue-600 focus:ring-0 w-3.5 h-3.5 border-slate-400"
                 />
               </th>
-              <th rowSpan={2} className="p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="Copy / Edit">
                 <img src="/edit1.png" alt="Akcia" className="mx-auto h-6 w-auto object-contain" />
               </th>
-              <th rowSpan={2} className="p-2 min-w-[calc(172px-4mm)] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-2 min-w-[calc(172px-4mm)] border-r border-slate-300 text-black" title="Meno zákazníka">
                 ZÁKAZNÍK
               </th>
-              <th rowSpan={2} className="p-1 w-4 text-center border-r border-slate-300 text-black" title="Nové colné konanie v evidencii">
+              <th rowSpan={2} className="p-1 w-4 text-center border-r border-slate-300 text-black" title="Nová colnica">
                 NEW
               </th>
-              <th rowSpan={2} className="box-border p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="Email odoslaný">
+              <th rowSpan={2} className="box-border p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="Odoslané na fakturáciu">
                 <img src="/mail.png" alt="Email odoslaný" className="mx-auto object-contain p-0 max-w-none shrink-0" style={{ width: '40px', height: '40px' }} />
               </th>
-              <th rowSpan={2} className="box-border p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="OPRAVA">
+              <th rowSpan={2} className="box-border p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="Úprava - odoslaná na fakturáciu">
                 <img src="/edit.png" alt="OPRAVA" className="mx-auto object-contain p-0 max-w-none shrink-0" style={{ width: '40px', height: '40px' }} />
               </th>
-              <th rowSpan={2} className="p-1 min-w-[60px] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-1 min-w-[60px] border-r border-slate-300 text-black" title="Dátum">
                 DÁTUM
               </th>
-              <th rowSpan={2} className="p-2 min-w-[111px] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-2 min-w-[111px] border-r border-slate-300 text-black" title="ŠPZ">
                 ŠPZ 🚛
               </th>
-              <th rowSpan={2} className="px-0 py-2 min-w-[54px] text-center border-r border-slate-300 font-sans text-black">
+              <th rowSpan={2} className="px-0 py-2 min-w-[54px] text-center border-r border-slate-300 font-sans text-black" title="Referencia na faktúru">
                 REF. NA
                 <br />
                 FAKTÚRU
               </th>
-              <th colSpan={2} className="p-1.5 text-center border-r border-b border-slate-300 text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans">
+              <th colSpan={2} className="p-1.5 text-center border-r border-b border-slate-300 text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans" title="Z UK do EU (výber col. úkonu)">
                 <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </th>
-              <th colSpan={2} className="p-1.5 text-center border-r border-b border-[#bdc0e8] text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans">
+              <th colSpan={2} className="p-1.5 text-center border-r border-b border-[#bdc0e8] text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans" title="Z EU do UK (výber col. úkonu)">
                 <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </th>
-              <th rowSpan={2} className="box-border py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] text-right border-r border-slate-300 font-sans text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] text-right border-r border-slate-300 font-sans text-black" title="Náklady od UK agenta">
                 <span className="whitespace-nowrap">FA OD UK</span>
                 <br/>
                 <span className="whitespace-nowrap">AGENTA</span>
               </th>
-              <th rowSpan={2} className="box-border py-2 px-1 w-[86px] min-w-[86px] max-w-[86px] text-right border-r border-slate-300 font-sans text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[86px] min-w-[86px] max-w-[86px] text-right border-r border-slate-300 font-sans text-black" title="Náklady od EU agenta">
                 <span className="whitespace-nowrap">FA OD EU</span>
                 <br/>
                 <span className="whitespace-nowrap">AGENTA</span>
               </th>
-              <th rowSpan={2} className="box-border py-2 px-1 w-[107px] min-w-[107px] max-w-[107px] text-center border-r border-slate-300 text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[107px] min-w-[107px] max-w-[107px] text-center border-r border-slate-300 text-black" title="Suma fakturovaná zákazníkovi">
                 <span className="whitespace-nowrap">FA NA</span>
                 <br/>
                 <span className="whitespace-nowrap">ZÁKAZNÍKA</span>
               </th>
-              <th rowSpan={2} className="p-2 min-w-[85px] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-2 min-w-[85px] border-r border-slate-300 text-black" title="Interná poznámka">
                 POZNÁMKA
               </th>
-              <th rowSpan={2} className="box-border py-2 px-1 w-[78px] min-w-[78px] max-w-[78px] text-right border-r border-slate-300 text-black font-extrabold whitespace-nowrap">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[78px] min-w-[78px] max-w-[78px] text-right border-r border-slate-300 text-black font-extrabold whitespace-nowrap" title="Zisk">
                 ZISK (€)
               </th>
               <th rowSpan={2} className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center align-middle border-r border-slate-300 text-black overflow-hidden">
@@ -511,16 +511,20 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                   className="mx-auto block h-[34.56px] w-[34.56px] max-w-full object-contain"
                 />
               </th>
-              <th rowSpan={2} className="box-border py-2 px-1 w-[84px] min-w-[84px] max-w-[84px] text-center border-r border-slate-300 text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[84px] min-w-[84px] max-w-[84px] text-center border-r border-slate-300 text-black" title="Číslo faktúry">
                 ČÍSLO
                 <br />
                 FAKTÚRY
               </th>
-              <th rowSpan={2} className="box-border py-2 px-1 w-[85px] min-w-[85px] max-w-[85px] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[85px] min-w-[85px] max-w-[85px] border-r border-slate-300 text-black" title="Dátum splatnosti">
                 SPLATNÁ
               </th>
-              <th rowSpan={2} className="p-2 w-[15mm] min-w-[15mm] max-w-[15mm] box-border text-center border-r border-slate-300 text-black font-bold">
-                @
+              <th rowSpan={2} className="p-2 w-[15mm] min-w-[15mm] max-w-[15mm] box-border text-center border-r border-slate-300 text-black" title="Fakturácia na zákazníka">
+                <img
+                  src="/invsend.png"
+                  alt="Fakturácia na zákazníka"
+                  className="mx-auto block h-[34.56px] w-[34.56px] max-w-full object-contain"
+                />
               </th>
               <th rowSpan={2} className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center text-black">
                 <img src="/money.png" alt="ÚHRADA" className="mx-auto max-w-none" />
@@ -713,12 +717,12 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                           <span
                             className="relative inline-block overflow-hidden shrink-0"
                             style={{ width: 28, height: 40 }}
-                            title="Faktúra odoslaná emailom"
+                            title="Odoslané zákazníkovi emailom"
                           >
                             {/* confi.png is a source sheet; show only the green confirmation badge */}
                             <img
                               src="/confi.png"
-                              alt="Faktúra odoslaná emailom"
+                              alt="Odoslané zákazníkovi emailom"
                               className="absolute max-w-none pointer-events-none"
                               style={{
                                 width: 110,
@@ -732,7 +736,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                         {invoicePin !== 'none' && (
                           <button
                             type="button"
-                            title="Stiahnuť faktúru"
+                            title={invoicePin === 'corrected' ? 'Oprava vystavenej faktúry' : 'Vystavená faktúra'}
                             onClick={(e) => {
                               e.stopPropagation();
                               onDownloadInvoice?.(r.id);
@@ -741,7 +745,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                           >
                             <img
                               src={invoicePin === 'corrected' ? '/pinnew.png' : '/pin.png'}
-                              alt="Faktúra PDF"
+                              alt={invoicePin === 'corrected' ? 'Oprava vystavenej faktúry' : 'Vystavená faktúra'}
                               className="h-[44px] w-auto max-w-full mx-auto object-contain pointer-events-none"
                             />
                           </button>
@@ -771,10 +775,10 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                           onTogglePaid(r.id, !r.zaplatena);
                         }}
                         className="inline-flex items-center justify-center cursor-pointer p-0.5 hover:opacity-80 transition-opacity"
-                        title={r.zaplatena ? 'Zaplatené (Kliknite pre zmenu)' : 'Nezaplatené (Kliknite pre zmenu)'}
+                        title={r.zaplatena ? 'Uhradená' : 'Nezaplatené (Kliknite pre zmenu)'}
                       >
                         {r.zaplatena ? (
-                          <img src="/yes.png" alt="Zaplatené" className="max-w-none" />
+                          <img src="/yes.png" alt="Uhradená" className="max-w-none" />
                         ) : (
                           <span className="w-3.5 h-3.5 border border-slate-400 rounded-sm bg-white hover:border-slate-600 inline-block" />
                         )}
