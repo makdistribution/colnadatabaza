@@ -454,17 +454,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th rowSpan={2} className="p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black">
                 <img src="/edit1.png" alt="Akcia" className="mx-auto h-6 w-auto object-contain" />
               </th>
-              <th rowSpan={2} className="p-2 min-w-[196px] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-2 min-w-[calc(172px-4mm)] border-r border-slate-300 text-black">
                 ZÁKAZNÍK
               </th>
               <th rowSpan={2} className="p-1 w-4 text-center border-r border-slate-300 text-black" title="Nové colné konanie v evidencii">
                 NEW
               </th>
-              <th rowSpan={2} className="box-border py-2 px-[calc((40px-2mm-26.375px)/2)] w-[calc(40px-2mm)] min-w-[calc(40px-2mm)] max-w-[calc(40px-2mm)] text-center border-r border-slate-300 text-black" title="Email odoslaný">
-                <img src="/mail.png" alt="Email odoslaný" className="mx-auto object-contain -mb-[3px] p-0 max-w-none shrink-0" style={{ width: '26.375px', height: '41px' }} />
+              <th rowSpan={2} className="box-border p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="Email odoslaný">
+                <img src="/mail.png" alt="Email odoslaný" className="mx-auto object-contain p-0 max-w-none shrink-0" style={{ width: '40px', height: '40px' }} />
               </th>
-              <th rowSpan={2} className="box-border py-2 px-[calc((40px-2mm-23px)/2)] w-[calc(40px-2mm)] min-w-[calc(40px-2mm)] max-w-[calc(40px-2mm)] text-center border-r border-slate-300 text-black" title="OPRAVA">
-                <img src="/edit.png" alt="OPRAVA" className="mx-auto object-contain p-0 max-w-none shrink-0" style={{ width: '23px', height: '41px', marginTop: '2px', marginLeft: '0px', paddingTop: '0px', paddingLeft: '0px' }} />
+              <th rowSpan={2} className="box-border p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="OPRAVA">
+                <img src="/edit.png" alt="OPRAVA" className="mx-auto object-contain p-0 max-w-none shrink-0" style={{ width: '40px', height: '40px' }} />
               </th>
               <th rowSpan={2} className="p-1 min-w-[60px] border-r border-slate-300 text-black">
                 DÁTUM
@@ -619,14 +619,14 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* EMAIL SENT — permanent after successful EmailJS notification */}
-                    <td className="box-border py-2 px-[calc((40px-2mm-26.375px)/2)] w-[calc(40px-2mm)] min-w-[calc(40px-2mm)] max-w-[calc(40px-2mm)] text-center border-r border-slate-200">
+                    <td className="box-border p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-200">
                       {r.invoicingEmailSentAt && (
                         <img src="/yes.png" alt="Email odoslaný" title="Email odoslaný" className="mx-auto max-w-none object-contain" />
                       )}
                     </td>
 
                     {/* OPRAVA — permanent after editing an existing record */}
-                    <td className="box-border py-2 px-[calc((40px-2mm-23px)/2)] w-[calc(40px-2mm)] min-w-[calc(40px-2mm)] max-w-[calc(40px-2mm)] text-center border-r border-slate-200">
+                    <td className="box-border p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-200">
                       {r.alert && (
                         <img src="/yes.png" alt="OPRAVA" title="OPRAVA" className="mx-auto max-w-none object-contain" />
                       )}
