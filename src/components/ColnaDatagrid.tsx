@@ -504,7 +504,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th rowSpan={2} className="box-border py-2 px-1 w-[78px] min-w-[78px] max-w-[78px] text-right border-r border-slate-300 text-black font-extrabold whitespace-nowrap" title="Zisk">
                 ZISK (€)
               </th>
-              <th rowSpan={2} className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center align-middle border-r border-slate-300 text-black overflow-hidden">
+              <th rowSpan={2} className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center align-middle border-r border-slate-300 text-black overflow-hidden" title="Podľa ikony v riadku">
                 <img
                   src="/inv.png"
                   alt="Invoice"
@@ -519,14 +519,14 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th rowSpan={2} className="box-border py-2 px-1 w-[85px] min-w-[85px] max-w-[85px] border-r border-slate-300 text-black" title="Dátum splatnosti">
                 SPLATNÁ
               </th>
-              <th rowSpan={2} className="p-2 w-[15mm] min-w-[15mm] max-w-[15mm] box-border text-center border-r border-slate-300 text-black" title="Fakturácia na zákazníka">
+              <th rowSpan={2} className="p-2 w-[15mm] min-w-[15mm] max-w-[15mm] box-border text-center border-r border-slate-300 text-black" title="Faktúra odoslaná zákazníkovi">
                 <img
                   src="/invsend.png"
-                  alt="Fakturácia na zákazníka"
+                  alt="Faktúra odoslaná zákazníkovi"
                   className="mx-auto block h-[34.56px] w-[34.56px] max-w-full object-contain"
                 />
               </th>
-              <th rowSpan={2} className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center text-black">
+              <th rowSpan={2} className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center text-black" title="Stav úhrady">
                 <img src="/money.png" alt="ÚHRADA" className="mx-auto max-w-none" />
               </th>
             </tr>
