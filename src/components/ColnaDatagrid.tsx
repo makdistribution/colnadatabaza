@@ -454,17 +454,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th rowSpan={2} className="p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black">
                 <img src="/edit1.png" alt="Akcia" className="mx-auto h-6 w-auto object-contain" />
               </th>
-              <th rowSpan={2} className="p-2 min-w-[141px] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="p-2 min-w-[196px] border-r border-slate-300 text-black">
                 ZÁKAZNÍK
               </th>
               <th rowSpan={2} className="p-1 w-4 text-center border-r border-slate-300 text-black" title="Nové colné konanie v evidencii">
                 NEW
               </th>
-              <th rowSpan={2} className="p-2 min-w-[40px] text-center border-r border-slate-300 text-black" title="Email odoslaný">
-                <img src="/mail.png" alt="Email odoslaný" className="mx-auto object-contain -mb-[3px] p-0" style={{ width: '26.375px', height: '41px' }} />
+              <th rowSpan={2} className="box-border py-2 px-[calc((40px-2mm-26.375px)/2)] w-[calc(40px-2mm)] min-w-[calc(40px-2mm)] max-w-[calc(40px-2mm)] text-center border-r border-slate-300 text-black" title="Email odoslaný">
+                <img src="/mail.png" alt="Email odoslaný" className="mx-auto object-contain -mb-[3px] p-0 max-w-none shrink-0" style={{ width: '26.375px', height: '41px' }} />
               </th>
-              <th rowSpan={2} className="p-2 min-w-[36px] text-center border-r border-slate-300 text-black" title="OPRAVA">
-                <img src="/edit.png" alt="OPRAVA" className="mx-auto object-contain p-0" style={{ width: '23px', height: '41px', marginTop: '2px', marginLeft: '0px', paddingTop: '0px', paddingLeft: '0px' }} />
+              <th rowSpan={2} className="box-border py-2 px-[calc((40px-2mm-23px)/2)] w-[calc(40px-2mm)] min-w-[calc(40px-2mm)] max-w-[calc(40px-2mm)] text-center border-r border-slate-300 text-black" title="OPRAVA">
+                <img src="/edit.png" alt="OPRAVA" className="mx-auto object-contain p-0 max-w-none shrink-0" style={{ width: '23px', height: '41px', marginTop: '2px', marginLeft: '0px', paddingTop: '0px', paddingLeft: '0px' }} />
               </th>
               <th rowSpan={2} className="p-1 min-w-[60px] border-r border-slate-300 text-black">
                 DÁTUM
@@ -483,17 +483,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th colSpan={2} className="p-1.5 text-center border-r border-b border-[#bdc0e8] text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans">
                 <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </th>
-              <th rowSpan={2} className="p-2 min-w-[78px] text-right border-r border-slate-300 font-sans text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] text-right border-r border-slate-300 font-sans text-black">
                 <span className="whitespace-nowrap">FA OD UK</span>
                 <br/>
-                <span className="whitespace-nowrap mr-[5px]">AGENTA</span>
+                <span className="whitespace-nowrap">AGENTA</span>
               </th>
-              <th rowSpan={2} className="p-2 min-w-[78px] text-right border-r border-slate-300 font-sans text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[86px] min-w-[86px] max-w-[86px] text-right border-r border-slate-300 font-sans text-black">
                 <span className="whitespace-nowrap">FA OD EU</span>
                 <br/>
-                <span className="whitespace-nowrap pr-[5px]">AGENTA</span>
+                <span className="whitespace-nowrap">AGENTA</span>
               </th>
-              <th rowSpan={2} className="p-2 min-w-[64px] text-center border-r border-slate-300 text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[107px] min-w-[107px] max-w-[107px] text-center border-r border-slate-300 text-black">
                 <span className="whitespace-nowrap">FA NA</span>
                 <br/>
                 <span className="whitespace-nowrap">ZÁKAZNÍKA</span>
@@ -501,7 +501,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th rowSpan={2} className="p-2 min-w-[85px] border-r border-slate-300 text-black">
                 POZNÁMKA
               </th>
-              <th rowSpan={2} className="p-2 min-w-[68px] text-right border-r border-slate-300 text-black font-extrabold whitespace-nowrap">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[78px] min-w-[78px] max-w-[78px] text-right border-r border-slate-300 text-black font-extrabold whitespace-nowrap">
                 ZISK (€)
               </th>
               <th rowSpan={2} className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center align-middle border-r border-slate-300 text-black overflow-hidden">
@@ -511,29 +511,32 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                   className="mx-auto block h-[34.56px] w-[34.56px] max-w-full object-contain"
                 />
               </th>
-              <th rowSpan={2} className="p-2 min-w-[67px] text-center border-r border-slate-300 text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[84px] min-w-[84px] max-w-[84px] text-center border-r border-slate-300 text-black">
                 ČÍSLO
                 <br />
                 FAKTÚRY
               </th>
-              <th rowSpan={2} className="p-2 min-w-[58px] border-r border-slate-300 text-black">
+              <th rowSpan={2} className="box-border py-2 px-1 w-[85px] min-w-[85px] max-w-[85px] border-r border-slate-300 text-black">
                 SPLATNÁ
+              </th>
+              <th rowSpan={2} className="p-2 w-[15mm] min-w-[15mm] max-w-[15mm] box-border text-center border-r border-slate-300 text-black font-bold">
+                @
               </th>
               <th rowSpan={2} className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center text-black">
                 <img src="/money.png" alt="ÚHRADA" className="mx-auto max-w-none" />
               </th>
             </tr>
             <tr className="bg-slate-200 text-black font-bold select-none text-[13px] leading-[20px] border-b-2 border-slate-400 font-sans">
-              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
+              <th className="p-1.5 min-w-[calc(100px-1mm)] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 zaclenie v UK
               </th>
-              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
+              <th className="p-1.5 min-w-[calc(100px-1mm)] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 vyclenie v EU
               </th>
-              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
+              <th className="p-1.5 min-w-[calc(100px-1mm)] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 zaclenie v EU
               </th>
-              <th className="p-1.5 min-w-[100px] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
+              <th className="p-1.5 min-w-[calc(100px-1mm)] border-r border-slate-300 text-black bg-[#F3FBFA] text-center font-sans text-[13px] leading-[20px] whitespace-nowrap">
                 vyclenie v UK
               </th>
             </tr>
@@ -541,7 +544,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
           <tbody className="divide-y divide-slate-200 font-mono text-[14px] text-slate-800">
             {paginatedRecords.length === 0 ? (
               <tr>
-                <td colSpan={22} className="p-10 text-center font-sans">
+                <td colSpan={23} className="p-10 text-center font-sans">
                   <div className="flex flex-col items-center justify-center gap-2 max-w-md mx-auto py-4">
                     <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 mb-1">
                       <Plus className="w-6 h-6" />
@@ -616,14 +619,14 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* EMAIL SENT — permanent after successful EmailJS notification */}
-                    <td className="p-2 text-center border-r border-slate-200">
+                    <td className="box-border py-2 px-[calc((40px-2mm-26.375px)/2)] w-[calc(40px-2mm)] min-w-[calc(40px-2mm)] max-w-[calc(40px-2mm)] text-center border-r border-slate-200">
                       {r.invoicingEmailSentAt && (
                         <img src="/yes.png" alt="Email odoslaný" title="Email odoslaný" className="mx-auto max-w-none object-contain" />
                       )}
                     </td>
 
                     {/* OPRAVA — permanent after editing an existing record */}
-                    <td className="p-2 text-center border-r border-slate-200">
+                    <td className="box-border py-2 px-[calc((40px-2mm-23px)/2)] w-[calc(40px-2mm)] min-w-[calc(40px-2mm)] max-w-[calc(40px-2mm)] text-center border-r border-slate-200">
                       {r.alert && (
                         <img src="/yes.png" alt="OPRAVA" title="OPRAVA" className="mx-auto max-w-none object-contain" />
                       )}
@@ -673,17 +676,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* FA OD UK AGENT */}
-                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[14px] leading-[16px]">
+                    <td className="box-border py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] text-right border-r border-slate-200 text-slate-700 font-mono text-[14px] leading-[16px]">
                       {r.faOdUkAgent ? `${r.faOdUkAgent.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
                     {/* FA OD EU AGENT */}
-                    <td className="p-2 text-right border-r border-slate-200 text-slate-700 font-mono text-[14px] leading-[16px]">
+                    <td className="box-border py-2 px-1 w-[86px] min-w-[86px] max-w-[86px] text-right border-r border-slate-200 text-slate-700 font-mono text-[14px] leading-[16px]">
                       {r.faOdEuAgent ? `${r.faOdEuAgent.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
                     {/* FA KLIENT */}
-                    <td className="p-2 text-right border-r border-slate-200 font-bold text-blue-800 bg-blue-50/30 font-mono text-[14px] leading-[16px]">
+                    <td className="box-border py-2 px-1 w-[107px] min-w-[107px] max-w-[107px] text-right border-r border-slate-200 font-bold text-blue-800 bg-blue-50/30 font-mono text-[14px] leading-[16px]">
                       {r.faKlient ? `${r.faKlient.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
@@ -700,7 +703,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* ZISK */}
-                    <td className="p-2 text-right border-r border-slate-200 font-extrabold text-emerald-700 bg-emerald-50/50 font-mono text-[14px]">
+                    <td className="box-border py-2 px-1 w-[78px] min-w-[78px] max-w-[78px] text-right border-r border-slate-200 font-extrabold text-emerald-700 bg-emerald-50/50 font-mono text-[14px]">
                       {r.zisk ? `${r.zisk.toFixed(2).replace('.', ',')}` : '0,00'}
                     </td>
 
@@ -747,14 +750,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* CISLO FA */}
-                    <td className="p-2 text-slate-700 border-r border-slate-200 font-medium font-mono text-[14px]">
+                    <td className="box-border py-2 px-1 w-[84px] min-w-[84px] max-w-[84px] text-slate-700 border-r border-slate-200 font-medium font-mono text-[14px]">
                       {r.cisloFa}
                     </td>
 
                     {/* SPLATNA */}
-                    <td className="p-2 text-slate-700 border-r border-slate-200 font-mono text-[14px]">
+                    <td className="box-border py-2 px-1 w-[85px] min-w-[85px] max-w-[85px] text-slate-700 border-r border-slate-200 font-mono text-[14px]">
                       {formatDueDateDisplay(r.splatna)}
                     </td>
+
+                    {/* @ — placeholder column (no functionality yet) */}
+                    <td className="p-2 w-[15mm] min-w-[15mm] max-w-[15mm] box-border text-center border-r border-slate-200"></td>
 
                     {/* ZAPLATENA / ÚHRADA */}
                     <td className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center border-r border-slate-200">
@@ -800,7 +806,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 {totalZisk.toFixed(2).replace('.', ',')}
               </td>
               <td className="px-2.5 py-[calc(0.625rem-1mm)] border-r border-slate-300"></td>
-              <td colSpan={3} className="px-2.5 py-[calc(0.625rem-1mm)]"></td>
+              <td colSpan={4} className="px-2.5 py-[calc(0.625rem-1mm)]"></td>
             </tr>
           </tfoot>
         </table>
@@ -905,7 +911,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
 
               <div className="space-y-2 text-slate-600 leading-relaxed text-[11px] bg-slate-50 p-3 rounded-lg border border-slate-200">
                 <div className="flex items-start gap-2">
-                  <img src="/yes.png" alt="" className="h-4 w-4 object-contain shrink-0 mt-0.5" />
+                  <img src="/yes.png" alt="" className="max-w-none object-contain shrink-0 mt-0.5" />
                   <span>Všetky konania a ich zisky budú bezpečne zarchivované v záložke <strong>REPORTY {parseMonthYear(currentMonthYear).year}</strong>.</span>
                 </div>
                 <div className="flex items-start gap-2">
@@ -941,7 +947,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow-xs flex items-center gap-2 transition-all cursor-pointer text-xs disabled:cursor-wait disabled:opacity-70"
               >
-                <img src="/yes.png" alt="" className="h-4 w-4 object-contain" />
+                <img src="/yes.png" alt="" className="max-w-none object-contain" />
                 <span>{isClosingMonth ? 'Uzatváram…' : 'Potvrdiť & Uzatvoriť mesiac'}</span>
               </button>
             </div>

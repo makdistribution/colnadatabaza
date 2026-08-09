@@ -355,16 +355,16 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                               {r.refNaFa}
                             </td>
                             <td className="p-2 text-center border-r border-slate-300 bg-blue-50/30">
-                              {hasUkZaclenie(r) ? <img src="/yes.png" alt="" className="h-4 w-4 mx-auto object-contain" /> : null}
+                              {hasUkZaclenie(r) ? <img src="/yes.png" alt="" className="max-w-none mx-auto object-contain" /> : null}
                             </td>
                             <td className="p-2 text-center border-r border-slate-300 bg-blue-50/30">
-                              {hasEuVyclenie(r) ? <img src="/yes.png" alt="" className="h-4 w-4 mx-auto object-contain" /> : null}
+                              {hasEuVyclenie(r) ? <img src="/yes.png" alt="" className="max-w-none mx-auto object-contain" /> : null}
                             </td>
                             <td className="p-2 text-center border-r border-slate-300 bg-emerald-50/30">
-                              {hasEuZaclenie(r) ? <img src="/yes.png" alt="" className="h-4 w-4 mx-auto object-contain" /> : null}
+                              {hasEuZaclenie(r) ? <img src="/yes.png" alt="" className="max-w-none mx-auto object-contain" /> : null}
                             </td>
                             <td className="p-2 text-center border-r border-slate-300 bg-emerald-50/30">
-                              {hasUkVyclenie(r) ? <img src="/yes.png" alt="" className="h-4 w-4 mx-auto object-contain" /> : null}
+                              {hasUkVyclenie(r) ? <img src="/yes.png" alt="" className="max-w-none mx-auto object-contain" /> : null}
                             </td>
                             <td className="p-2 text-right border-r border-slate-300 text-black">
                               {(r.faOdUkAgent || 0).toFixed(2).replace('.', ',')}
@@ -389,7 +389,7 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                             </td>
                             <td className="p-2 text-center">
                               {r.zaplatena ? (
-                                <img src="/yes.png" alt="Zaplatené" className="h-4 w-4 mx-auto object-contain" />
+                                <img src="/yes.png" alt="Zaplatené" className="max-w-none mx-auto object-contain" />
                               ) : null}
                             </td>
                           </tr>
