@@ -543,16 +543,14 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </th>
               <th rowSpan={2} className="box-border py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] text-center align-middle border-r border-slate-300 font-sans text-black" title="Náklady od UK agenta">
-                <div className="flex flex-col items-center justify-center leading-none">
-                  <span className="whitespace-nowrap">FA OD UK</span>
-                  <span className="whitespace-nowrap">AGENTA</span>
-                </div>
+                <span className="whitespace-nowrap">FA OD UK</span>
+                <br/>
+                <span className="whitespace-nowrap">AGENTA</span>
               </th>
               <th rowSpan={2} className="box-border py-2 px-1 w-[86px] min-w-[86px] max-w-[86px] text-center align-middle border-r border-slate-300 font-sans text-black" title="Náklady od EU agenta">
-                <div className="flex flex-col items-center justify-center leading-none">
-                  <span className="whitespace-nowrap">FA OD EU</span>
-                  <span className="whitespace-nowrap">AGENTA</span>
-                </div>
+                <span className="whitespace-nowrap">FA OD EU</span>
+                <br/>
+                <span className="whitespace-nowrap">AGENTA</span>
               </th>
               <th rowSpan={2} className="box-border py-2 px-1 w-[107px] min-w-[107px] max-w-[107px] text-center border-r border-slate-300 text-black" title="Suma fakturovaná zákazníkovi">
                 <span className="whitespace-nowrap">FA NA</span>

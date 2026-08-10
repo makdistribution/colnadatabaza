@@ -743,7 +743,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   </label>
                 </>
               ) : (
-                <label className="inline-flex items-center gap-2.5 m-0 p-0 cursor-pointer text-slate-700">
+                <label className="inline-flex items-center gap-2 m-0 p-0 cursor-pointer text-slate-700">
                   <input
                     type="checkbox"
                     checked={formData.alert}
@@ -756,23 +756,25 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                     className="object-contain shrink-0 max-w-none self-center block"
                     aria-hidden="true"
                   />
-                  <span className="flex flex-col text-slate-700 font-medium text-[12px] text-left leading-none">
-                    <span className="flex h-[15px] items-center whitespace-nowrap">
-                      Zaznamenať úpravu a
+                  <span className="inline-flex items-start gap-1 shrink-0">
+                    <span className="flex flex-col text-slate-700 font-medium text-[12px] text-left leading-none">
+                      <span className="flex h-[15px] items-center whitespace-nowrap">
+                        Zaznamenať úpravu a
+                      </span>
+                      <span className="flex h-[15px] items-center whitespace-nowrap">
+                        info pre opravu faktúry.
+                      </span>
+                      <span className="flex h-[15px] items-center whitespace-nowrap">
+                        (pre vystavenie novej faktúry)
+                      </span>
                     </span>
-                    <span className="flex h-[15px] items-center whitespace-nowrap">
-                      info pre opravu faktúry.
-                    </span>
-                    <span className="flex h-[15px] items-center whitespace-nowrap">
-                      (pre vystavenie novej faktúry)
-                    </span>
+                    <img
+                      src="/posli.png"
+                      alt=""
+                      className="object-contain shrink-0 max-w-none block"
+                      aria-hidden="true"
+                    />
                   </span>
-                  <img
-                    src="/posli.png"
-                    alt=""
-                    className="object-contain shrink-0 max-w-none self-center block"
-                    aria-hidden="true"
-                  />
                 </label>
               )}
               </div>
@@ -859,7 +861,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 >
                   <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
                     {isUkZaclenieSelected ? (
-                      <img src="/yes.png" alt="" className="max-w-none object-contain block" />
+                      <img src="/yes.png" alt="" className="max-w-none object-contain block -translate-y-[1mm]" />
                     ) : (
                       '＋'
                     )}
@@ -878,7 +880,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 >
                   <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
                     {isEuVyclenieSelected ? (
-                      <img src="/yes.png" alt="" className="max-w-none object-contain block" />
+                      <img src="/yes.png" alt="" className="max-w-none object-contain block -translate-y-[1mm]" />
                     ) : (
                       '＋'
                     )}
@@ -913,7 +915,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 >
                   <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
                     {isEuZaclenieSelected ? (
-                      <img src="/yes.png" alt="" className="max-w-none object-contain block" />
+                      <img src="/yes.png" alt="" className="max-w-none object-contain block -translate-y-[1mm]" />
                     ) : (
                       '＋'
                     )}
@@ -932,7 +934,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 >
                   <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
                     {isUkVyclenieSelected ? (
-                      <img src="/yes.png" alt="" className="max-w-none object-contain block" />
+                      <img src="/yes.png" alt="" className="max-w-none object-contain block -translate-y-[1mm]" />
                     ) : (
                       '＋'
                     )}
@@ -995,7 +997,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 </span>
                 <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 flex w-full h-[26px] box-border items-center justify-center gap-2 whitespace-nowrap leading-none">
                   <span className="font-bold text-emerald-900 text-[11px] leading-none">VYPOČÍTANÝ ZISK:</span>
-                  <span className="text-xs font-black font-mono text-emerald-700 leading-none">{calculatedProfit.toFixed(2)} €</span>
+                  <span className="text-xs font-black font-mono text-emerald-700 leading-none translate-y-[1.75mm]">{calculatedProfit.toFixed(2)} €</span>
                 </div>
               </div>
             </div>
