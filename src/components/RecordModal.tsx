@@ -756,24 +756,22 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                     className="object-contain shrink-0 max-w-none self-center block"
                     aria-hidden="true"
                   />
-                  <span className="inline-flex items-start gap-1 shrink-0">
-                    <span className="flex flex-col text-slate-700 font-medium text-[12px] text-left leading-none">
-                      <span className="flex h-[15px] items-center whitespace-nowrap">
-                        Zaznamenať úpravu a
-                      </span>
-                      <span className="flex h-[15px] items-center whitespace-nowrap">
-                        info pre opravu faktúry.
-                      </span>
-                      <span className="flex h-[15px] items-center whitespace-nowrap">
-                        (pre vystavenie novej faktúry)
-                      </span>
+                  <span className="flex flex-col text-slate-700 font-medium text-[12px] text-left leading-none shrink-0">
+                    <span className="flex h-[15px] items-center whitespace-nowrap gap-1">
+                      Zaznamenať úpravu a
+                      <img
+                        src="/posli.png"
+                        alt=""
+                        className="object-contain shrink-0 max-w-none block"
+                        aria-hidden="true"
+                      />
                     </span>
-                    <img
-                      src="/posli.png"
-                      alt=""
-                      className="object-contain shrink-0 max-w-none block"
-                      aria-hidden="true"
-                    />
+                    <span className="flex h-[15px] items-center whitespace-nowrap">
+                      info pre opravu faktúry.
+                    </span>
+                    <span className="flex h-[15px] items-center whitespace-nowrap">
+                      (pre vystavenie novej faktúry)
+                    </span>
                   </span>
                 </label>
               )}
@@ -995,9 +993,11 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <span className="block text-slate-600 font-medium mb-0.5 text-[11px] leading-none invisible select-none" aria-hidden="true">
                   VYPOČÍTANÝ ZISK
                 </span>
-                <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 flex w-full h-[26px] box-border items-center justify-center gap-2 whitespace-nowrap leading-none">
-                  <span className="font-bold text-emerald-900 text-[11px] leading-none">VYPOČÍTANÝ ZISK:</span>
-                  <span className="text-xs font-black font-mono text-emerald-700 leading-none translate-y-[1.75mm]">{calculatedProfit.toFixed(2)} €</span>
+                <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 flex w-full h-[26px] box-border items-end justify-center gap-2 whitespace-nowrap leading-none pb-1">
+                  <span className="inline-flex items-baseline gap-2 leading-none">
+                    <span className="font-bold text-emerald-900 text-[11px] leading-none">VYPOČÍTANÝ ZISK:</span>
+                    <span className="text-xs font-black font-mono text-emerald-700 leading-none">{calculatedProfit.toFixed(2)} €</span>
+                  </span>
                 </div>
               </div>
             </div>
