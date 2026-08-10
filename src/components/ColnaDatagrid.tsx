@@ -369,7 +369,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={onAddRecord}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" /> PRIDAŤ ZÁZNAM
           </button>
@@ -542,15 +542,17 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th colSpan={2} className="p-1.5 text-center border-r border-b border-[#bdc0e8] text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans" title="Z EU do UK (výber col. úkonu)">
                 <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </th>
-              <th rowSpan={2} className="box-border py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] text-right border-r border-slate-300 font-sans text-black" title="Náklady od UK agenta">
-                <span className="whitespace-nowrap">FA OD UK</span>
-                <br/>
-                <span className="whitespace-nowrap">AGENTA</span>
+              <th rowSpan={2} className="box-border py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] text-center align-middle border-r border-slate-300 font-sans text-black" title="Náklady od UK agenta">
+                <div className="flex flex-col items-center justify-center leading-none">
+                  <span className="whitespace-nowrap">FA OD UK</span>
+                  <span className="whitespace-nowrap">AGENTA</span>
+                </div>
               </th>
-              <th rowSpan={2} className="box-border py-2 px-1 w-[86px] min-w-[86px] max-w-[86px] text-right border-r border-slate-300 font-sans text-black" title="Náklady od EU agenta">
-                <span className="whitespace-nowrap">FA OD EU</span>
-                <br/>
-                <span className="whitespace-nowrap">AGENTA</span>
+              <th rowSpan={2} className="box-border py-2 px-1 w-[86px] min-w-[86px] max-w-[86px] text-center align-middle border-r border-slate-300 font-sans text-black" title="Náklady od EU agenta">
+                <div className="flex flex-col items-center justify-center leading-none">
+                  <span className="whitespace-nowrap">FA OD EU</span>
+                  <span className="whitespace-nowrap">AGENTA</span>
+                </div>
               </th>
               <th rowSpan={2} className="box-border py-2 px-1 w-[107px] min-w-[107px] max-w-[107px] text-center border-r border-slate-300 text-black" title="Suma fakturovaná zákazníkovi">
                 <span className="whitespace-nowrap">FA NA</span>
@@ -800,14 +802,6 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
 
                     <td className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center border-r border-slate-200 overflow-hidden h-[1.6cm] max-h-[1.6cm]">
                       <div className="inline-flex items-center justify-center gap-0.5 w-full h-full px-0.5">
-                        {r.customerInvoiceEmailSentAt && (
-                          <img
-                            src="/yes.png"
-                            alt="Odoslané zákazníkovi emailom"
-                            title="Odoslané zákazníkovi emailom"
-                            className="mx-auto max-w-none object-contain shrink-0"
-                          />
-                        )}
                         {invoicePin !== 'none' && (
                           <button
                             type="button"

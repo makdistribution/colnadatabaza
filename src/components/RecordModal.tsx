@@ -738,7 +738,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                       style={{ width: 48, height: 56 }}
                     />
                     <span className="inline-flex items-center self-center text-slate-600 font-medium text-[12px] whitespace-nowrap leading-none">
-                      Odoslať na fakturáciu
+                      Odoslať Mirovi na fakturáciu
                     </span>
                   </label>
                 </>
@@ -756,8 +756,16 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                     className="object-contain shrink-0 max-w-none self-center block"
                     aria-hidden="true"
                   />
-                  <span className="inline-flex items-center self-center text-slate-700 font-medium text-[12px] whitespace-nowrap leading-none">
-                    Zaznamenať zmenu
+                  <span className="flex flex-col text-slate-700 font-medium text-[12px] text-left leading-none">
+                    <span className="flex h-[15px] items-center whitespace-nowrap">
+                      Zaznamenať úpravu a
+                    </span>
+                    <span className="flex h-[15px] items-center whitespace-nowrap">
+                      info pre opravu faktúry.
+                    </span>
+                    <span className="flex h-[15px] items-center whitespace-nowrap">
+                      (pre vystavenie novej faktúry)
+                    </span>
                   </span>
                   <img
                     src="/posli.png"
@@ -849,9 +857,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                       : 'bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:text-blue-700'
                   }`}
                 >
-                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 shrink-0 leading-none">
+                  <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
                     {isUkZaclenieSelected ? (
-                      <img src="/yes.png" alt="" className="w-3.5 h-3.5 object-contain block" />
+                      <img src="/yes.png" alt="" className="max-w-none object-contain block" />
                     ) : (
                       '＋'
                     )}
@@ -868,9 +876,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                       : 'bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:text-blue-700'
                   }`}
                 >
-                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 shrink-0 leading-none">
+                  <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
                     {isEuVyclenieSelected ? (
-                      <img src="/yes.png" alt="" className="w-3.5 h-3.5 object-contain block" />
+                      <img src="/yes.png" alt="" className="max-w-none object-contain block" />
                     ) : (
                       '＋'
                     )}
@@ -903,9 +911,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                       : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700'
                   }`}
                 >
-                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 shrink-0 leading-none">
+                  <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
                     {isEuZaclenieSelected ? (
-                      <img src="/yes.png" alt="" className="w-3.5 h-3.5 object-contain block" />
+                      <img src="/yes.png" alt="" className="max-w-none object-contain block" />
                     ) : (
                       '＋'
                     )}
@@ -922,9 +930,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                       : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700'
                   }`}
                 >
-                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 shrink-0 leading-none">
+                  <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
                     {isUkVyclenieSelected ? (
-                      <img src="/yes.png" alt="" className="w-3.5 h-3.5 object-contain block" />
+                      <img src="/yes.png" alt="" className="max-w-none object-contain block" />
                     ) : (
                       '＋'
                     )}
@@ -943,7 +951,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               Poplatky & Zisk
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-start">
               <div className="min-w-0">
                 <label className="block text-slate-600 font-medium mb-0.5 text-[11px] leading-none">
                   FA OD UK AGENT (€){requiredMark}
@@ -951,7 +959,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <AmountInput
                   value={formData.faOdUkAgent ?? 0}
                   onChange={(val) => setFormData(prev => ({ ...prev, faOdUkAgent: val }))}
-                  className={`w-full bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border ${
+                  className={`w-full h-[26px] bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border ${
                     fieldMissing('FA OD UK AGENT (€)') ? 'border-red-500' : 'border-slate-200'
                   }`}
                 />
@@ -964,7 +972,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <AmountInput
                   value={formData.faOdEuAgent ?? 0}
                   onChange={(val) => setFormData(prev => ({ ...prev, faOdEuAgent: val }))}
-                  className={`w-full bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border ${
+                  className={`w-full h-[26px] bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border ${
                     fieldMissing('FA OD EU AGENT (€)') ? 'border-red-500' : 'border-slate-200'
                   }`}
                 />
@@ -977,7 +985,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <AmountInput
                   value={formData.faKlient ?? 0}
                   onChange={(val) => setFormData(prev => ({ ...prev, faKlient: val }))}
-                  className="w-full bg-white border border-blue-400 rounded-md px-2.5 py-1 text-blue-900 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border"
+                  className="w-full h-[26px] bg-white border border-blue-400 rounded-md px-2.5 py-1 text-blue-900 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border"
                 />
               </div>
 
@@ -985,7 +993,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <span className="block text-slate-600 font-medium mb-0.5 text-[11px] leading-none invisible select-none" aria-hidden="true">
                   VYPOČÍTANÝ ZISK
                 </span>
-                <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 py-1 flex w-full box-border items-center justify-center gap-2 whitespace-nowrap leading-none">
+                <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 flex w-full h-[26px] box-border items-center justify-center gap-2 whitespace-nowrap leading-none">
                   <span className="font-bold text-emerald-900 text-[11px] leading-none">VYPOČÍTANÝ ZISK:</span>
                   <span className="text-xs font-black font-mono text-emerald-700 leading-none">{calculatedProfit.toFixed(2)} €</span>
                 </div>
