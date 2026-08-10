@@ -475,6 +475,7 @@ export default function App() {
           setSearchTerm={setSearchTerm}
           onRefreshCustoms={handleRefreshCustoms}
           isRefreshingCustoms={isRefreshingCustoms}
+          showMonthYearBanner={activeTab === 'COLNA_DATABAZA'}
         />
       </div>
 
