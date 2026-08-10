@@ -296,14 +296,14 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={() => { setActiveTab('COLNICA_GB_VAT_EORI'); setColnicaDropdownOpen(false); }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
-                      <BookOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <img src="/uk1.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
                       <span>GB VAT/EORI CHECKER</span>
                     </button>
                     <button
                       onClick={() => { setActiveTab('COLNICA_EU_VAT_EORI'); setColnicaDropdownOpen(false); }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
-                      <Key className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <img src="/eu1.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
                       <span>EU VAT/EORI CHECKER</span>
                     </button>
                   </div>
@@ -313,14 +313,14 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={() => { setActiveTab('COLNICA_GB_TARIFF'); setColnicaDropdownOpen(false); }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
-                      <Building2 className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                      <img src="/uk1.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
                       <span>GB ONLINE TARIFF</span>
                     </button>
                     <button
                       onClick={() => { setActiveTab('COLNICA_EU_TARIFF'); setColnicaDropdownOpen(false); }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
-                      <BarChart3 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <img src="/eu1.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
                       <span>EU ONLINE TARIFF</span>
                     </button>
                   </div>
@@ -330,7 +330,7 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={() => { setActiveTab('COLNICA_REX'); setColnicaDropdownOpen(false); }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
-                      <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <img src="/eu1.png" alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
                       <span>REX CHECKER</span>
                     </button>
                   </div>
