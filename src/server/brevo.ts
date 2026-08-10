@@ -13,6 +13,8 @@ export {
 interface CustomerInvoiceEmail {
   toEmail: string;
   toName?: string;
+  fromEmail?: string;
+  bccEmail?: string;
   invoiceNumber: string;
   attachmentFileName: string;
   attachmentBase64: string;
@@ -45,6 +47,13 @@ export const sendCustomerInvoiceEmail = async (email: CustomerInvoiceEmail) => {
     throw new Error('Chýba platný email zákazníka v adresári.');
   }
 
+  const fromEmail = String(email.fromEmail || CUSTOMER_INVOICE_FROM).trim() || CUSTOMER_INVOICE_FROM;
+  if (!fromEmail.includes('@')) {
+    throw new Error('Chýba platný odosielateľ (FROM).');
+  }
+
+  const bccEmail = String(email.bccEmail || CUSTOMER_INVOICE_FROM).trim() || CUSTOMER_INVOICE_FROM;
+
   const invoiceNumber = String(email.invoiceNumber || '').trim();
   if (!invoiceNumber) {
     throw new Error('Chýba číslo faktúry.');
@@ -56,11 +65,8 @@ export const sendCustomerInvoiceEmail = async (email: CustomerInvoiceEmail) => {
     throw new Error('Chýba príloha faktúry PDF.');
   }
 
-  const htmlContent = String(email.htmlBody || '').trim() || CUSTOMER_INVOICE_EMAIL_BODY
-    .split('\n')
-    .map((line) => (line ? `<div>${line}</div>` : '<div><br></div>'))
-    .join('');
-  const textContent = htmlToPlainText(htmlContent) || CUSTOMER_INVOICE_EMAIL_BODY;
+  const htmlContent = String(email.htmlBody || '').trim() || '<div><br></div>';
+  const textContent = htmlToPlainText(htmlContent);
 
   const apiKey = requiredEnvironmentValue('BREVO_API_KEY');
   const subject = buildCustomerInvoiceSubject(invoiceNumber);
@@ -74,7 +80,7 @@ export const sendCustomerInvoiceEmail = async (email: CustomerInvoiceEmail) => {
     },
     body: JSON.stringify({
       sender: {
-        email: CUSTOMER_INVOICE_FROM,
+        email: fromEmail,
         name: process.env.BREVO_SENDER_NAME || 'MAK DISTRIBUTION',
       },
       to: [
@@ -83,11 +89,15 @@ export const sendCustomerInvoiceEmail = async (email: CustomerInvoiceEmail) => {
           ...(email.toName ? { name: email.toName } : {}),
         },
       ],
-      bcc: [
-        {
-          email: CUSTOMER_INVOICE_FROM,
-        },
-      ],
+      ...(bccEmail && bccEmail.includes('@')
+        ? {
+            bcc: [
+              {
+                email: bccEmail,
+              },
+            ],
+          }
+        : {}),
       subject,
       textContent,
       htmlContent,

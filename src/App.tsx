@@ -526,7 +526,6 @@ export default function App() {
               setColnaRecords((prev) =>
                 prev.map((r) => (r.id === record.id ? { ...r, ...record } : r)),
               );
-              setToastMessage('Faktúra bola úspešne odoslaná emailom.');
               setActiveTab('COLNA_DATABAZA');
             }}
             searchTerm={searchTerm}

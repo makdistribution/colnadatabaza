@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, X, Paperclip } from 'lucide-react';
 import { LoadingButtonContent } from './LoadingButtonContent';
-import { EmailRichTextEditor, plainTextToEmailHtml } from './EmailRichTextEditor';
+import { EmailRichTextEditor } from './EmailRichTextEditor';
 import {
-  CUSTOMER_INVOICE_EMAIL_BODY,
   CUSTOMER_INVOICE_FROM,
   buildCustomerInvoiceSubject,
 } from '../server/brevoClient';
@@ -17,8 +16,13 @@ interface InvoiceEmailModalProps {
   isSending?: boolean;
   sendError?: string | null;
   onCancel: () => void;
-  /** Sends email with current HTML body from the rich editor. */
-  onSend: (htmlBody: string) => void;
+  /** Sends email with current HTML body and editable address fields. */
+  onSend: (payload: {
+    htmlBody: string;
+    fromEmail: string;
+    toEmail: string;
+    bccEmail: string;
+  }) => void;
 }
 
 /** Compose / confirm customer invoice email before Brevo send. */
@@ -36,14 +40,18 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
   const [bodyHtml, setBodyHtml] = useState('');
   const [signatureHtml, setSignatureHtml] = useState('');
   const [signatureStatus, setSignatureStatus] = useState<string | null>(null);
+  const [fromEmail, setFromEmail] = useState(CUSTOMER_INVOICE_FROM);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [bccEmail, setBccEmail] = useState(CUSTOMER_INVOICE_FROM);
 
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
     setError(null);
     setSignatureStatus(null);
-
-    const defaultHtml = plainTextToEmailHtml(CUSTOMER_INVOICE_EMAIL_BODY);
+    setFromEmail(CUSTOMER_INVOICE_FROM);
+    setRecipientEmail(toEmail);
+    setBccEmail(CUSTOMER_INVOICE_FROM);
 
     void (async () => {
       try {
@@ -51,22 +59,18 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
         if (cancelled) return;
         const signature = String(result.html || '').trim();
         setSignatureHtml(signature);
-        setBodyHtml(
-          signature
-            ? `${defaultHtml}<div><br></div><div><br></div>${signature}`
-            : defaultHtml,
-        );
+        setBodyHtml(signature);
       } catch {
         if (cancelled) return;
         setSignatureHtml('');
-        setBodyHtml(defaultHtml);
+        setBodyHtml('');
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [isOpen]);
+  }, [isOpen, toEmail]);
 
   if (!isOpen) return null;
 
@@ -74,7 +78,11 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
 
   const handleSend = () => {
     setError(null);
-    if (!toEmail.trim()) {
+    if (!fromEmail.trim()) {
+      setError('Chýba odosielateľ (FROM).');
+      return;
+    }
+    if (!recipientEmail.trim()) {
       setError('Email zákazníka sa nenašiel v adresári.');
       return;
     }
@@ -91,7 +99,12 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
       setError('Email nemá obsah.');
       return;
     }
-    onSend(html);
+    onSend({
+      htmlBody: html,
+      fromEmail: fromEmail.trim(),
+      toEmail: recipientEmail.trim(),
+      bccEmail: bccEmail.trim(),
+    });
   };
 
   const handleSaveSignature = async (html: string) => {
@@ -104,6 +117,9 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
       setError(err instanceof Error ? err.message : 'Uloženie podpisu zlyhalo.');
     }
   };
+
+  const emailFieldClass =
+    'w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none focus:ring-1 focus:ring-blue-500';
 
   return (
     <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
@@ -132,29 +148,32 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
           <div>
             <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">FROM</label>
             <input
-              type="text"
-              readOnly
-              value={CUSTOMER_INVOICE_FROM}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+              type="email"
+              value={fromEmail}
+              onChange={(e) => setFromEmail(e.target.value)}
+              disabled={isSending}
+              className={emailFieldClass}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">TO</label>
               <input
-                type="text"
-                readOnly
-                value={toEmail}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+                type="email"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                disabled={isSending}
+                className={emailFieldClass}
               />
             </div>
             <div>
               <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">BCC</label>
               <input
-                type="text"
-                readOnly
-                value={CUSTOMER_INVOICE_FROM}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+                type="email"
+                value={bccEmail}
+                onChange={(e) => setBccEmail(e.target.value)}
+                disabled={isSending}
+                className={emailFieldClass}
               />
             </div>
           </div>

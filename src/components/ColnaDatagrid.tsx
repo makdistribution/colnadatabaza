@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AdresaRecord, ColnaRecord } from '../types';
 import { parseMonthYear, extractYearAndMonth } from '../utils/monthUtils';
 import { resolveCustomerSkratka } from '../utils/customerSkratka';
@@ -77,6 +77,7 @@ import {
   Trash2, 
   Edit3,
   Copy,
+  AtSign,
   Bell, 
   AlertTriangle, 
   ChevronLeft, 
@@ -144,6 +145,8 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   const [invoiceEmailRecord, setInvoiceEmailRecord] = useState<ColnaRecord | null>(null);
   const [isSendingCustomerInvoiceEmail, setIsSendingCustomerInvoiceEmail] = useState(false);
   const [customerInvoiceEmailError, setCustomerInvoiceEmailError] = useState<string | null>(null);
+  const [emailSentPopupVisible, setEmailSentPopupVisible] = useState(false);
+  const emailSentPopupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pageSize = 10;
 
   const targetYear = parseMonthYear(currentMonthYear).year;
@@ -224,6 +227,12 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     setCurrentPage(1);
   }, [filteredRecords[0]?.id, currentMonthYear, statusFilter, activeViewTab, searchTerm]);
 
+  useEffect(() => {
+    return () => {
+      if (emailSentPopupTimerRef.current) clearTimeout(emailSentPopupTimerRef.current);
+    };
+  }, []);
+
   // Checkbox handlers
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
@@ -285,14 +294,29 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     return String(byOfficial?.email || '').trim();
   };
 
-  const handleSendCustomerInvoiceEmail = async (htmlBody: string) => {
+  const handleSendCustomerInvoiceEmail = async (payload: {
+    htmlBody: string;
+    fromEmail: string;
+    toEmail: string;
+    bccEmail: string;
+  }) => {
     if (!invoiceEmailRecord?.id || isSendingCustomerInvoiceEmail) return;
     setIsSendingCustomerInvoiceEmail(true);
     setCustomerInvoiceEmailError(null);
     try {
-      const result = await appApi.sendCustomerInvoiceEmail(invoiceEmailRecord.id, htmlBody);
+      const result = await appApi.sendCustomerInvoiceEmail(invoiceEmailRecord.id, payload.htmlBody, {
+        fromEmail: payload.fromEmail,
+        toEmail: payload.toEmail,
+        bccEmail: payload.bccEmail,
+      });
       setInvoiceEmailRecord(null);
       onCustomerInvoiceEmailSent?.(result.record);
+      if (emailSentPopupTimerRef.current) clearTimeout(emailSentPopupTimerRef.current);
+      setEmailSentPopupVisible(true);
+      emailSentPopupTimerRef.current = setTimeout(() => {
+        setEmailSentPopupVisible(false);
+        emailSentPopupTimerRef.current = null;
+      }, 2000);
     } catch (err) {
       setCustomerInvoiceEmailError(err instanceof Error ? err.message : 'Odoslanie emailu zlyhalo.');
     } finally {
@@ -650,18 +674,18 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                               setCustomerInvoiceEmailError(null);
                               setInvoiceEmailRecord(r);
                             }}
-                            className="text-blue-600 hover:text-blue-800 p-0 cursor-pointer inline-flex items-center justify-center font-bold text-[14px] leading-none"
+                            className="text-blue-600 hover:text-blue-800 mt-2.5 p-0 cursor-pointer inline-flex items-center justify-center leading-none"
                             title="Odoslať FA emailom"
                           >
-                            @
+                            <AtSign className="w-3.5 h-3.5" strokeWidth={2.25} />
                           </button>
                         ) : (
                           <span
-                            className="text-slate-300 p-0 inline-flex items-center justify-center font-bold text-[14px] leading-none select-none pointer-events-none"
+                            className="text-slate-300 mt-2.5 p-0 inline-flex items-center justify-center leading-none select-none pointer-events-none"
                             aria-disabled="true"
                             title="Najprv nahrajte faktúru"
                           >
-                            @
+                            <AtSign className="w-3.5 h-3.5" strokeWidth={2.25} />
                           </span>
                         )}
                       </div>
@@ -777,24 +801,12 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     <td className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center border-r border-slate-200 overflow-hidden h-[1.6cm] max-h-[1.6cm]">
                       <div className="inline-flex items-center justify-center gap-0.5 w-full h-full px-0.5">
                         {r.customerInvoiceEmailSentAt && (
-                          <span
-                            className="relative inline-block overflow-hidden shrink-0"
-                            style={{ width: 28, height: 40 }}
+                          <img
+                            src="/yes.png"
+                            alt="Odoslané zákazníkovi emailom"
                             title="Odoslané zákazníkovi emailom"
-                          >
-                            {/* confi.png is a source sheet; show only the green confirmation badge */}
-                            <img
-                              src="/confi.png"
-                              alt="Odoslané zákazníkovi emailom"
-                              className="absolute max-w-none pointer-events-none"
-                              style={{
-                                width: 110,
-                                height: 112,
-                                left: -52,
-                                top: -67,
-                              }}
-                            />
-                          </span>
+                            className="mx-auto max-w-none object-contain shrink-0"
+                          />
                         )}
                         {invoicePin !== 'none' && (
                           <button
@@ -919,6 +931,14 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
         />
       )}
 
+      {emailSentPopupVisible && (
+        <div className="fixed inset-0 z-[70] flex items-start justify-center pt-24 pointer-events-none print:hidden">
+          <div className="pointer-events-none rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-2xl">
+            Email bol úspešne odoslaný.
+          </div>
+        </div>
+      )}
+
       <InvoiceEmailModal
         isOpen={!!invoiceEmailRecord}
         toEmail={invoiceEmailRecord ? resolveCustomerEmail(invoiceEmailRecord) : ''}
@@ -932,7 +952,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
             setCustomerInvoiceEmailError(null);
           }
         }}
-        onSend={(htmlBody) => { void handleSendCustomerInvoiceEmail(htmlBody); }}
+        onSend={(payload) => { void handleSendCustomerInvoiceEmail(payload); }}
       />
 
       <ConfirmDeleteModal

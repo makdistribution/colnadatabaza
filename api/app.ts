@@ -89,6 +89,9 @@ type ActionBody = {
   clearNewBadge?: boolean;
   closeYear?: boolean;
   htmlBody?: string;
+  fromEmail?: string;
+  toEmail?: string;
+  bccEmail?: string;
   signatureHtml?: string;
 };
 
@@ -732,7 +735,11 @@ const getInvoiceDownloadUrl = async (recordId: string) => {
   return { url: data.signedUrl, fileName };
 };
 
-const sendCustomerInvoiceEmailAction = async (recordId: string, htmlBody?: string) => {
+const sendCustomerInvoiceEmailAction = async (
+  recordId: string,
+  htmlBody?: string,
+  addressOverrides?: { fromEmail?: string; toEmail?: string; bccEmail?: string },
+) => {
   const supabase = getSupabaseAdmin();
   const { data: recordRow, error: recordError } = await supabase
     .from('customs_records')
@@ -763,7 +770,8 @@ const sendCustomerInvoiceEmailAction = async (recordId: string, htmlBody?: strin
   const customer =
     directory.find((d) => d.skratka === customerName)
     || directory.find((d) => d.nazovFirmy === customerName);
-  const toEmail = String(customer?.email || '').trim();
+  const directoryEmail = String(customer?.email || '').trim();
+  const toEmail = String(addressOverrides?.toEmail || directoryEmail).trim();
   if (!toEmail) {
     throw new Error('Email zákazníka sa nenašiel v adresári. Doplňte email v ADRESÁR ZÁKAZNÍKOV.');
   }
@@ -780,6 +788,8 @@ const sendCustomerInvoiceEmailAction = async (recordId: string, htmlBody?: strin
   await sendCustomerInvoiceEmail({
     toEmail,
     toName: customer?.nazovFirmy || customerName,
+    fromEmail: addressOverrides?.fromEmail,
+    bccEmail: addressOverrides?.bccEmail,
     invoiceNumber,
     attachmentFileName,
     attachmentBase64: pdfBuffer.toString('base64'),
@@ -898,7 +908,11 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     }
 
     if (body.action === 'sendCustomerInvoiceEmail' && body.id) {
-      const record = await sendCustomerInvoiceEmailAction(body.id, body.htmlBody);
+      const record = await sendCustomerInvoiceEmailAction(body.id, body.htmlBody, {
+        fromEmail: body.fromEmail,
+        toEmail: body.toEmail,
+        bccEmail: body.bccEmail,
+      });
       sendJson(response, 200, { record, bootstrap: await loadBootstrapData() });
       return;
     }
