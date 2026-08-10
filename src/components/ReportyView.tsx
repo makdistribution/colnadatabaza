@@ -323,9 +323,9 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                             <span className="inline-block translate-y-[1px]">➔</span>{' '}
                             <img src="/uk1.png" alt="UK" className="inline-block w-4 h-4 object-contain" />
                           </th>
-                          <th rowSpan={2} className="p-2 text-right border-r border-slate-300 text-black align-middle whitespace-nowrap">FA OD UK AGENT</th>
-                          <th rowSpan={2} className="p-2 text-right border-r border-slate-300 text-black align-middle whitespace-nowrap">FA OD EU AGENT</th>
-                          <th rowSpan={2} className="p-2 text-right border-r border-slate-300 text-black align-middle whitespace-nowrap">FA. KLIENT</th>
+                          <th rowSpan={2} className="p-2 text-center border-r border-slate-300 text-black align-middle whitespace-nowrap">FA OD UK AGENT</th>
+                          <th rowSpan={2} className="p-2 text-center border-r border-slate-300 text-black align-middle whitespace-nowrap">FA OD EU AGENT</th>
+                          <th rowSpan={2} className="p-2 text-center border-r border-slate-300 text-black align-middle whitespace-nowrap">FA. KLIENT</th>
                           <th rowSpan={2} className="p-2 min-w-[110px] border-r border-slate-300 text-black align-middle">INT. POZNÁMKA</th>
                           <th rowSpan={2} className="p-2 text-right border-r border-slate-300 text-emerald-800 font-extrabold align-middle">ZISK</th>
                           <th rowSpan={2} className="p-2 min-w-[80px] border-r border-slate-300 text-black align-middle">ČÍSLO FA.</th>
