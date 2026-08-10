@@ -48,13 +48,18 @@ export const QuickStatsHeader: React.FC<QuickStatsHeaderProps> = ({
             />
           </div>
 
-          {/* Center: Month banner */}
+          {/* Center: Month banner — flex geometric centre + em optical offset for cap-height ink */}
           <div className="flex justify-center items-center px-2">
             <div
-              className="font-sans text-blue-950 font-black tracking-widest bg-white px-8 py-1.5 rounded-xl border-[3px] border-[#000a2f] shadow-sm flex items-center justify-center whitespace-nowrap"
-              style={{ fontFamily: 'system-ui', fontSize: '22px' }}
+              className="font-sans text-blue-950 font-black tracking-widest bg-white px-8 py-1.5 rounded-xl border-[3px] border-[#000a2f] shadow-sm flex items-center justify-center whitespace-nowrap leading-none"
+              style={{ fontFamily: 'system-ui', fontSize: '22px', lineHeight: 1 }}
             >
-              {currentMonthYear}
+              <span
+                className="leading-none"
+                style={{ lineHeight: 1, transform: 'translateY(-0.05em)' }}
+              >
+                {currentMonthYear}
+              </span>
             </div>
           </div>
 
