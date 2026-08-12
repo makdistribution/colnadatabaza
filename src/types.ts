@@ -75,7 +75,12 @@ export interface AdresaRecord {
   dic: string;
   icDph: string;
   telefonneCislo: string;
+  /** EMAIL 1 — primary customer email (existing field, must not be renamed). */
   email: string;
+  /** EMAIL 2 — optional additional customer email. */
+  email2: string;
+  /** EMAIL 3 — optional additional customer email. */
+  email3: string;
   poznamka: string;
 }
 

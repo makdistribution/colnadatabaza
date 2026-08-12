@@ -285,19 +285,31 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
   })();
   const formatMoney = (value: number) => value.toFixed(2).replace('.', ',');
 
-  const resolveCustomerEmail = (record: ColnaRecord) => {
+  const resolveCustomerEmails = (record: ColnaRecord): string[] => {
     const name = String(record.zakaznik || '').trim();
-    if (!name) return '';
+    if (!name) return [];
     const bySkratka = customerDirectory.find((d) => String(d.skratka || '').trim() === name);
-    if (bySkratka?.email) return String(bySkratka.email).trim();
     const byOfficial = customerDirectory.find((d) => String(d.nazovFirmy || '').trim() === name);
-    return String(byOfficial?.email || '').trim();
+    const customer = bySkratka || byOfficial;
+    if (!customer) return [];
+    const emails = [customer.email, customer.email2, customer.email3]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean);
+    const seen = new Set<string>();
+    const unique: string[] = [];
+    for (const email of emails) {
+      const key = email.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(email);
+    }
+    return unique;
   };
 
   const handleSendCustomerInvoiceEmail = async (payload: {
     htmlBody: string;
     fromEmail: string;
-    toEmail: string;
+    toEmails: string[];
     bccEmail: string;
   }) => {
     if (!invoiceEmailRecord?.id || isSendingCustomerInvoiceEmail) return;
@@ -306,7 +318,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     try {
       const result = await appApi.sendCustomerInvoiceEmail(invoiceEmailRecord.id, payload.htmlBody, {
         fromEmail: payload.fromEmail,
-        toEmail: payload.toEmail,
+        toEmails: payload.toEmails,
         bccEmail: payload.bccEmail,
       });
       setInvoiceEmailRecord(null);
@@ -933,7 +945,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
 
       <InvoiceEmailModal
         isOpen={!!invoiceEmailRecord}
-        toEmail={invoiceEmailRecord ? resolveCustomerEmail(invoiceEmailRecord) : ''}
+        directoryEmails={invoiceEmailRecord ? resolveCustomerEmails(invoiceEmailRecord) : []}
         invoiceNumber={String(invoiceEmailRecord?.cisloFa || '').trim()}
         attachmentName={invoiceDisplayNameFromPath(invoiceEmailRecord?.invoicePdfPath)}
         isSending={isSendingCustomerInvoiceEmail}

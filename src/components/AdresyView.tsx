@@ -86,6 +86,8 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
       r.icDph.toLowerCase().includes(needle) ||
       (r.telefonneCislo || '').toLowerCase().includes(needle) ||
       r.email.toLowerCase().includes(needle) ||
+      (r.email2 || '').toLowerCase().includes(needle) ||
+      (r.email3 || '').toLowerCase().includes(needle) ||
       (r.poznamka || '').toLowerCase().includes(needle)
     );
   });
@@ -103,13 +105,19 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
       icDph: '',
       telefonneCislo: '',
       email: '',
+      email2: '',
+      email3: '',
       poznamka: ''
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (rec: AdresaRecord) => {
-    setEditingRecord({ ...rec });
+    setEditingRecord({
+      ...rec,
+      email2: rec.email2 || '',
+      email3: rec.email3 || '',
+    });
     setIsModalOpen(true);
   };
 
@@ -224,11 +232,23 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
                     )}
                   </td>
                   <td className="p-2 text-slate-700 border-r-2 border-slate-400">
-                    {r.email && (
-                      <a href={`mailto:${r.email}`} className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1.5 font-normal">
-                        <Mail className="w-3 h-3 text-blue-500" /> {r.email}
-                      </a>
-                    )}
+                    <div className="space-y-0.5">
+                      {r.email && (
+                        <a href={`mailto:${r.email}`} className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1.5 font-normal">
+                          <Mail className="w-3 h-3 text-blue-500" /> {r.email}
+                        </a>
+                      )}
+                      {r.email2 && (
+                        <a href={`mailto:${r.email2}`} className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1.5 font-normal">
+                          <Mail className="w-3 h-3 text-blue-500" /> {r.email2}
+                        </a>
+                      )}
+                      {r.email3 && (
+                        <a href={`mailto:${r.email3}`} className="text-blue-600 underline hover:text-blue-800 flex items-center gap-1.5 font-normal">
+                          <Mail className="w-3 h-3 text-blue-500" /> {r.email3}
+                        </a>
+                      )}
+                    </div>
                   </td>
                   <td className="p-2 text-slate-500 text-[11px]">{r.poznamka}</td>
                 </tr>
@@ -353,11 +373,32 @@ export const AdresyView: React.FC<AdresyViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1">E-MAIL</label>
+                  <label className="block text-slate-600 font-semibold mb-1">EMAIL 1</label>
                   <input
                     type="email"
                     value={editingRecord.email}
                     onChange={(e) => setEditingRecord({ ...editingRecord, email: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">EMAIL 2</label>
+                  <input
+                    type="email"
+                    value={editingRecord.email2 || ''}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, email2: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">EMAIL 3</label>
+                  <input
+                    type="email"
+                    value={editingRecord.email3 || ''}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, email3: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>

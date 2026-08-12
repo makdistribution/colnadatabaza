@@ -103,7 +103,7 @@ export const appApi = {
   sendCustomerInvoiceEmail: (
     recordId: string,
     htmlBody: string,
-    addresses?: { fromEmail?: string; toEmail?: string; bccEmail?: string },
+    addresses?: { fromEmail?: string; toEmail?: string; toEmails?: string[]; bccEmail?: string },
   ) =>
     request<{ record: ColnaRecord; bootstrap: AppBootstrap }>('/api/app', {
       method: 'POST',
@@ -113,6 +113,7 @@ export const appApi = {
         htmlBody,
         fromEmail: addresses?.fromEmail,
         toEmail: addresses?.toEmail,
+        toEmails: addresses?.toEmails,
         bccEmail: addresses?.bccEmail,
       }),
     }),

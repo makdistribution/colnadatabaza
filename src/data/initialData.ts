@@ -1015,6 +1015,8 @@ export const INITIAL_ADRESY_RECORDS: AdresaRecord[] = [
     icDph: 'SK2122128228',
     telefonneCislo: '',
     email: 'info@abcsped.sk',
+    email2: '',
+    email3: '',
     poznamka: '',
   },
   {
@@ -1029,6 +1031,8 @@ export const INITIAL_ADRESY_RECORDS: AdresaRecord[] = [
     icDph: 'SK2120591253',
     telefonneCislo: '',
     email: '',
+    email2: '',
+    email3: '',
     poznamka: '',
   },
   {
@@ -1043,6 +1047,8 @@ export const INITIAL_ADRESY_RECORDS: AdresaRecord[] = [
     icDph: 'CZ46905952',
     telefonneCislo: '',
     email: '',
+    email2: '',
+    email3: '',
     poznamka: '',
   },
   {
@@ -1057,6 +1063,8 @@ export const INITIAL_ADRESY_RECORDS: AdresaRecord[] = [
     icDph: 'SK2022726101',
     telefonneCislo: '',
     email: 'michaela.hinerova@edysea.sk',
+    email2: '',
+    email3: '',
     poznamka: '',
   },
   {
@@ -1071,6 +1079,8 @@ export const INITIAL_ADRESY_RECORDS: AdresaRecord[] = [
     icDph: 'SK2023105634',
     telefonneCislo: '',
     email: 'office@petertransporte.eu',
+    email2: '',
+    email3: '',
     poznamka: '',
   },
   {
@@ -1085,6 +1095,8 @@ export const INITIAL_ADRESY_RECORDS: AdresaRecord[] = [
     icDph: '',
     telefonneCislo: '',
     email: '',
+    email2: '',
+    email3: '',
     poznamka: '',
   },
   {
@@ -1099,6 +1111,8 @@ export const INITIAL_ADRESY_RECORDS: AdresaRecord[] = [
     icDph: '',
     telefonneCislo: '',
     email: '',
+    email2: '',
+    email3: '',
     poznamka: '',
   },
   {
@@ -1113,6 +1127,8 @@ export const INITIAL_ADRESY_RECORDS: AdresaRecord[] = [
     icDph: 'CZ7703165338',
     telefonneCislo: '',
     email: '',
+    email2: '',
+    email3: '',
     poznamka: '',
   },
 ];

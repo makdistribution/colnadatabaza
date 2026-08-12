@@ -88,6 +88,8 @@ export const toCustomerDirectoryRow = (record: AdresaRecord) => ({
   ic_dph: record.icDph || '',
   telefonne_cislo: record.telefonneCislo || '',
   email: record.email || '',
+  email2: record.email2 || '',
+  email3: record.email3 || '',
   poznamka: record.poznamka || '',
   updated_at: new Date().toISOString(),
 });
@@ -104,6 +106,8 @@ export const fromCustomerDirectoryRow = (row: Record<string, unknown>): AdresaRe
   icDph: String(row.ic_dph || ''),
   telefonneCislo: String(row.telefonne_cislo || ''),
   email: String(row.email || ''),
+  email2: String(row.email2 || ''),
+  email3: String(row.email3 || ''),
   poznamka: String(row.poznamka || ''),
 });
 
@@ -514,15 +518,32 @@ export const upsertAdresaRecord = async (
 ): Promise<AdresaRecord> => {
   const mode = await detectMode(supabase);
   if (mode === 'tables') {
-    const { data, error } = await supabase
+    const row = toCustomerDirectoryRow(record);
+    let { data, error } = await supabase
       .from('customer_directory')
-      .upsert(toCustomerDirectoryRow(record), { onConflict: 'id' })
+      .upsert(row, { onConflict: 'id' })
       .select('*')
       .single();
     if (error && /skratka/i.test(error.message || '')) {
       throw new Error(
         "V databáze chýba stĺpec SKRATKA. Spustite v Supabase SQL Editor: alter table public.customer_directory add column if not exists skratka text not null default '';",
       );
+    }
+    // Before email2/email3 migration: keep saving EMAIL 1 and other fields.
+    if (error && /email2|email3/i.test(error.message || '')) {
+      if (String(record.email2 || '').trim() || String(record.email3 || '').trim()) {
+        throw new Error(
+          'V databáze chýbajú stĺpce EMAIL 2 / EMAIL 3. Spustite migráciu 20260812_customer_directory_email2_email3.sql v Supabase SQL Editor.',
+        );
+      }
+      const { email2: _email2, email3: _email3, ...legacyRow } = row;
+      const legacy = await supabase
+        .from('customer_directory')
+        .upsert(legacyRow, { onConflict: 'id' })
+        .select('*')
+        .single();
+      data = legacy.data;
+      error = legacy.error;
     }
     throwIfError(error);
     return fromCustomerDirectoryRow(data);

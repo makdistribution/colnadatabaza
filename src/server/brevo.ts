@@ -11,7 +11,8 @@ export {
 } from './brevoClient.js';
 
 interface CustomerInvoiceEmail {
-  toEmail: string;
+  /** One or more recipient addresses. */
+  toEmails: string[];
   toName?: string;
   fromEmail?: string;
   bccEmail?: string;
@@ -40,10 +41,24 @@ const htmlToPlainText = (html: string) =>
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
+const normalizeRecipients = (emails: string[]) => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of emails || []) {
+    const email = String(raw || '').trim();
+    if (!email || !email.includes('@')) continue;
+    const key = email.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(email);
+  }
+  return result;
+};
+
 /** Send customer invoice PDF via Brevo transactional email API. */
 export const sendCustomerInvoiceEmail = async (email: CustomerInvoiceEmail) => {
-  const toEmail = String(email.toEmail || '').trim();
-  if (!toEmail || !toEmail.includes('@')) {
+  const toEmails = normalizeRecipients(email.toEmails);
+  if (toEmails.length === 0) {
     throw new Error('Chýba platný email zákazníka v adresári.');
   }
 
@@ -70,6 +85,7 @@ export const sendCustomerInvoiceEmail = async (email: CustomerInvoiceEmail) => {
 
   const apiKey = requiredEnvironmentValue('BREVO_API_KEY');
   const subject = buildCustomerInvoiceSubject(invoiceNumber);
+  const toName = String(email.toName || '').trim();
 
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -83,12 +99,10 @@ export const sendCustomerInvoiceEmail = async (email: CustomerInvoiceEmail) => {
         email: fromEmail,
         name: process.env.BREVO_SENDER_NAME || 'MAK DISTRIBUTION',
       },
-      to: [
-        {
-          email: toEmail,
-          ...(email.toName ? { name: email.toName } : {}),
-        },
-      ],
+      to: toEmails.map((toEmail, index) => ({
+        email: toEmail,
+        ...(index === 0 && toName ? { name: toName } : {}),
+      })),
       ...(bccEmail && bccEmail.includes('@')
         ? {
             bcc: [

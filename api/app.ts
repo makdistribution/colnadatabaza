@@ -91,6 +91,7 @@ type ActionBody = {
   htmlBody?: string;
   fromEmail?: string;
   toEmail?: string;
+  toEmails?: string[];
   bccEmail?: string;
   signatureHtml?: string;
 };
@@ -734,7 +735,12 @@ const getInvoiceDownloadUrl = async (recordId: string) => {
 const sendCustomerInvoiceEmailAction = async (
   recordId: string,
   htmlBody?: string,
-  addressOverrides?: { fromEmail?: string; toEmail?: string; bccEmail?: string },
+  addressOverrides?: {
+    fromEmail?: string;
+    toEmail?: string;
+    toEmails?: string[];
+    bccEmail?: string;
+  },
 ) => {
   const supabase = getSupabaseAdmin();
   const { data: recordRow, error: recordError } = await supabase
@@ -755,20 +761,47 @@ const sendCustomerInvoiceEmailAction = async (
   const customerName = String(record.zakaznik || '').trim();
   const { data: adresy, error: adresyError } = await supabase
     .from('customer_directory')
-    .select('skratka, nazov_firmy, email');
+    .select('*');
   throwIfError(adresyError);
 
   const directory = (adresy || []).map((row) => ({
     skratka: String(row.skratka || '').trim(),
     nazovFirmy: String(row.nazov_firmy || '').trim(),
-    email: String(row.email || '').trim(),
+    emails: [row.email, row.email2, row.email3]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean),
   }));
   const customer =
     directory.find((d) => d.skratka === customerName)
     || directory.find((d) => d.nazovFirmy === customerName);
-  const directoryEmail = String(customer?.email || '').trim();
-  const toEmail = String(addressOverrides?.toEmail || directoryEmail).trim();
-  if (!toEmail) {
+
+  const uniqueEmails = (emails: string[]) => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const raw of emails) {
+      const email = String(raw || '').trim();
+      if (!email) continue;
+      const key = email.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(email);
+    }
+    return result;
+  };
+
+  const overrideList = Array.isArray(addressOverrides?.toEmails)
+    ? addressOverrides.toEmails
+    : [];
+  const overrideSingle = String(addressOverrides?.toEmail || '').trim();
+  const directoryEmails = customer?.emails || [];
+  const toEmails = uniqueEmails(
+    overrideList.length > 0
+      ? overrideList
+      : overrideSingle
+        ? [overrideSingle]
+        : directoryEmails.slice(0, 1),
+  );
+  if (toEmails.length === 0) {
     throw new Error('Email zákazníka sa nenašiel v adresári. Doplňte email v ADRESÁR ZÁKAZNÍKOV.');
   }
 
@@ -782,7 +815,7 @@ const sendCustomerInvoiceEmailAction = async (
   const attachmentFileName = invoiceDisplayNameFromPath(storagePath) || 'invoice.pdf';
 
   await sendCustomerInvoiceEmail({
-    toEmail,
+    toEmails,
     toName: customer?.nazovFirmy || customerName,
     fromEmail: addressOverrides?.fromEmail,
     bccEmail: addressOverrides?.bccEmail,
@@ -907,6 +940,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       const record = await sendCustomerInvoiceEmailAction(body.id, body.htmlBody, {
         fromEmail: body.fromEmail,
         toEmail: body.toEmail,
+        toEmails: body.toEmails,
         bccEmail: body.bccEmail,
       });
       sendJson(response, 200, { record, bootstrap: await loadBootstrapData() });
