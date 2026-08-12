@@ -12,6 +12,9 @@ import {
   Folder,
   ArrowLeftRight
 } from 'lucide-react';
+import { VatEoriCheckerModal, type VatEoriRegion } from './VatEoriCheckerModal';
+import { HsCodeCheckerModal } from './HsCodeCheckerModal';
+import { VatEoriSearchModal } from './VatEoriSearchModal';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -19,6 +22,12 @@ interface HeaderProps {
   availableYears?: number[];
   activeReportYear?: number;
 }
+
+type ColnicaModal =
+  | { kind: 'vatEori'; region: VatEoriRegion }
+  | { kind: 'tariff'; title: string; flagSrc: string }
+  | { kind: 'search' }
+  | null;
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
@@ -28,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [colnicaDropdownOpen, setColnicaDropdownOpen] = useState(false);
+  const [colnicaModal, setColnicaModal] = useState<ColnicaModal>(null);
 
   const colnicaTabs = [
     'COLNICA_GB_VAT_EORI',
@@ -122,6 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
+    <>
     <div className="bg-[#000a2f] pt-2 pb-1.5">
       {/* Top Banner Empty Blue Bar */}
       <div className="h-1.5 w-full mb-1" style={{ backgroundColor: '#000a2f' }} />
@@ -266,7 +277,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="whitespace-nowrap">SÚBORY</span>
           </button>
 
-          {/* COLNICA dropdown — same style as FAKTURÁCIA • LOGIN • ADRESY */}
+          {/* VAT / EORI / HS CODE dropdown — same style as FAKTURÁCIA • LOGIN • ADRESY */}
           <div className="relative shrink-0">
             <button
               onClick={() => {
@@ -280,7 +291,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span className="whitespace-nowrap">COLNICA</span>
+              <span className="whitespace-nowrap">VAT / EORI / HS CODE</span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform shrink-0 ${colnicaDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -290,48 +301,75 @@ export const Header: React.FC<HeaderProps> = ({
                   className="fixed inset-0 z-40"
                   onClick={() => setColnicaDropdownOpen(false)}
                 />
-                <div className="absolute left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl py-1 z-50 divide-y divide-slate-500 text-slate-700">
+                <div className="absolute left-0 mt-2 w-[22rem] bg-white border border-slate-200 rounded-xl shadow-2xl py-1 z-50 divide-y divide-slate-500 text-slate-700">
                   <div className="py-1">
                     <button
-                      onClick={() => { setActiveTab('COLNICA_GB_VAT_EORI'); setColnicaDropdownOpen(false); }}
+                      onClick={() => {
+                        setColnicaModal({ kind: 'vatEori', region: 'GB' });
+                        setColnicaDropdownOpen(false);
+                      }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
                       <img src="/uk1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
-                      <span>GB VAT/EORI CHECKER</span>
+                      <span>VAT/EORI CHECKER</span>
                     </button>
                     <button
-                      onClick={() => { setActiveTab('COLNICA_EU_VAT_EORI'); setColnicaDropdownOpen(false); }}
+                      onClick={() => {
+                        setColnicaModal({ kind: 'vatEori', region: 'EU' });
+                        setColnicaDropdownOpen(false);
+                      }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
                       <img src="/eu1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
-                      <span>EU VAT/EORI CHECKER</span>
+                      <span>VAT/EORI CHECKER</span>
                     </button>
                   </div>
 
                   <div className="py-1">
                     <button
-                      onClick={() => { setActiveTab('COLNICA_GB_TARIFF'); setColnicaDropdownOpen(false); }}
+                      onClick={() => {
+                        setColnicaModal({
+                          kind: 'tariff',
+                          title: 'ONLINE TARIFF',
+                          flagSrc: '/uk1.png',
+                        });
+                        setColnicaDropdownOpen(false);
+                      }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
                       <img src="/uk1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
-                      <span>GB ONLINE TARIFF</span>
+                      <span>ONLINE TARIFF</span>
                     </button>
                     <button
-                      onClick={() => { setActiveTab('COLNICA_EU_TARIFF'); setColnicaDropdownOpen(false); }}
+                      onClick={() => {
+                        setColnicaModal({
+                          kind: 'tariff',
+                          title: 'ONLINE TARIC',
+                          flagSrc: '/eu1.png',
+                        });
+                        setColnicaDropdownOpen(false);
+                      }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
                       <img src="/eu1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
-                      <span>EU ONLINE TARIFF</span>
+                      <span>ONLINE TARIC</span>
                     </button>
                   </div>
 
                   <div className="py-1">
                     <button
-                      onClick={() => { setActiveTab('COLNICA_REX'); setColnicaDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
+                      onClick={() => {
+                        setColnicaModal({ kind: 'search' });
+                        setColnicaDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer text-xs font-medium whitespace-nowrap"
                     >
+                      <img src="/uk1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
                       <img src="/eu1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
-                      <span>REX CHECKER</span>
+                      <span>
+                        VAT/EORI no. SEARCH{' '}
+                        <span className="font-normal text-[11px] text-slate-500">(by company name)</span>
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -403,5 +441,22 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
     </div>
   </div>
+
+  <VatEoriCheckerModal
+    isOpen={colnicaModal?.kind === 'vatEori'}
+    region={colnicaModal?.kind === 'vatEori' ? colnicaModal.region : 'GB'}
+    onClose={() => setColnicaModal(null)}
+  />
+  <HsCodeCheckerModal
+    isOpen={colnicaModal?.kind === 'tariff'}
+    title={colnicaModal?.kind === 'tariff' ? colnicaModal.title : ''}
+    flagSrc={colnicaModal?.kind === 'tariff' ? colnicaModal.flagSrc : '/uk1.png'}
+    onClose={() => setColnicaModal(null)}
+  />
+  <VatEoriSearchModal
+    isOpen={colnicaModal?.kind === 'search'}
+    onClose={() => setColnicaModal(null)}
+  />
+  </>
 );
 };

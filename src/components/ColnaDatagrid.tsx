@@ -842,11 +842,11 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                       {formatDueDateDisplay(r.splatna)}
                     </td>
 
-                    {/* Faktúra odoslaná zákazníkovi — yes.png after successful customer invoice email */}
+                    {/* Faktúra odoslaná zákazníkovi — posli1.png after successful customer invoice email */}
                     <td className="p-2 w-[15mm] min-w-[15mm] max-w-[15mm] box-border text-center border-r border-slate-200">
                       {r.customerInvoiceEmailSentAt ? (
                         <img
-                          src="/yes.png"
+                          src="/posli1.png"
                           alt="Odoslané zákazníkovi emailom"
                           title="Odoslané zákazníkovi emailom"
                           className="mx-auto max-w-none object-contain"
