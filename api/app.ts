@@ -120,8 +120,8 @@ const toDatabaseRecord = (record: Partial<ColnaRecord>, id: string, monthStart: 
   fa_od_uk_agent: Number(record.faOdUkAgent) || 0,
   fa_od_eu_agent: Number(record.faOdEuAgent) || 0,
   fa_klient: Number(record.faKlient) || 0,
-  // Pack OPRAVA + invoice clip flags into int_poznamka (no dedicated columns yet).
-  int_poznamka: packCustomsNotes(
+  // Pack POZNÁMKA + OPRAVA + invoice clip flags into oprava_faktury.
+  oprava_faktury: packCustomsNotes(
     record.intPoznamka || '',
     record.opravaFaktury || '',
     record.invoiceCorrected
@@ -164,14 +164,10 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
     faOdEuAgent: Number(record.fa_od_eu_agent) || 0,
     faKlient: Number(record.fa_klient) || 0,
     ...(() => {
-      const packed = unpackCustomsNotes(String(record.int_poznamka || ''));
-      const fromColumn =
-        record.oprava_faktury != null && record.oprava_faktury !== undefined
-          ? String(record.oprava_faktury)
-          : '';
+      const packed = unpackCustomsNotes(String(record.oprava_faktury || ''));
       return {
         intPoznamka: packed.intPoznamka,
-        opravaFaktury: fromColumn || packed.opravaFaktury,
+        opravaFaktury: packed.opravaFaktury,
         invoiceCorrectionPending: packed.invoiceClipState === 'pending',
         invoiceCorrected: packed.invoiceClipState === 'corrected',
         customerInvoiceEmailSentAt: packed.customerInvoiceEmailSentAt,
@@ -492,7 +488,7 @@ const saveRecord = async (record: Partial<ColnaRecord> & { invoiceHandoff?: bool
   if (isUpdate) {
     const { data: existing, error } = await supabase
       .from('customs_records')
-      .select('month_start, is_closed, invoice_token_hash, is_new, alert, invoice_pdf_path, int_poznamka')
+      .select('month_start, is_closed, invoice_token_hash, is_new, alert, invoice_pdf_path, oprava_faktury')
       .eq('id', id)
       .single();
     throwIfError(error);
@@ -502,7 +498,7 @@ const saveRecord = async (record: Partial<ColnaRecord> & { invoiceHandoff?: bool
     isClosed = Boolean(existing.is_closed);
     existingIsNew = Boolean(existing.is_new);
     existingAlert = Boolean(existing.alert);
-    const existingClip = unpackCustomsNotes(String(existing.int_poznamka || '')).invoiceClipState;
+    const existingClip = unpackCustomsNotes(String(existing.oprava_faktury || '')).invoiceClipState;
     clipState = existingClip;
     // Accountant save with invoice already on record → clear NEW permanently.
     if (isInvoiceHandoff && existing.invoice_pdf_path) {
@@ -641,11 +637,11 @@ const completeInvoiceUpload = async (
 
   const { data: existingRow, error: existingError } = await supabase
     .from('customs_records')
-    .select('int_poznamka')
+    .select('oprava_faktury')
     .eq('id', recordId)
     .single();
   throwIfError(existingError);
-  const existingPacked = unpackCustomsNotes(String(existingRow.int_poznamka || ''));
+  const existingPacked = unpackCustomsNotes(String(existingRow.oprava_faktury || ''));
   let nextClip: InvoiceClipState = existingPacked.invoiceClipState;
   // Correction workflow upload → permanent pinnew.png state.
   if (nextClip === 'pending' || nextClip === 'corrected') {
@@ -655,7 +651,7 @@ const completeInvoiceUpload = async (
   const updatePayload: Record<string, unknown> = {
     invoice_pdf_path: invoicePath,
     cislo_fa: extractInvoiceNumberFromFileName(fileName),
-    int_poznamka: packCustomsNotes(
+    oprava_faktury: packCustomsNotes(
       existingPacked.intPoznamka,
       existingPacked.opravaFaktury,
       nextClip,
@@ -797,11 +793,11 @@ const sendCustomerInvoiceEmailAction = async (
   });
 
   const sentAt = new Date().toISOString();
-  const existingPacked = unpackCustomsNotes(String(recordRow.int_poznamka || ''));
+  const existingPacked = unpackCustomsNotes(String(recordRow.oprava_faktury || ''));
   const { data, error } = await supabase
     .from('customs_records')
     .update({
-      int_poznamka: packCustomsNotes(
+      oprava_faktury: packCustomsNotes(
         existingPacked.intPoznamka,
         existingPacked.opravaFaktury,
         existingPacked.invoiceClipState,

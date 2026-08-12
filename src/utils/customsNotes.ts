@@ -1,5 +1,5 @@
 /**
- * Pack/unpack POZNÁMKA + OPRAVA FAKTÚRY + invoice clip flags into int_poznamka
+ * Pack/unpack POZNÁMKA + OPRAVA FAKTÚRY + invoice clip flags into oprava_faktury.
  * until dedicated columns exist in Supabase.
  * Sentinels use ASCII RS + tag (must never appear in normal user text).
  */

@@ -15,11 +15,7 @@ const isPermanentToken = (value: string) => /^[A-Za-z0-9_-]{43}$/.test(value);
 const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
   const storedToken = record.invoice_token_hash ? String(record.invoice_token_hash) : '';
   const invoiceToken = isPermanentToken(storedToken) ? storedToken : undefined;
-  const packed = unpackCustomsNotes(String(record.int_poznamka || ''));
-  const fromColumn =
-    record.oprava_faktury != null && record.oprava_faktury !== undefined
-      ? String(record.oprava_faktury)
-      : '';
+  const packed = unpackCustomsNotes(String(record.oprava_faktury || ''));
   return {
     id: String(record.id),
     zakaznik: String(record.zakaznik || ''),
@@ -35,7 +31,7 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
     faOdEuAgent: Number(record.fa_od_eu_agent) || 0,
     faKlient: Number(record.fa_klient) || 0,
     intPoznamka: packed.intPoznamka,
-    opravaFaktury: fromColumn || packed.opravaFaktury,
+    opravaFaktury: packed.opravaFaktury,
     invoiceCorrectionPending: packed.invoiceClipState === 'pending',
     invoiceCorrected: packed.invoiceClipState === 'corrected',
     customerInvoiceEmailSentAt: packed.customerInvoiceEmailSentAt,
