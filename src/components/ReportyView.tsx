@@ -354,17 +354,33 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                             <td className="p-2 text-black border-r border-slate-300 text-left">
                               {r.refNaFa}
                             </td>
-                            <td className="p-2 text-center border-r border-slate-300 bg-blue-50/30">
-                              {hasUkZaclenie(r) ? <img src="/yes.png" alt="" className="max-w-none mx-auto object-contain" /> : null}
+                            <td className="box-border p-2 text-center border-r border-slate-300 bg-blue-50/30">
+                              <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
+                                {hasUkZaclenie(r) ? (
+                                  <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                                ) : null}
+                              </span>
                             </td>
-                            <td className="p-2 text-center border-r border-slate-300 bg-blue-50/30">
-                              {hasEuVyclenie(r) ? <img src="/yes.png" alt="" className="max-w-none mx-auto object-contain" /> : null}
+                            <td className="box-border p-2 text-center border-r border-slate-300 bg-blue-50/30">
+                              <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
+                                {hasEuVyclenie(r) ? (
+                                  <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                                ) : null}
+                              </span>
                             </td>
-                            <td className="p-2 text-center border-r border-slate-300 bg-emerald-50/30">
-                              {hasEuZaclenie(r) ? <img src="/yes.png" alt="" className="max-w-none mx-auto object-contain" /> : null}
+                            <td className="box-border p-2 text-center border-r border-slate-300 bg-emerald-50/30">
+                              <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
+                                {hasEuZaclenie(r) ? (
+                                  <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                                ) : null}
+                              </span>
                             </td>
-                            <td className="p-2 text-center border-r border-slate-300 bg-emerald-50/30">
-                              {hasUkVyclenie(r) ? <img src="/yes.png" alt="" className="max-w-none mx-auto object-contain" /> : null}
+                            <td className="box-border p-2 text-center border-r border-slate-300 bg-emerald-50/30">
+                              <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
+                                {hasUkVyclenie(r) ? (
+                                  <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                                ) : null}
+                              </span>
                             </td>
                             <td className="p-2 text-right border-r border-slate-300 text-black">
                               {(r.faOdUkAgent || 0).toFixed(2).replace('.', ',')}

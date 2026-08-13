@@ -101,6 +101,65 @@ const AmountInput: React.FC<AmountInputProps> = ({ value, onChange, className })
   );
 };
 
+/** Native yes.png size (public/yes.png) — reserved so selected state cannot grow the button. */
+const ROUTE_YES_ICON_W = 23;
+const ROUTE_YES_ICON_H = 25;
+const ROUTE_BTN_H = ROUTE_YES_ICON_H + 12 + 2; // icon + py-1.5*2 + border*2
+
+const ROUTE_YES_ICON_CLASS = 'max-w-none object-contain block -translate-y-[1mm]';
+const ROUTE_ICON_SLOT_CLASS =
+  'inline-flex items-center justify-center shrink-0 self-center leading-none w-[23px] h-[25px]';
+const ROUTE_BTN_BASE_CLASS =
+  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center gap-1.5 whitespace-nowrap';
+const ROUTE_BTN_ROW_CLASS =
+  'flex flex-nowrap items-center gap-1.5 sm:gap-2 min-h-[39px] overflow-x-auto';
+
+type RouteSelectButtonProps = {
+  selected: boolean;
+  onClick: () => void;
+  label: string;
+  selectedClassName: string;
+  idleClassName: string;
+};
+
+/** Shared UK→EU / EU→UK direction chip — same geometry; only colors differ. */
+const RouteSelectButton: React.FC<RouteSelectButtonProps> = ({
+  selected,
+  onClick,
+  label,
+  selectedClassName,
+  idleClassName,
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`${ROUTE_BTN_BASE_CLASS} ${selected ? selectedClassName : idleClassName}`}
+    style={{ height: ROUTE_BTN_H, minHeight: ROUTE_BTN_H }}
+  >
+    <span
+      className={ROUTE_ICON_SLOT_CLASS}
+      style={{ width: ROUTE_YES_ICON_W, height: ROUTE_YES_ICON_H }}
+    >
+      {selected ? (
+        <img src="/yes.png" alt="" className={ROUTE_YES_ICON_CLASS} />
+      ) : (
+        '＋'
+      )}
+    </span>{' '}
+    {label}
+  </button>
+);
+
+/** Same outer geometry for UK→EU and EU→UK TRASA panels. */
+const routePanelClassName = (highlighted: boolean, handoffMode: boolean) =>
+  `bg-slate-50/70 p-3 sm:p-3.5 rounded-xl space-y-2 border-solid box-border min-h-[108px] ${
+    handoffMode && highlighted
+      ? 'border-[3px] border-[#0f766e]'
+      : handoffMode
+        ? 'border-[3px] border-slate-200'
+        : 'border border-slate-200'
+  }`;
+
 export const RecordModal: React.FC<RecordModalProps> = ({
   isOpen,
   onClose,
@@ -841,50 +900,25 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           <div className={`grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3.5 items-start ${
             fieldMissing('TRASA') ? 'ring-2 ring-red-500 rounded-xl p-1' : ''
           }`}>
-            <div className={`bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border space-y-2 ${
-              isNewInvoicingHandoff && showUkToEuInvoice ? greenPanel : 'border-slate-200'
-            }`}>
+            <div className={routePanelClassName(showUkToEuInvoice, isNewInvoicingHandoff)}>
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
                 TRASA <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </label>
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <button
-                  type="button"
+              <div className={ROUTE_BTN_ROW_CLASS}>
+                <RouteSelectButton
                   onClick={toggleUkZaclenie}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-all flex items-center gap-1.5 ${
-                    isUkZaclenieSelected
-                      ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:text-blue-700'
-                  }`}
-                >
-                  <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
-                    {isUkZaclenieSelected ? (
-                      <img src="/yes.png" alt="" className="max-w-none object-contain block -translate-y-[1mm]" />
-                    ) : (
-                      '＋'
-                    )}
-                  </span>{' '}
-                  zaclenie v UK
-                </button>
-
-                <button
-                  type="button"
+                  selected={isUkZaclenieSelected}
+                  label="zaclenie v UK"
+                  selectedClassName="bg-blue-600 text-white border-blue-700 shadow-xs"
+                  idleClassName="bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:text-blue-700"
+                />
+                <RouteSelectButton
                   onClick={toggleEuVyclenie}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-all flex items-center gap-1.5 ${
-                    isEuVyclenieSelected
-                      ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:text-blue-700'
-                  }`}
-                >
-                  <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
-                    {isEuVyclenieSelected ? (
-                      <img src="/yes.png" alt="" className="max-w-none object-contain block -translate-y-[1mm]" />
-                    ) : (
-                      '＋'
-                    )}
-                  </span>{' '}
-                  vyclenie v EU
-                </button>
+                  selected={isEuVyclenieSelected}
+                  label="vyclenie v EU"
+                  selectedClassName="bg-blue-600 text-white border-blue-700 shadow-xs"
+                  idleClassName="bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:text-blue-700"
+                />
               </div>
             </div>
 
@@ -895,50 +929,25 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               *
             </span>
 
-            <div className={`bg-slate-50/70 p-3 sm:p-3.5 rounded-xl border space-y-2 ${
-              isNewInvoicingHandoff && showEuToUkInvoice ? greenPanel : 'border-slate-200'
-            }`}>
+            <div className={routePanelClassName(showEuToUkInvoice, isNewInvoicingHandoff)}>
               <label className="block text-teal-900 font-bold text-[11px] uppercase tracking-wide">
                 TRASA <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> ➔ <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </label>
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <button
-                  type="button"
+              <div className={ROUTE_BTN_ROW_CLASS}>
+                <RouteSelectButton
                   onClick={toggleEuZaclenie}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-all flex items-center gap-1.5 ${
-                    isEuZaclenieSelected
-                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700'
-                  }`}
-                >
-                  <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
-                    {isEuZaclenieSelected ? (
-                      <img src="/yes.png" alt="" className="max-w-none object-contain block -translate-y-[1mm]" />
-                    ) : (
-                      '＋'
-                    )}
-                  </span>{' '}
-                  zaclenie v EU
-                </button>
-
-                <button
-                  type="button"
+                  selected={isEuZaclenieSelected}
+                  label="zaclenie v EU"
+                  selectedClassName="bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                  idleClassName="bg-white text-slate-700 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700"
+                />
+                <RouteSelectButton
                   onClick={toggleUkVyclenie}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-all flex items-center gap-1.5 ${
-                    isUkVyclenieSelected
-                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                      : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700'
-                  }`}
-                >
-                  <span className="inline-flex items-center justify-center shrink-0 self-center leading-none">
-                    {isUkVyclenieSelected ? (
-                      <img src="/yes.png" alt="" className="max-w-none object-contain block -translate-y-[1mm]" />
-                    ) : (
-                      '＋'
-                    )}
-                  </span>{' '}
-                  vyclenie v UK
-                </button>
+                  selected={isUkVyclenieSelected}
+                  label="vyclenie v UK"
+                  selectedClassName="bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                  idleClassName="bg-white text-slate-700 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700"
+                />
               </div>
             </div>
           </div>
@@ -1257,8 +1266,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   <img src="/uk1.png" alt="" className="inline-block w-5 h-5 object-contain" aria-hidden="true" /> ➔ <img src="/eu1.png" alt="" className="inline-block w-5 h-5 object-contain" aria-hidden="true" />
                 </span>
                 <div
-                  className={`box-border min-w-0 flex-1 rounded-md bg-white px-2.5 py-2 min-h-[36px] ${
-                    showUkToEuInvoice ? greenPanel : 'border border-slate-300'
+                  className={`box-border min-w-0 flex-1 rounded-md bg-white px-2.5 py-2 min-h-[36px] border-solid ${
+                    showUkToEuInvoice ? 'border-[3px] border-[#0f766e]' : 'border-[3px] border-slate-300'
                   }`}
                 >
                   <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">
@@ -1271,8 +1280,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   <img src="/eu1.png" alt="" className="inline-block w-5 h-5 object-contain" aria-hidden="true" /> ➔ <img src="/uk1.png" alt="" className="inline-block w-5 h-5 object-contain" aria-hidden="true" />
                 </span>
                 <div
-                  className={`box-border min-w-0 flex-1 rounded-md bg-white px-2.5 py-2 min-h-[36px] ${
-                    showEuToUkInvoice ? greenPanel : 'border border-slate-300'
+                  className={`box-border min-w-0 flex-1 rounded-md bg-white px-2.5 py-2 min-h-[36px] border-solid ${
+                    showEuToUkInvoice ? 'border-[3px] border-[#0f766e]' : 'border-[3px] border-slate-300'
                   }`}
                 >
                   <p className="text-[11px] leading-snug text-slate-800 select-text cursor-text">

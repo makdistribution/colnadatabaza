@@ -751,31 +751,39 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* zaclenie v UK */}
-                    <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
-                      {getUkZaclenie(r) ? (
-                        <img src="/yes.png" alt="" className="mx-auto max-w-none object-contain" />
-                      ) : null}
+                    <td className="box-border p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
+                      <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
+                        {getUkZaclenie(r) ? (
+                          <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                        ) : null}
+                      </span>
                     </td>
 
                     {/* vyclenie v EU */}
-                    <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
-                      {getEuVyclenie(r) ? (
-                        <img src="/yes.png" alt="" className="mx-auto max-w-none object-contain" />
-                      ) : null}
+                    <td className="box-border p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
+                      <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
+                        {getEuVyclenie(r) ? (
+                          <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                        ) : null}
+                      </span>
                     </td>
 
                     {/* zaclenie v EU */}
-                    <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
-                      {getEuZaclenie(r) ? (
-                        <img src="/yes.png" alt="" className="mx-auto max-w-none object-contain" />
-                      ) : null}
+                    <td className="box-border p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
+                      <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
+                        {getEuZaclenie(r) ? (
+                          <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                        ) : null}
+                      </span>
                     </td>
 
                     {/* vyclenie v UK */}
-                    <td className="p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
-                      {getUkVyclenie(r) ? (
-                        <img src="/yes.png" alt="" className="mx-auto max-w-none object-contain" />
-                      ) : null}
+                    <td className="box-border p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
+                      <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
+                        {getUkVyclenie(r) ? (
+                          <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                        ) : null}
+                      </span>
                     </td>
 
                     {/* FA OD UK AGENT */}
