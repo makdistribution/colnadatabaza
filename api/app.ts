@@ -31,6 +31,7 @@ import {
 } from '../src/server/directoryStore.js';
 import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs.js';
 import { sendCustomerInvoiceEmail } from '../src/server/brevo.js';
+import { validateEoriNumber, validateVatNumber } from '../src/server/vatEoriCheck.js';
 import {
   packCustomsNotes,
   unpackCustomsNotes,
@@ -68,7 +69,9 @@ type ActionBody = {
     | 'prepareDocumentUpload'
     | 'completeDocumentUpload'
     | 'deleteDocument'
-    | 'getDocumentDownloadUrl';
+    | 'getDocumentDownloadUrl'
+    | 'checkVatNumber'
+    | 'checkEoriNumber';
   record?: Partial<ColnaRecord> & { invoiceHandoff?: boolean };
   adresaRecord?: AdresaRecord;
   loginRecord?: LoginRecord;
@@ -94,6 +97,8 @@ type ActionBody = {
   toEmails?: string[];
   bccEmail?: string;
   signatureHtml?: string;
+  number?: string;
+  region?: 'GB' | 'EU';
 };
 
 const INVOICE_BUCKET = 'invoice-pdfs';
@@ -1096,6 +1101,18 @@ export default async function handler(request: ApiRequest, response: ApiResponse
 
     if (body.action === 'getDocumentDownloadUrl' && body.id) {
       sendJson(response, 200, await getDocumentDownloadUrl(body.id));
+      return;
+    }
+
+    if (body.action === 'checkVatNumber' && typeof body.number === 'string') {
+      const region = body.region === 'GB' || body.region === 'EU' ? body.region : 'EU';
+      sendJson(response, 200, { result: await validateVatNumber(body.number, region) });
+      return;
+    }
+
+    if (body.action === 'checkEoriNumber' && typeof body.number === 'string') {
+      const region = body.region === 'GB' || body.region === 'EU' ? body.region : 'EU';
+      sendJson(response, 200, { result: await validateEoriNumber(body.number, region) });
       return;
     }
 

@@ -642,7 +642,7 @@ export default function App() {
           <div className="w-[90vw] h-[90vh] flex items-center justify-center rounded-2xl border border-white/60 bg-white/80 shadow-2xl backdrop-blur-xl">
             <form onSubmit={handleApplicationUnlock} className="w-full max-w-sm px-8 text-center">
               <p className="mb-3 text-center text-4xl font-bold uppercase tracking-wide text-slate-900">
-                ZADAJTE HESLO
+                ZADAJTE  HESLO
               </p>
               <input
                 type="password"

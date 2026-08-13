@@ -229,4 +229,50 @@ export const appApi = {
       method: 'POST',
       body: JSON.stringify({ action: 'getDocumentDownloadUrl', id }),
     }),
+  checkVatNumber: (number: string, region: 'GB' | 'EU') =>
+    request<{
+      result: {
+        status:
+          | 'VALID'
+          | 'INVALID'
+          | 'SERVICE UNAVAILABLE'
+          | 'RATE LIMIT REACHED'
+          | 'FORMAT ERROR'
+          | 'CONFIG ERROR';
+        number?: string;
+        companyName?: string;
+        companyAddress?: string;
+        country?: string;
+        confidence?: string;
+        source?: string;
+        error?: string;
+        detailsUnavailable?: boolean;
+      };
+    }>('/api/app', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'checkVatNumber', number, region }),
+    }),
+  checkEoriNumber: (number: string, region: 'GB' | 'EU') =>
+    request<{
+      result: {
+        status:
+          | 'VALID'
+          | 'INVALID'
+          | 'SERVICE UNAVAILABLE'
+          | 'RATE LIMIT REACHED'
+          | 'FORMAT ERROR'
+          | 'CONFIG ERROR';
+        number?: string;
+        companyName?: string;
+        companyAddress?: string;
+        country?: string;
+        confidence?: string;
+        source?: string;
+        error?: string;
+        detailsUnavailable?: boolean;
+      };
+    }>('/api/app', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'checkEoriNumber', number, region }),
+    }),
 };

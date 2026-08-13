@@ -1,12 +1,16 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { ExternalLink, X } from 'lucide-react';
 
 interface VatEoriSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-/** Placeholder for VAT/EORI company-name search — UI shell only. */
+/**
+ * Company-name / VAT search popup.
+ * vat-search.eu sends X-Frame-Options: DENY, so iframe embedding is blocked.
+ * No VAT-Search API key is configured — show a clear unavailable state + external link.
+ */
 export const VatEoriSearchModal: React.FC<VatEoriSearchModalProps> = ({
   isOpen,
   onClose,
@@ -34,8 +38,25 @@ export const VatEoriSearchModal: React.FC<VatEoriSearchModalProps> = ({
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto flex-1 min-h-0">
-          <div className="border border-slate-200 rounded-xl bg-slate-50/60 p-4 min-h-[160px]" />
+        <div className="p-5 overflow-y-auto flex-1 min-h-0 space-y-3">
+          <div className="border border-amber-200 bg-amber-50 rounded-xl px-4 py-3 text-xs text-amber-900 space-y-2">
+            <p className="font-semibold">Externá služba VAT-Search nie je dostupná v aplikácii.</p>
+            <p>
+              Stránka <span className="font-mono">vat-search.eu</span> blokuje vloženie cez iframe
+              (X-Frame-Options: DENY) a API kľúč pre VAT-Search nie je nakonfigurovaný.
+            </p>
+            <p>Predvolená krajina vyhľadávania: GB.</p>
+          </div>
+          <a
+            href="https://vat-search.eu/?cc=gb"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900"
+          >
+            Otvoriť VAT-Search (GB) v novom okne
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          <div className="border border-slate-200 rounded-xl bg-slate-50/60 p-4 min-h-[120px]" />
         </div>
       </div>
     </div>
