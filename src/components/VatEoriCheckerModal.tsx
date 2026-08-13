@@ -192,7 +192,7 @@ const CheckerPanel: React.FC<CheckerPanelProps> = ({
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-md px-3 py-2.5 min-h-[96px] text-xs text-slate-900 text-left leading-snug">
+      <div className="bg-white border border-slate-200 rounded-md px-3 py-2.5 h-40 overflow-y-auto text-xs text-slate-900 text-left leading-snug">
         {loading && <p className="font-semibold text-slate-600">LOADING…</p>}
         {!loading && hasResultContent && (
           <div className="space-y-0">
