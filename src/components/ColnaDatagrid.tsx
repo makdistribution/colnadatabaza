@@ -508,7 +508,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
       <div className="w-full overflow-x-auto min-[1600px]:overflow-x-hidden">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-[#dae3ed] text-black uppercase font-extrabold tracking-wider border-b border-slate-300 select-none text-[16px] leading-tight font-sans">
+            <tr className="bg-[#dae3ed] text-black uppercase font-extrabold tracking-wider border-t-2 border-t-slate-400 border-b border-slate-300 select-none text-[16px] leading-tight font-sans">
               <th rowSpan={2} className="p-2 w-7 text-center border-r border-slate-300 text-black">
                 <input
                   type="checkbox"
