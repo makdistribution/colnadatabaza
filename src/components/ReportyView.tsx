@@ -9,6 +9,7 @@ import {
 } from '../data/july2026ReportOverride';
 import { formatDueDateDisplay } from '../utils/dueDate';
 import { BarChart3, ChevronDown, ChevronRight, TrendingUp, Clock } from 'lucide-react';
+import { ReportPaidPinModal } from './ReportPaidPinModal';
 
 const hasUkZaclenie = (r: ColnaRecord) => {
   const lower = (r.ukToEu || '').toLowerCase();
@@ -35,6 +36,7 @@ interface ReportyViewProps {
   availableYears?: number[];
   searchTerm?: string;
   customerDirectory?: AdresaRecord[];
+  onTogglePaid?: (monthStart: string, isPaid: boolean) => Promise<void>;
 }
 
 const recordMatchesSearch = (record: ColnaRecord, term: string) => {
@@ -85,8 +87,11 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
   availableYears,
   searchTerm = '',
   customerDirectory = [],
+  onTogglePaid,
 }) => {
   const [collapsedMonths, setCollapsedMonths] = useState<Record<number, boolean>>({});
+  const [pinModalMonthStart, setPinModalMonthStart] = useState<string | null>(null);
+  const [pinModalError, setPinModalError] = useState<string | null>(null);
 
   const yearList = availableYears && availableYears.length > 0 ? availableYears : [year];
 
@@ -140,6 +145,8 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
       totalRevenue,
       totalCosts: report?.totalCosts || 0,
       hasSearchMatches: displayRecords.length > 0,
+      monthStart: report?.monthStart,
+      isPaid: report?.isPaid || false,
     };
   }).filter((g) => reportedMonths.has(g.monthIndex + 1))
     .filter((g) => !searchTerm || g.hasSearchMatches)
@@ -291,6 +298,22 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                       <span className="text-emerald-900 font-extrabold">ZISK: € {profitFormatted}</span>
                       <span className="text-emerald-900 font-sans mx-0.5 font-bold">➜</span>
                       <span className="text-emerald-900 font-extrabold">€ {twoThirdsFormatted} (poslať na účet)</span>
+                      <span className="text-emerald-900 font-sans mx-0.5 font-bold">➜</span>
+                      <span className="text-emerald-900 font-extrabold">VYPLATENÉ</span>
+                      {group.isPaid ? (
+                        <img src="/yes.png" alt="Vyplatené" className="max-w-none object-contain shrink-0 -translate-y-[0.7mm]" />
+                      ) : (
+                        <input
+                          type="checkbox"
+                          checked={false}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (group.monthStart) setPinModalMonthStart(group.monthStart);
+                          }}
+                          className="w-3.5 h-3.5 rounded text-emerald-700 focus:ring-0 border-emerald-400 cursor-pointer shrink-0"
+                        />
+                      )}
                     </div>
                   </div>
                 </button>
@@ -442,6 +465,26 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
         )}
       </div>
 
+      <ReportPaidPinModal
+        isOpen={pinModalMonthStart !== null}
+        errorMessage={pinModalError}
+        onCancel={() => {
+          setPinModalMonthStart(null);
+          setPinModalError(null);
+        }}
+        onConfirm={async () => {
+          if (pinModalMonthStart && onTogglePaid) {
+            try {
+              setPinModalError(null);
+              await onTogglePaid(pinModalMonthStart, true);
+            } catch {
+              setPinModalError('Uloženie zlyhalo. Skúste to prosím neskôr.');
+              return;
+            }
+          }
+          setPinModalMonthStart(null);
+        }}
+      />
     </div>
   );
 };

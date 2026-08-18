@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ColnaRecord, 
   AppBootstrap,
@@ -71,6 +71,7 @@ export default function App() {
   const [passwordError, setPasswordError] = useState(false);
   const [applicationError, setApplicationError] = useState('');
   const [isRefreshingCustoms, setIsRefreshingCustoms] = useState(false);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -175,6 +176,11 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Always keep the text cursor ready in the password field while the app is locked. */
+  useEffect(() => {
+    if (isApplicationLocked) passwordInputRef.current?.focus();
+  }, [isApplicationLocked]);
+
   // Close month logic
   const handleCloseMonth = async (monthYearToClose: string, closeYear = false) => {
     const { year: targetYear } = parseMonthYear(monthYearToClose);
@@ -185,6 +191,11 @@ export default function App() {
     setActiveTab('COLNA_DATABAZA');
     setToastMessage(`Mesiac ${monthYearToClose} bol úspešne uzatvorený. Dáta a zisk boli prenesené do REPORTY ${targetYear}. Automaticky bola vytvorená nová čisto prázdna databáza pre mesiac ${nextMY}.`);
     setTimeout(() => setToastMessage(null), 9000);
+  };
+
+  const handleToggleReportPaid = async (monthStart: string, isPaid: boolean) => {
+    const response = await appApi.toggleReportPaid(monthStart, isPaid);
+    applyBootstrap(response.bootstrap);
   };
 
   /** Reload customs table rows only — keep session, month, filters, and UI state. */
@@ -574,6 +585,7 @@ export default function App() {
             availableYears={availableYears}
             searchTerm={searchTerm}
             customerDirectory={adresyRecords}
+            onTogglePaid={handleToggleReportPaid}
           />
         )}
 
@@ -646,6 +658,7 @@ export default function App() {
               </p>
               <input
                 type="password"
+                ref={passwordInputRef}
                 value={applicationPassword}
                 onChange={(event) => {
                   setApplicationPassword(event.target.value);

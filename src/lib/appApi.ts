@@ -144,6 +144,11 @@ export const appApi = {
       method: 'POST',
       body: JSON.stringify({ action: 'closeMonth', closeYear }),
     }),
+  toggleReportPaid: (monthStart: string, isPaid: boolean) =>
+    request<{ bootstrap: AppBootstrap }>('/api/app', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'toggleReportPaid', monthStart, isPaid }),
+    }),
   resetData: () =>
     request<{ bootstrap: AppBootstrap }>('/api/app', {
       method: 'POST',

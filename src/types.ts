@@ -41,6 +41,7 @@ export interface MonthlyReport {
   totalRevenue: number;
   totalCosts: number;
   totalProfit: number;
+  isPaid: boolean;
 }
 
 export interface AppDocument {

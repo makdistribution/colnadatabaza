@@ -71,7 +71,8 @@ type ActionBody = {
     | 'deleteDocument'
     | 'getDocumentDownloadUrl'
     | 'checkVatNumber'
-    | 'checkEoriNumber';
+    | 'checkEoriNumber'
+    | 'toggleReportPaid';
   record?: Partial<ColnaRecord> & { invoiceHandoff?: boolean };
   adresaRecord?: AdresaRecord;
   loginRecord?: LoginRecord;
@@ -99,6 +100,8 @@ type ActionBody = {
   signatureHtml?: string;
   number?: string;
   region?: 'GB' | 'EU';
+  monthStart?: string;
+  isPaid?: boolean;
 };
 
 const INVOICE_BUCKET = 'invoice-pdfs';
@@ -384,6 +387,7 @@ const loadBootstrapData = async () => {
       totalRevenue: Number(report.total_revenue) || 0,
       totalCosts: Number(report.total_costs) || 0,
       totalProfit: Number(report.total_profit) || 0,
+      isPaid: Boolean(report.is_paid),
     })),
     ...directory,
   };
@@ -991,6 +995,16 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       });
       throwIfError(error);
       sendJson(response, 200, { result: data, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'toggleReportPaid' && body.monthStart && typeof body.isPaid === 'boolean') {
+      const { error } = await supabase
+        .from('monthly_reports')
+        .update({ is_paid: body.isPaid, updated_at: new Date().toISOString() })
+        .eq('month_start', body.monthStart);
+      throwIfError(error);
+      sendJson(response, 200, { bootstrap: await loadBootstrapData() });
       return;
     }
 
