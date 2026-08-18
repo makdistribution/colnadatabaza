@@ -32,6 +32,7 @@ import {
 import { createInvoiceLink, sendInvoicingEmail } from '../src/server/emailjs.js';
 import { sendCustomerInvoiceEmail } from '../src/server/brevo.js';
 import { validateEoriNumber, validateVatNumber } from '../src/server/vatEoriCheck.js';
+import { searchVatEori } from '../src/server/vatSearch.js';
 import {
   packCustomsNotes,
   unpackCustomsNotes,
@@ -71,7 +72,10 @@ type ActionBody = {
     | 'deleteDocument'
     | 'getDocumentDownloadUrl'
     | 'checkVatNumber'
-    | 'checkEoriNumber';
+    | 'checkEoriNumber'
+    | 'searchVatEori'
+    | 'getReportPayouts'
+    | 'markReportPayout';
   record?: Partial<ColnaRecord> & { invoiceHandoff?: boolean };
   adresaRecord?: AdresaRecord;
   loginRecord?: LoginRecord;
@@ -99,6 +103,13 @@ type ActionBody = {
   signatureHtml?: string;
   number?: string;
   region?: 'GB' | 'EU';
+  companyName?: string;
+  address?: string;
+  countryCode?: string;
+  cutoffScore?: number | string;
+  livecheck?: boolean;
+  monthKey?: string;
+  pin?: string;
 };
 
 const INVOICE_BUCKET = 'invoice-pdfs';
@@ -886,6 +897,55 @@ const saveEmailSignature = async (signatureHtml: string) => {
   return { html };
 };
 
+const REPORT_PAYOUTS_PATH = 'settings/report-payouts.json';
+/** Správny PIN pre potvrdenie VYPLATENÉ. */
+const REPORT_PAYOUT_PIN = '860525';
+
+const isValidPayoutMonthKey = (value: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+
+const readReportPayouts = async (): Promise<string[]> => {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.storage.from(DOCUMENTS_BUCKET).download(REPORT_PAYOUTS_PATH);
+  if (error) {
+    if (/not found|404|Object not found/i.test(error.message || '')) {
+      return [];
+    }
+    throw new Error(error.message);
+  }
+  if (!data) return [];
+  const text = await data.text();
+  try {
+    const parsed = JSON.parse(text) as { keys?: unknown };
+    if (!Array.isArray(parsed.keys)) return [];
+    return parsed.keys.filter((key): key is string => typeof key === 'string' && isValidPayoutMonthKey(key));
+  } catch {
+    return [];
+  }
+};
+
+const getReportPayouts = async () => ({ keys: await readReportPayouts() });
+
+const markReportPayout = async (monthKey: string, pin: string) => {
+  if (String(pin || '').trim() !== REPORT_PAYOUT_PIN) {
+    return { ok: false as const, error: 'Nesprávny PIN', keys: [] as string[] };
+  }
+  const key = String(monthKey || '').trim();
+  if (!isValidPayoutMonthKey(key)) {
+    throw new Error('Neplatný mesiac reportu.');
+  }
+  const keys = await readReportPayouts();
+  if (!keys.includes(key)) keys.push(key);
+  keys.sort();
+  const bytes = new TextEncoder().encode(JSON.stringify({ keys }));
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.storage.from(DOCUMENTS_BUCKET).upload(REPORT_PAYOUTS_PATH, bytes, {
+    contentType: 'application/json; charset=utf-8',
+    upsert: true,
+  });
+  throwIfError(error);
+  return { ok: true as const, keys };
+};
+
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (!isAuthorized(request)) {
     sendJson(response, 401, { error: 'Unauthorized.' });
@@ -1113,6 +1173,29 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     if (body.action === 'checkEoriNumber' && typeof body.number === 'string') {
       const region = body.region === 'GB' || body.region === 'EU' ? body.region : 'EU';
       sendJson(response, 200, { result: await validateEoriNumber(body.number, region) });
+      return;
+    }
+
+    if (body.action === 'searchVatEori') {
+      sendJson(response, 200, {
+        result: await searchVatEori({
+          companyName: typeof body.companyName === 'string' ? body.companyName : '',
+          address: typeof body.address === 'string' ? body.address : '',
+          countryCode: typeof body.countryCode === 'string' ? body.countryCode : '',
+          cutoffScore: body.cutoffScore,
+          livecheck: body.livecheck !== false,
+        }),
+      });
+      return;
+    }
+
+    if (body.action === 'getReportPayouts') {
+      sendJson(response, 200, await getReportPayouts());
+      return;
+    }
+
+    if (body.action === 'markReportPayout' && typeof body.monthKey === 'string' && typeof body.pin === 'string') {
+      sendJson(response, 200, await markReportPayout(body.monthKey, body.pin));
       return;
     }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AdresaRecord, ColnaRecord, MonthlyReport } from '../types';
 import { extractYearAndMonth, MONTH_NAMES } from '../utils/monthUtils';
 import { resolveCustomerSkratka } from '../utils/customerSkratka';
@@ -8,7 +8,11 @@ import {
   JULY_2026_REPORT_RECORDS,
 } from '../data/july2026ReportOverride';
 import { formatDueDateDisplay } from '../utils/dueDate';
-import { BarChart3, ChevronDown, ChevronRight, TrendingUp, Clock } from 'lucide-react';
+import { BarChart3, ChevronDown, ChevronRight, TrendingUp, Clock, X } from 'lucide-react';
+import { appApi } from '../lib/appApi';
+
+/** Správny PIN pre potvrdenie VYPLATENÉ. */
+const VYPLATENE_PIN = '860525';
 
 const hasUkZaclenie = (r: ColnaRecord) => {
   const lower = (r.ukToEu || '').toLowerCase();
@@ -87,6 +91,34 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
   customerDirectory = [],
 }) => {
   const [collapsedMonths, setCollapsedMonths] = useState<Record<number, boolean>>({});
+  const [paidMonthKeys, setPaidMonthKeys] = useState<Set<string>>(new Set());
+  const [payoutMonthKey, setPayoutMonthKey] = useState<string | null>(null);
+  const [payoutPin, setPayoutPin] = useState('');
+  const [payoutError, setPayoutError] = useState('');
+  const [payoutSaving, setPayoutSaving] = useState(false);
+  const pinInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await appApi.getReportPayouts();
+        if (cancelled) return;
+        setPaidMonthKeys(new Set(response.keys || []));
+      } catch {
+        if (!cancelled) setPaidMonthKeys(new Set());
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!payoutMonthKey) return;
+    const timer = window.setTimeout(() => pinInputRef.current?.focus(), 30);
+    return () => window.clearTimeout(timer);
+  }, [payoutMonthKey]);
 
   const yearList = availableYears && availableYears.length > 0 ? availableYears : [year];
 
@@ -163,6 +195,52 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
 
   const toggleMonth = (index: number) => {
     setCollapsedMonths(prev => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  const monthPayoutKey = (monthIndex: number) =>
+    `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+
+  const openPayoutModal = (monthKey: string) => {
+    setPayoutMonthKey(monthKey);
+    setPayoutPin('');
+    setPayoutError('');
+  };
+
+  const closePayoutModal = () => {
+    if (payoutSaving) return;
+    setPayoutMonthKey(null);
+    setPayoutPin('');
+    setPayoutError('');
+  };
+
+  const confirmPayoutPin = async () => {
+    if (!payoutMonthKey || payoutSaving) return;
+    const pin = String(payoutPin || '').replace(/\s+/g, '');
+    if (pin !== VYPLATENE_PIN) {
+      setPayoutError('Nesprávny PIN');
+      setPayoutPin('');
+      window.setTimeout(() => pinInputRef.current?.focus(), 0);
+      return;
+    }
+
+    setPayoutSaving(true);
+    setPayoutError('');
+    try {
+      const response = await appApi.markReportPayout(payoutMonthKey, VYPLATENE_PIN);
+      if (response.ok && Array.isArray(response.keys)) {
+        setPaidMonthKeys(new Set(response.keys));
+      } else {
+        setPaidMonthKeys((prev) => new Set(prev).add(payoutMonthKey));
+      }
+      setPayoutMonthKey(null);
+      setPayoutPin('');
+    } catch {
+      setPaidMonthKeys((prev) => new Set(prev).add(payoutMonthKey));
+      setPayoutMonthKey(null);
+      setPayoutPin('');
+    } finally {
+      setPayoutSaving(false);
+    }
   };
 
   const formatDateStr = (dateStr: string) => {
@@ -272,11 +350,12 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
               <div key={group.monthIndex} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
                 
                 {/* Month Header Banner */}
-                <button
-                  onClick={() => toggleMonth(group.monthIndex)}
-                  className="w-full bg-slate-100 hover:bg-slate-200/70 px-5 py-3 border-b border-slate-200 flex items-center justify-between text-xs transition-colors cursor-pointer text-left"
-                >
-                  <div className="flex items-center gap-2.5">
+                <div className="w-full bg-slate-100 px-5 py-3 border-b border-slate-200 flex items-center justify-between text-xs text-left">
+                  <button
+                    type="button"
+                    onClick={() => toggleMonth(group.monthIndex)}
+                    className="flex items-center gap-2.5 min-w-0 hover:text-slate-900 cursor-pointer"
+                  >
                     {isCollapsed ? <ChevronRight className="w-4 h-4 text-slate-600" /> : <ChevronDown className="w-4 h-4 text-blue-600" />}
                     <span className="font-bold text-slate-900 uppercase tracking-tight text-sm">
                       {group.monthName} {year}
@@ -284,16 +363,36 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                     <span className="text-slate-600 text-xs font-mono ml-2">
                       ({formatColneKonaniaCount(group.records.length)})
                     </span>
-                  </div>
+                  </button>
 
-                  <div className="flex items-center gap-3">
-                    <div className="bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold px-3 py-1 rounded-md font-mono text-xs flex items-center gap-1.5 shadow-2xs whitespace-nowrap">
-                      <span className="text-emerald-900 font-extrabold">ZISK: € {profitFormatted}</span>
-                      <span className="text-emerald-900 font-sans mx-0.5 font-bold">➜</span>
-                      <span className="text-emerald-900 font-extrabold">€ {twoThirdsFormatted} (poslať na účet)</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold px-3 py-0 rounded-md font-mono text-xs leading-none flex items-center gap-1.5 shadow-2xs whitespace-nowrap box-border h-[27px] min-h-[27px] overflow-visible">
+                      <span className="text-emerald-900 font-extrabold leading-none">ZISK: € {profitFormatted}</span>
+                      <span className="text-emerald-900 font-sans mx-0.5 font-bold leading-none">➜</span>
+                      <span className="text-emerald-900 font-extrabold leading-none">€ {twoThirdsFormatted} (poslať na účet)</span>
+                      <span className="text-emerald-900 font-sans mx-0.5 font-bold leading-none">➜</span>
+                      <span className="text-emerald-900 font-extrabold leading-none">VYPLATENÉ</span>
+                      <span className="inline-flex items-center justify-center shrink-0 w-[23px] h-[25px]">
+                        {paidMonthKeys.has(monthPayoutKey(group.monthIndex)) ? (
+                          <img src="/yes.png" alt="Vyplatené" className="max-w-none object-contain -translate-y-[0.8mm]" />
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={false}
+                            readOnly
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              openPayoutModal(monthPayoutKey(group.monthIndex));
+                            }}
+                            className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 cursor-pointer"
+                            aria-label="Označiť ako vyplatené"
+                          />
+                        )}
+                      </span>
                     </div>
                   </div>
-                </button>
+                </div>
 
                 {/* Table for this Month — standard header for all monthly reports */}
                 {!isCollapsed && (() => {
@@ -441,6 +540,72 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
           })
         )}
       </div>
+
+      {payoutMonthKey && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-[14rem] w-full overflow-hidden text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-slate-900 text-white px-2.5 py-2 flex items-center justify-between border-b border-slate-800">
+              <div>
+                <h3 className="font-bold text-xs leading-tight">VYPLATENÉ</h3>
+                <p className="text-[9px] text-slate-400 leading-tight">Zadajte PIN na potvrdenie</p>
+              </div>
+              <button
+                type="button"
+                onClick={closePayoutModal}
+                disabled={payoutSaving}
+                className="text-slate-400 hover:text-white p-0.5 rounded-md hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <form
+              className="p-2.5 space-y-1.5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void confirmPayoutPin();
+              }}
+            >
+              <label className="block text-slate-700 font-semibold text-[9px] uppercase">
+                PIN
+              </label>
+              <input
+                ref={pinInputRef}
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                value={payoutPin}
+                onChange={(event) => {
+                  setPayoutPin(event.target.value);
+                  setPayoutError('');
+                }}
+                disabled={payoutSaving}
+                className="w-full bg-white border border-slate-200 rounded-md px-1.5 py-1 text-slate-900 outline-none focus:ring-1 focus:ring-blue-500 text-xs disabled:opacity-60"
+              />
+              {payoutError && (
+                <p className="text-[10px] font-semibold text-red-600">{payoutError}</p>
+              )}
+              <div className="flex items-center justify-end gap-1.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={closePayoutModal}
+                  disabled={payoutSaving}
+                  className="px-2 py-1 rounded-md text-slate-700 hover:bg-slate-200 font-medium transition-colors cursor-pointer text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Zrušiť
+                </button>
+                <button
+                  type="submit"
+                  disabled={payoutSaving}
+                  className="bg-[#1a65ff] hover:bg-blue-700 text-white font-bold px-2 py-1 rounded-md shadow-xs cursor-pointer text-[10px] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {payoutSaving ? 'Overujem…' : 'POTVRDIŤ'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

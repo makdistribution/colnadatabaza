@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ColnaRecord, 
   AppBootstrap,
@@ -71,6 +71,7 @@ export default function App() {
   const [passwordError, setPasswordError] = useState(false);
   const [applicationError, setApplicationError] = useState('');
   const [isRefreshingCustoms, setIsRefreshingCustoms] = useState(false);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -174,6 +175,14 @@ export default function App() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!isApplicationLocked) return;
+    const focusPassword = () => passwordInputRef.current?.focus();
+    focusPassword();
+    const timer = window.setTimeout(focusPassword, 50);
+    return () => window.clearTimeout(timer);
+  }, [isApplicationLocked, isDataLoading]);
 
   // Close month logic
   const handleCloseMonth = async (monthYearToClose: string, closeYear = false) => {
@@ -645,6 +654,7 @@ export default function App() {
                 ZADAJTE  HESLO
               </p>
               <input
+                ref={passwordInputRef}
                 type="password"
                 value={applicationPassword}
                 onChange={(event) => {
