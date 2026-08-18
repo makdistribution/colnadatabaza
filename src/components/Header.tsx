@@ -340,20 +340,6 @@ export const Header: React.FC<HeaderProps> = ({
                       <img src="/uk1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
                       <span>ONLINE TARIFF</span>
                     </button>
-                    <button
-                      onClick={() => {
-                        setColnicaModal({
-                          kind: 'tariff',
-                          title: 'ONLINE TARIC',
-                          flagSrc: '/eu1.png',
-                        });
-                        setColnicaDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
-                    >
-                      <img src="/eu1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
-                      <span>ONLINE TARIC</span>
-                    </button>
                   </div>
 
                   <div className="py-1">

@@ -10,6 +10,7 @@ import type { ApiRequest, ApiResponse } from '../src/server/apiUtils.js';
 import sessionHandler from '../api/session.js';
 import appHandler from '../api/app.js';
 import invoiceHandler from '../api/invoice.js';
+import tariffHandler from '../api/tariff.js';
 
 const preferredPort = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -69,6 +70,7 @@ async function start() {
   app.all('/api/session', asApiHandler(sessionHandler));
   app.all('/api/app', asApiHandler(appHandler));
   app.all('/api/invoice', asApiHandler(invoiceHandler));
+  app.all('/api/tariff', asApiHandler(tariffHandler));
 
   const server = http.createServer(app);
 
@@ -86,7 +88,7 @@ async function start() {
 
   const port = await listenOnAvailablePort(server, HOST, preferredPort);
   console.log(`Local app + API ready at http://localhost:${port}/`);
-  console.log('API routes: /api/session, /api/app, /api/invoice');
+  console.log('API routes: /api/session, /api/app, /api/invoice, /api/tariff');
 }
 
 start().catch((error) => {
