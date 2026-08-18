@@ -275,6 +275,19 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
     setDetailError(null);
   };
 
+  const handleClose = () => {
+    requestSeq.current += 1;
+    detailSeq.current += 1;
+    setQuery('');
+    setResults(null);
+    setLoading(false);
+    setErrorMessage(null);
+    setDetail(null);
+    setDetailLoading(false);
+    setDetailError(null);
+    onClose();
+  };
+
   const showDetailView = detailLoading || detailError || detail;
 
   return (
@@ -290,7 +303,7 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
