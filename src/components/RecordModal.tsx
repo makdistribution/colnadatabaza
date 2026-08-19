@@ -110,7 +110,7 @@ const ROUTE_YES_ICON_CLASS = 'max-w-none object-contain block -translate-y-[1mm]
 const ROUTE_ICON_SLOT_CLASS =
   'inline-flex items-center justify-center shrink-0 self-center leading-none w-[23px] h-[25px]';
 const ROUTE_BTN_BASE_CLASS =
-  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center gap-1.5 whitespace-nowrap';
+  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap';
 const ROUTE_BTN_ROW_CLASS =
   'flex flex-nowrap items-center gap-1.5 sm:gap-2 min-h-[39px] overflow-x-auto';
 
@@ -143,7 +143,7 @@ const RouteSelectButton: React.FC<RouteSelectButtonProps> = ({
       {selected ? (
         <img src="/yes.png" alt="" className={ROUTE_YES_ICON_CLASS} />
       ) : (
-        '＋'
+        <span className="text-[20px] leading-none font-bold">＋</span>
       )}
     </span>{' '}
     {label}
