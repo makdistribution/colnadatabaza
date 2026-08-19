@@ -110,9 +110,9 @@ const ROUTE_YES_ICON_CLASS = 'max-w-none object-contain block -translate-y-[1mm]
 const ROUTE_ICON_SLOT_CLASS =
   'inline-flex items-center justify-center shrink-0 self-center leading-none w-[23px] h-[25px]';
 const ROUTE_BTN_BASE_CLASS =
-  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap';
+  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none align-middle';
 const ROUTE_BTN_ROW_CLASS =
-  'flex flex-nowrap items-center gap-1.5 sm:gap-2 min-h-[39px] overflow-x-auto';
+  'flex flex-nowrap items-center justify-center gap-1.5 sm:gap-2 min-h-[39px] overflow-x-auto';
 
 type RouteSelectButtonProps = {
   selected: boolean;
@@ -143,10 +143,10 @@ const RouteSelectButton: React.FC<RouteSelectButtonProps> = ({
       {selected ? (
         <img src="/yes.png" alt="" className={ROUTE_YES_ICON_CLASS} />
       ) : (
-        <span className="text-[20px] leading-none font-bold">＋</span>
+        <span className="text-[20px] leading-none font-bold flex items-center justify-center w-full h-full">＋</span>
       )}
     </span>
-    <span className="inline-block leading-none" style={{ transform: 'translateY(-1mm)' }}>
+    <span className="inline-flex items-center justify-center leading-none text-center align-middle">
       {label}
     </span>
   </button>
@@ -334,48 +334,70 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   // Helper state toggles for UK/EU route selection
   const isUkZaclenieSelected = !!(formData.ukToEu && formData.ukToEu.includes('zaclenie v UK'));
   const isEuVyclenieSelected = !!(formData.ukToEu && formData.ukToEu.includes('vyclenie v EU'));
+  const isUkIcs2Selected = !!(formData.ukToEu && formData.ukToEu.includes('ICS2'));
+
+  const buildUkToEuValue = (hasUk: boolean, hasEu: boolean, hasIcs2: boolean) => {
+    const parts: string[] = [];
+    if (hasUk) parts.push('zaclenie v UK');
+    if (hasEu) parts.push('vyclenie v EU');
+    if (hasIcs2) parts.push('ICS2');
+    return parts.join('; ');
+  };
 
   const toggleUkZaclenie = () => {
     const nextUk = !isUkZaclenieSelected;
     const nextEu = isEuVyclenieSelected;
-    let newStr = '';
-    if (nextUk && nextEu) newStr = 'zaclenie v UK; vyclenie v EU';
-    else if (nextUk) newStr = 'zaclenie v UK';
-    else if (nextEu) newStr = 'vyclenie v EU';
-    setFormData(prev => ({ ...prev, ukToEu: newStr }));
+    const nextIcs2 = isUkIcs2Selected;
+    setFormData(prev => ({ ...prev, ukToEu: buildUkToEuValue(nextUk, nextEu, nextIcs2) }));
   };
 
   const toggleEuVyclenie = () => {
     const nextUk = isUkZaclenieSelected;
     const nextEu = !isEuVyclenieSelected;
-    let newStr = '';
-    if (nextUk && nextEu) newStr = 'zaclenie v UK; vyclenie v EU';
-    else if (nextUk) newStr = 'zaclenie v UK';
-    else if (nextEu) newStr = 'vyclenie v EU';
-    setFormData(prev => ({ ...prev, ukToEu: newStr }));
+    const nextIcs2 = isUkIcs2Selected;
+    setFormData(prev => ({ ...prev, ukToEu: buildUkToEuValue(nextUk, nextEu, nextIcs2) }));
+  };
+
+  const toggleUkIcs2 = () => {
+    const nextIcs2 = !isUkIcs2Selected;
+    setFormData(prev => ({
+      ...prev,
+      ukToEu: buildUkToEuValue(isUkZaclenieSelected, isEuVyclenieSelected, nextIcs2),
+    }));
   };
 
   const isEuZaclenieSelected = !!(formData.euToUk && formData.euToUk.includes('zaclenie v EU'));
   const isUkVyclenieSelected = !!(formData.euToUk && formData.euToUk.includes('vyclenie v UK'));
+  const isGbEnsSelected = !!(formData.euToUk && formData.euToUk.includes('GB ENS'));
+
+  const buildEuToUkValue = (hasEu: boolean, hasUk: boolean, hasGbEns: boolean) => {
+    const parts: string[] = [];
+    if (hasEu) parts.push('zaclenie v EU');
+    if (hasUk) parts.push('vyclenie v UK');
+    if (hasGbEns) parts.push('GB ENS');
+    return parts.join('; ');
+  };
 
   const toggleEuZaclenie = () => {
     const nextEu = !isEuZaclenieSelected;
     const nextUk = isUkVyclenieSelected;
-    let newStr = '';
-    if (nextEu && nextUk) newStr = 'zaclenie v EU; vyclenie v UK';
-    else if (nextEu) newStr = 'zaclenie v EU';
-    else if (nextUk) newStr = 'vyclenie v UK';
-    setFormData(prev => ({ ...prev, euToUk: newStr }));
+    const nextGbEns = isGbEnsSelected;
+    setFormData(prev => ({ ...prev, euToUk: buildEuToUkValue(nextEu, nextUk, nextGbEns) }));
   };
 
   const toggleUkVyclenie = () => {
     const nextEu = isEuZaclenieSelected;
     const nextUk = !isUkVyclenieSelected;
-    let newStr = '';
-    if (nextEu && nextUk) newStr = 'zaclenie v EU; vyclenie v UK';
-    else if (nextEu) newStr = 'zaclenie v EU';
-    else if (nextUk) newStr = 'vyclenie v UK';
-    setFormData(prev => ({ ...prev, euToUk: newStr }));
+    const nextGbEns = isGbEnsSelected;
+    setFormData(prev => ({ ...prev, euToUk: buildEuToUkValue(nextEu, nextUk, nextGbEns) }));
+  };
+
+  const toggleGbEns = () => {
+    const nextGbEns = !isGbEnsSelected;
+    setFormData(prev => ({
+      ...prev,
+      euToUk: buildEuToUkValue(isEuZaclenieSelected, isUkVyclenieSelected, nextGbEns),
+    }));
   };
 
   const selectInvoiceFile = (file?: File) => {
@@ -598,9 +620,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const handoffDateLabel = formatHandoffDate(formData.datumColnice);
   const handoffSpzLabel = (formData.spz || '').trim() || '…………';
   const handoffUkToEuText =
-    `Fakturujeme Vám poplatok za sprostredkovanie col. konania pri preprave z UK zo dňa ${handoffDateLabel} / ŠPZ: ${handoffSpzLabel}`;
+    `Fakturujeme Vám poplatok za sprostredkovanie col. konania${isUkIcs2Selected ? ' + ICS2' : ''} pri preprave z UK zo dňa ${handoffDateLabel} / ŠPZ: ${handoffSpzLabel}`;
   const handoffEuToUkText =
-    `Fakturujeme Vám poplatok za sprostredkovanie col. konania pri preprave do UK zo dňa ${handoffDateLabel} / ŠPZ: ${handoffSpzLabel}`;
+    `Fakturujeme Vám poplatok za sprostredkovanie col. konania${isGbEnsSelected ? ' + GB ENS' : ''} pri preprave do UK zo dňa ${handoffDateLabel} / ŠPZ: ${handoffSpzLabel}`;
   const isUkToEuRouteActive = isUkZaclenieSelected || isEuVyclenieSelected;
   const isEuToUkRouteActive = isEuZaclenieSelected || isUkVyclenieSelected;
   // Only one invoice text may be visible; prefer EU→UK when it is the sole selection.
@@ -921,6 +943,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   selectedClassName="bg-blue-600 text-white border-blue-700 shadow-xs"
                   idleClassName="bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:text-blue-700"
                 />
+                <RouteSelectButton
+                  onClick={toggleUkIcs2}
+                  selected={isUkIcs2Selected}
+                  label="ICS2"
+                  selectedClassName="bg-blue-600 text-white border-blue-700 shadow-xs"
+                  idleClassName="bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:text-blue-700"
+                />
               </div>
             </div>
 
@@ -947,6 +976,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   onClick={toggleUkVyclenie}
                   selected={isUkVyclenieSelected}
                   label="vyclenie v UK"
+                  selectedClassName="bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                  idleClassName="bg-white text-slate-700 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700"
+                />
+                <RouteSelectButton
+                  onClick={toggleGbEns}
+                  selected={isGbEnsSelected}
+                  label="GB ENS"
                   selectedClassName="bg-emerald-600 text-white border-emerald-700 shadow-xs"
                   idleClassName="bg-white text-slate-700 border-slate-300 hover:bg-emerald-50 hover:text-emerald-700"
                 />
@@ -1004,8 +1040,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <span className="block text-slate-600 font-medium mb-0.5 text-[11px] leading-none invisible select-none" aria-hidden="true">
                   VYPOČÍTANÝ ZISK
                 </span>
-                <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 flex w-full h-[26px] box-border items-end justify-center gap-2 whitespace-nowrap leading-none pb-1">
-                  <span className="inline-flex items-baseline gap-2 leading-none">
+                <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 flex w-full h-[26px] box-border items-center justify-center gap-2 whitespace-nowrap leading-none">
+                  <span className="inline-flex items-center justify-center gap-2 leading-none">
                     <span className="font-bold text-emerald-900 text-[11px] leading-none">VYPOČÍTANÝ ZISK:</span>
                     <span className="text-xs font-black font-mono text-emerald-700 leading-none">{calculatedProfit.toFixed(2)} €</span>
                   </span>
