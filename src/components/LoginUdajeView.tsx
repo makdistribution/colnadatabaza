@@ -35,7 +35,6 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
   onReorderRecords,
 }) => {
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editingRecord, setEditingRecord] = useState<LoginRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<LoginRecord | null>(null);
@@ -96,10 +95,8 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
     setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleCopy = (text: string, id: string) => {
+  const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleOpenAdd = (defaultCat: LoginCategory) => {
@@ -201,15 +198,11 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => handleCopy(r.heslo, r.id)}
+            onClick={() => handleCopy(r.heslo)}
             className="text-slate-400 hover:text-blue-600 p-0.5 cursor-pointer"
             title="Kopírovať heslo"
           >
-            {copiedId === r.id ? (
-              <img src="/yes.png" alt="Skopírované" className="max-w-none object-contain" />
-            ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
+            <Copy className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
