@@ -537,7 +537,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
               <th rowSpan={2} className="box-border p-1 w-[52px] min-w-[52px] max-w-[52px] text-center border-r border-slate-300 text-black" title="Úprava - odoslaná na fakturáciu">
                 <img src="/edit.png" alt="OPRAVA" className="mx-auto object-contain p-0 max-w-none shrink-0" style={{ width: '40px', height: '40px' }} />
               </th>
-              <th rowSpan={2} className="p-1 min-w-[60px] border-r border-slate-300 text-black" title="Dátum">
+              <th rowSpan={2} className="box-border p-1 w-[calc(60px-2mm)] min-w-[calc(60px-2mm)] max-w-[calc(60px-2mm)] border-r border-slate-300 text-black" title="Dátum">
                 DÁTUM
               </th>
               <th rowSpan={2} className="p-2 min-w-[111px] border-r border-slate-300 text-black" title="ŠPZ">
@@ -599,7 +599,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                   style={{ width: 'calc(15mm - 1rem)', height: 'auto' }}
                 />
               </th>
-              <th rowSpan={2} className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center text-black" title="Stav úhrady">
+              <th rowSpan={2} className="p-2 w-[calc(2.5rem+4mm)] min-w-[calc(2.5rem+4mm)] max-w-[calc(2.5rem+4mm)] box-border text-center text-black" title="Stav úhrady">
                 <img src="/money.png" alt="ÚHRADA" className="mx-auto max-w-none" />
               </th>
             </tr>
@@ -736,7 +736,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* Datum Colnice */}
-                    <td className="px-1 py-2 text-slate-700 border-r border-slate-200 font-mono text-[14px] whitespace-nowrap">
+                    <td className="box-border px-1 py-2 w-[calc(60px-2mm)] min-w-[calc(60px-2mm)] max-w-[calc(60px-2mm)] text-slate-700 border-r border-slate-200 font-mono text-[14px] whitespace-nowrap">
                       {formatDateStr(r.datumColnice)}
                     </td>
 
@@ -863,7 +863,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* ZAPLATENA / ÚHRADA */}
-                    <td className="p-2 w-[calc(2.5rem+2mm)] min-w-[calc(2.5rem+2mm)] max-w-[calc(2.5rem+2mm)] box-border text-center border-r border-slate-200">
+                    <td className="p-2 w-[calc(2.5rem+4mm)] min-w-[calc(2.5rem+4mm)] max-w-[calc(2.5rem+4mm)] box-border text-center border-r border-slate-200">
                       <button
                         type="button"
                         onClick={(e) => {

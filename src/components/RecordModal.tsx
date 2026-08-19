@@ -144,10 +144,10 @@ const RouteSelectButton: React.FC<RouteSelectButtonProps> = ({
       {selected ? (
         <img src="/yes.png" alt="" className={ROUTE_YES_ICON_CLASS} />
       ) : (
-        <span className="text-[20px] leading-none font-bold flex items-center justify-center w-full h-full">＋</span>
+        <span className="flex h-[25px] w-full -translate-y-[1mm] items-center justify-center text-[20px] font-bold leading-[25px]">＋</span>
       )}
     </span>
-    <span className="inline-flex items-center justify-center leading-none text-center align-middle">
+    <span className="inline-flex h-[25px] items-center justify-center text-center leading-[25px] align-middle">
       {label}
     </span>
   </button>

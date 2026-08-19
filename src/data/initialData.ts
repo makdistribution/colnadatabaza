@@ -1136,7 +1136,7 @@ export const INITIAL_ADRESY_RECORDS: AdresaRecord[] = [
 export const INITIAL_LOGIN_RECORDS: LoginRecord[] = [
   {
     id: 'log-1',
-    sluzba: 'GETLINK Customs',
+    sluzba: 'GETLINK Customs / GETLINK GMR',
     odkaz: 'www.customspro.net',
     prihlasenie: 'mak@distribution.sk',
     heslo: 'MAKZollchp#2025**ucet',

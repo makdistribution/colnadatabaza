@@ -315,7 +315,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
                   </div>
                 </td>
                 <td className="p-2.5 font-bold font-sans text-slate-900 border-r-2 border-slate-400">
-                  {r.sluzba}
+                  {r.sluzba === 'GETLINK Customs' ? 'GETLINK Customs / GETLINK GMR' : r.sluzba}
                 </td>
                 <td className="p-2.5 border-r-2 border-slate-400">
                   <a
