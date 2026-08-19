@@ -110,7 +110,7 @@ const ROUTE_YES_ICON_CLASS = 'max-w-none object-contain block -translate-y-[1mm]
 const ROUTE_ICON_SLOT_CLASS =
   'inline-flex items-center justify-center shrink-0 self-center leading-none w-[23px] h-[25px]';
 const ROUTE_BTN_BASE_CLASS =
-  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none align-middle';
+  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none align-middle text-center';
 const ROUTE_BTN_ROW_CLASS =
   'flex flex-nowrap items-center justify-center gap-1.5 sm:gap-2 min-h-[39px] overflow-x-auto';
 
@@ -581,7 +581,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   if (!isOpen) return null;
 
   // Auto calculate profit
-  const calculatedProfit = (Number(formData.faKlient) || 0) - (Number(formData.faOdUkAgent) || 0) - (Number(formData.faOdEuAgent) || 0);
+  const calculatedProfit =
+    ((Number(formData.faKlient) || 0) + (isUkIcs2Selected ? 25 : 0) + (isGbEnsSelected ? 25 : 0))
+    - (Number(formData.faOdUkAgent) || 0)
+    - (Number(formData.faOdEuAgent) || 0);
 
   const isCreateOrCopy = !initialRecord || copyMode;
   /** Create, copy, and NÁHĽAD late-send use bell ("Odoslať na fakturáciu"). */
