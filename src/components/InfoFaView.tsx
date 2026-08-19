@@ -120,13 +120,13 @@ export const InfoFaView: React.FC<InfoFaViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
           <div className="space-y-2">
             <div className="bg-white border-2 border-slate-400 p-3 rounded-lg shadow-2xs space-y-1">
-              <div className="font-bold text-blue-700">UK ➔ EU Preprava</div>
+              <div className="font-bold text-blue-700">UK ➔ EU Preprava (bez ICS2)</div>
               <p className="font-mono text-slate-800 select-all bg-slate-50 p-2.5 rounded-md text-[11px] border border-slate-300">
                 Fakturujeme Vám poplatok za sprostredkovanie col. konania pri preprave z UK zo dňa [DÁTUM] / ŠPZ: [ŠPZ]
               </p>
             </div>
             <div className="bg-white border-2 border-slate-400 p-3 rounded-lg shadow-2xs space-y-1">
-              <div className="font-bold text-blue-700">UK ➔ EU Preprava</div>
+              <div className="font-bold text-blue-700">UK ➔ EU Preprava (s ICS2)</div>
               <p className="font-mono text-slate-800 select-all bg-slate-50 p-2.5 rounded-md text-[11px] border border-slate-300">
                 Fakturujeme Vám poplatok za sprostredkovanie col. konania + ICS2 pri preprave z UK zo dňa [DÁTUM] / ŠPZ: [ŠPZ]
               </p>
@@ -135,13 +135,13 @@ export const InfoFaView: React.FC<InfoFaViewProps> = ({
 
           <div className="space-y-2">
             <div className="bg-white border-2 border-slate-400 p-3 rounded-lg shadow-2xs space-y-1">
-              <div className="font-bold text-emerald-700">EU ➔ UK Preprava</div>
+              <div className="font-bold text-emerald-700">EU ➔ UK Preprava (bez GB ENS)</div>
               <p className="font-mono text-slate-800 select-all bg-slate-50 p-2.5 rounded-md text-[11px] border border-slate-300">
                 Fakturujeme Vám poplatok za sprostredkovanie col. konania pri preprave do UK zo dňa [DÁTUM] / ŠPZ: [ŠPZ]
               </p>
             </div>
             <div className="bg-white border-2 border-slate-400 p-3 rounded-lg shadow-2xs space-y-1">
-              <div className="font-bold text-emerald-700">EU ➔ UK Preprava</div>
+              <div className="font-bold text-emerald-700">EU ➔ UK Preprava (s GB ENS)</div>
               <p className="font-mono text-slate-800 select-all bg-slate-50 p-2.5 rounded-md text-[11px] border border-slate-300">
                 Fakturujeme Vám poplatok za sprostredkovanie col. konania + GB ENS pri preprave do UK zo dňa [DÁTUM] / ŠPZ: [ŠPZ]
               </p>

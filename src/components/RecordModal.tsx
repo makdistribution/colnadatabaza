@@ -145,8 +145,10 @@ const RouteSelectButton: React.FC<RouteSelectButtonProps> = ({
       ) : (
         <span className="text-[20px] leading-none font-bold">＋</span>
       )}
-    </span>{' '}
-    {label}
+    </span>
+    <span className="inline-block leading-none" style={{ transform: 'translateY(-1mm)' }}>
+      {label}
+    </span>
   </button>
 );
 
