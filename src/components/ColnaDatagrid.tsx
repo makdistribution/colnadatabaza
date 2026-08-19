@@ -660,7 +660,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     {/* Copy + Edit (horizontal) with @ centred underneath */}
                     <td className="p-0 text-center border-r border-slate-200 w-[52px] min-w-[52px] max-w-[52px]">
                       <div className="flex flex-col items-center justify-center gap-0 leading-none py-0">
-                        <div className="flex flex-row items-center justify-center gap-0.5">
+                        <div className="flex flex-row items-center justify-center gap-[1mm]">
                           <button
                             type="button"
                             onClick={() => onCopyRecord(r)}

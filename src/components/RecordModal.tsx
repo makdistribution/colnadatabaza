@@ -96,7 +96,8 @@ const AmountInput: React.FC<AmountInputProps> = ({ value, onChange, className })
       onFocus={handleFocus}
       onChange={handleChange}
       onBlur={handleBlur}
-      className={className}
+      className={`${className} text-center`}
+      style={{ lineHeight: '1', verticalAlign: 'middle' }}
     />
   );
 };
@@ -358,12 +359,35 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     setFormData(prev => ({ ...prev, ukToEu: buildUkToEuValue(nextUk, nextEu, nextIcs2) }));
   };
 
+  const updateAdjustmentNote = (existing: string | undefined, kind: 'ICS2' | 'GB ENS', removed: boolean) => {
+    const note = `-25 € z fa pre klienta (nerobila sa ${kind})`;
+    const withoutKind = (existing || '')
+      .split(/\r?\n/)
+      .filter(line => !line.includes(`nerobila sa ${kind}`))
+      .join('\n')
+      .trim();
+
+    if (!removed) {
+      return withoutKind;
+    }
+
+    const nextLines = withoutKind ? [withoutKind, note] : [note];
+    return nextLines.join('\n');
+  };
+
   const toggleUkIcs2 = () => {
     const nextIcs2 = !isUkIcs2Selected;
-    setFormData(prev => ({
-      ...prev,
-      ukToEu: buildUkToEuValue(isUkZaclenieSelected, isEuVyclenieSelected, nextIcs2),
-    }));
+    setFormData(prev => {
+      const currentAuto = ((prev.ukToEu || '').includes('ICS2') ? 25 : 0) + ((prev.euToUk || '').includes('GB ENS') ? 25 : 0);
+      const manualValue = (Number(prev.faKlient) || 0) - currentAuto;
+      const nextAuto = ((nextIcs2 ? 25 : 0) + ((prev.euToUk || '').includes('GB ENS') ? 25 : 0));
+      return {
+        ...prev,
+        faKlient: manualValue + nextAuto,
+        ukToEu: buildUkToEuValue(isUkZaclenieSelected, isEuVyclenieSelected, nextIcs2),
+        opravaFaktury: updateAdjustmentNote(prev.opravaFaktury, 'ICS2', !nextIcs2),
+      };
+    });
   };
 
   const isEuZaclenieSelected = !!(formData.euToUk && formData.euToUk.includes('zaclenie v EU'));
@@ -394,10 +418,17 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
   const toggleGbEns = () => {
     const nextGbEns = !isGbEnsSelected;
-    setFormData(prev => ({
-      ...prev,
-      euToUk: buildEuToUkValue(isEuZaclenieSelected, isUkVyclenieSelected, nextGbEns),
-    }));
+    setFormData(prev => {
+      const currentAuto = ((prev.ukToEu || '').includes('ICS2') ? 25 : 0) + ((prev.euToUk || '').includes('GB ENS') ? 25 : 0);
+      const manualValue = (Number(prev.faKlient) || 0) - currentAuto;
+      const nextAuto = (((prev.ukToEu || '').includes('ICS2') ? 25 : 0) + (nextGbEns ? 25 : 0));
+      return {
+        ...prev,
+        faKlient: manualValue + nextAuto,
+        euToUk: buildEuToUkValue(isEuZaclenieSelected, isUkVyclenieSelected, nextGbEns),
+        opravaFaktury: updateAdjustmentNote(prev.opravaFaktury, 'GB ENS', !nextGbEns),
+      };
+    });
   };
 
   const selectInvoiceFile = (file?: File) => {
@@ -581,8 +612,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   if (!isOpen) return null;
 
   // Auto calculate profit
+  const autoFaKlientSurcharge = (isUkIcs2Selected ? 25 : 0) + (isGbEnsSelected ? 25 : 0);
+  const manualFaKlientValue = Math.max(0, (Number(formData.faKlient) || 0) - autoFaKlientSurcharge);
   const calculatedProfit =
-    ((Number(formData.faKlient) || 0) + (isUkIcs2Selected ? 25 : 0) + (isGbEnsSelected ? 25 : 0))
+    (Number(formData.faKlient) || 0)
     - (Number(formData.faOdUkAgent) || 0)
     - (Number(formData.faOdEuAgent) || 0);
 
@@ -1032,22 +1065,35 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <label className="block text-blue-900 font-bold mb-0.5 text-[11px] leading-none">
                   FA ➔ KLIENT (€)
                 </label>
-                <AmountInput
-                  value={formData.faKlient ?? 0}
-                  onChange={(val) => setFormData(prev => ({ ...prev, faKlient: val }))}
-                  className="w-full h-[26px] bg-white border border-blue-400 rounded-md px-2.5 py-1 text-blue-900 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border"
-                />
+                <div className="grid grid-cols-[minmax(0,1fr)_72px] gap-[1mm]">
+                  <AmountInput
+                    value={manualFaKlientValue}
+                    onChange={(val) => setFormData(prev => {
+                      const currentAuto = ((prev.ukToEu || '').includes('ICS2') ? 25 : 0) + ((prev.euToUk || '').includes('GB ENS') ? 25 : 0);
+                      return {
+                        ...prev,
+                        faKlient: val + currentAuto,
+                      };
+                    })}
+                    className="w-full h-[26px] bg-white border border-blue-400 rounded-md px-2.5 py-1 text-blue-900 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border"
+                  />
+                  <div className="bg-white border border-blue-300 rounded-md px-2 h-[26px] flex items-center justify-end text-blue-900 font-bold font-mono box-border text-[12px]">
+                    {autoFaKlientSurcharge.toFixed(2)}
+                  </div>
+                </div>
               </div>
 
               <div className="min-w-0">
                 <span className="block text-slate-600 font-medium mb-0.5 text-[11px] leading-none invisible select-none" aria-hidden="true">
                   VYPOČÍTANÝ ZISK
                 </span>
-                <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 flex w-full h-[26px] box-border items-center justify-center gap-2 whitespace-nowrap leading-none">
-                  <span className="inline-flex items-center justify-center gap-2 leading-none">
+                <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 flex w-full h-[26px] box-border items-center justify-center whitespace-nowrap leading-none">
+                  <div className="flex items-center justify-center gap-2 leading-none text-center" style={{ lineHeight: 1 }}>
                     <span className="font-bold text-emerald-900 text-[11px] leading-none">VYPOČÍTANÝ ZISK:</span>
-                    <span className="text-xs font-black font-mono text-emerald-700 leading-none">{calculatedProfit.toFixed(2)} €</span>
-                  </span>
+                    <span className="font-black font-mono text-emerald-700 text-xs leading-none">
+                      {calculatedProfit.toFixed(2)} €
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
