@@ -372,7 +372,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
 
   return (
     <>
-    <div className="bg-white border-2 border-slate-400 rounded-xl shadow-xs overflow-hidden my-2 print:hidden">
+    <div className="bg-white border-2 border-slate-400 rounded-xl shadow-xs overflow-hidden my-2 print:hidden" style={{ zoom: '90%' }}>
       
       {/* Top Filter & Action Bar — layout matches abc.png reference; bottom pad −2mm vs table */}
       <div className="bg-slate-50 px-3.5 pt-3 pb-[calc(0.75rem-2mm)] border-b border-slate-200 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-xs">
