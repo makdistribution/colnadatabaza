@@ -216,6 +216,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const [isRequiredFieldsModalOpen, setIsRequiredFieldsModalOpen] = useState(false);
   /** Sticky correction workflow for handoff session (survives PDF delete). */
   const [correctionWorkflow, setCorrectionWorkflow] = useState(false);
+  const [customerPanelOpen, setCustomerPanelOpen] = useState(true);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
   const spzInputRef = useRef<HTMLInputElement>(null);
   const opravaInputRef = useRef<HTMLInputElement>(null);
@@ -311,14 +312,16 @@ export const RecordModal: React.FC<RecordModalProps> = ({
       setCorrectionWorkflow(false);
       return;
     }
-    if (
-      invoiceHandoffMode &&
-      (initialRecord?.invoiceCorrectionPending ||
+    if (invoiceHandoffMode) {
+      setCustomerPanelOpen(true);
+      if (
+        initialRecord?.invoiceCorrectionPending ||
         initialRecord?.invoiceCorrected ||
         initialRecord?.invoicePdfPath ||
-        initialRecord?.cisloFa)
-    ) {
-      setCorrectionWorkflow(true);
+        initialRecord?.cisloFa
+      ) {
+        setCorrectionWorkflow(true);
+      }
     }
   }, [isOpen, invoiceHandoffMode, initialRecord]);
 
@@ -611,6 +614,17 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
   if (!isOpen) return null;
 
+  const currentCustomer = (() => {
+    const name = String(formData.zakaznik || '').trim();
+    if (!name) return null;
+    const bySkratka = customerDirectory.find((d) => String(d.skratka || '').trim() === name);
+    if (bySkratka) return bySkratka;
+    const byOfficial = customerDirectory.find((d) => String(d.nazovFirmy || '').trim() === name);
+    return byOfficial || null;
+  })();
+
+  const showCustomerSidePanel = invoiceHandoffMode;
+
   // Auto calculate profit
   const autoFaKlientSurcharge = (isUkIcs2Selected ? 25 : 0) + (isGbEnsSelected ? 25 : 0);
   const manualFaKlientValue = Math.max(0, (Number(formData.faKlient) || 0) - autoFaKlientSurcharge);
@@ -739,14 +753,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   const fieldMissing = (name: string) => missingFields.includes(name);
   const requiredMark = <span className="text-red-600"> *</span>;
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-4xl my-auto text-slate-800 overflow-hidden flex flex-col max-h-[98vh]">
-        
+  const renderMainModal = () => (
+    <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-4xl text-slate-800 overflow-hidden flex flex-col max-h-[98vh]">
+
         {/* Modal Header */}
         <div className="bg-white px-5 py-3 border-b border-slate-200 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <h3 
+            <h3
               className="font-bold text-slate-900 tracking-tight uppercase px-3 py-1"
               style={{
                 borderRadius: '8px',
@@ -773,8 +786,8 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                     : 'NOVÝ ZÁZNAM'}
             </h3>
           </div>
-          
-          <button 
+
+          <button
             type="button"
             onClick={invoiceHandoffMode ? undefined : onClose}
             disabled={invoiceHandoffMode}
@@ -790,11 +803,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
-        <form id="colna-record-form" onSubmit={handleSubmit} className="p-3 sm:p-4 space-y-3 text-xs overflow-y-auto">
+        <form id="colna-record-form" onSubmit={handleSubmit} className="flex-1 p-3 sm:p-4 space-y-3 text-xs overflow-y-auto">
           {/* Customs fields — locked in accountant view */}
           <fieldset disabled={customsLocked} className="space-y-3">
-          
+
           {/* Row 1: Customer & Flags — toolbar shares the select row so centres match the dropdown arrow */}
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
             <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
@@ -1378,7 +1390,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </div>
             </div>
           )}
-        </form>
+          </form>
 
         {/* Bottom Action Footer — submit via form= so Enter and click share one handler */}
         <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-center shrink-0">
@@ -1393,9 +1405,119 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </LoadingButtonContent>
           </button>
         </div>
-
       </div>
+    );
 
+  const renderCustomerSidePanel = () => {
+    if (!showCustomerSidePanel || !customerPanelOpen || !currentCustomer) return null;
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-[22rem] shrink-0 text-slate-800 overflow-hidden flex flex-col max-h-[98vh]">
+        <div className="px-4 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <span className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+            Údaje zákazníka
+          </span>
+          <button
+            type="button"
+            onClick={() => setCustomerPanelOpen(false)}
+            className="text-slate-400 p-1 rounded-md transition-colors hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+            title="Zavrieť panel s údajmi zákazníka"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-3 sm:p-4 space-y-3 text-xs overflow-y-auto">
+          <div>
+            <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+              NÁZOV FIRMY
+            </label>
+            <input
+              type="text"
+              value={currentCustomer.nazovFirmy || ''}
+              readOnly
+              className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+              REGISTROVANÁ ADRESA
+            </label>
+            <input
+              type="text"
+              value={currentCustomer.registrovanaAdresa || ''}
+              readOnly
+              className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5">
+            <div>
+              <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+                IČO
+              </label>
+              <input
+                type="text"
+                value={currentCustomer.ico || ''}
+                readOnly
+                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+                DIČ
+              </label>
+              <input
+                type="text"
+                value={currentCustomer.dic || ''}
+                readOnly
+                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+                IČ DPH
+              </label>
+              <input
+                type="text"
+                value={currentCustomer.icDph || ''}
+                readOnly
+                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+              TELEFÓNNE ČÍSLO
+            </label>
+            <div className="w-[42%]">
+              <input
+                type="text"
+                value={currentCustomer.telefonneCislo || ''}
+                readOnly
+                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+              POZNÁMKA
+            </label>
+            <input
+              type="text"
+              value={currentCustomer.poznamka || ''}
+              readOnly
+              className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderConfirmModals = () => (
+    <>
       <ConfirmDeleteModal
         isOpen={isInvoiceDeleteModalOpen}
         title="VYMAZAŤ FAKTÚRU"
@@ -1432,6 +1554,14 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         onCancel={() => setIsRequiredFieldsModalOpen(false)}
         onConfirm={() => setIsRequiredFieldsModalOpen(false)}
       />
+    </>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-start justify-center gap-2 flex-nowrap p-2 sm:p-4 overflow-x-auto overflow-y-auto">
+      {renderMainModal()}
+      {renderCustomerSidePanel()}
+      {renderConfirmModals()}
     </div>
   );
 };

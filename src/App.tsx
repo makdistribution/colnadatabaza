@@ -628,6 +628,7 @@ export default function App() {
         onDeleteInvoice={handleDeleteInvoice}
         initialRecord={editingColnaRecord}
         customerList={customerList}
+        customerDirectory={adresyRecords}
         copyMode={isCopyMode}
         invoiceHandoffMode={isInvoiceHandoff}
         defaultDate={(() => {

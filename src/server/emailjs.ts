@@ -52,10 +52,14 @@ export const sendInvoicingEmail = async (email: InvoicingEmail) => {
       ? EDIT_NOTIFICATION_TEMPLATE_ID
       : requiredEnvironmentValue('EMAILJS_TEMPLATE_ID');
 
+  const serviceId = requiredEnvironmentValue('EMAILJS_SERVICE_ID');
+  const publicKey = requiredEnvironmentValue('EMAILJS_PUBLIC_KEY');
+  const privateKey = process.env.EMAILJS_PRIVATE_KEY || '';
+
   const requestBody: Record<string, unknown> = {
-    service_id: requiredEnvironmentValue('EMAILJS_SERVICE_ID'),
+    service_id: serviceId,
     template_id: templateId,
-    user_id: requiredEnvironmentValue('EMAILJS_PUBLIC_KEY'),
+    user_id: publicKey,
     template_params: {
       customer_name: email.customerName,
       customs_date: email.customsDate,
@@ -68,18 +72,41 @@ export const sendInvoicingEmail = async (email: InvoicingEmail) => {
     },
   };
 
-  if (process.env.EMAILJS_PRIVATE_KEY) {
-    requestBody.accessToken = process.env.EMAILJS_PRIVATE_KEY;
+  if (privateKey) {
+    requestBody.accessToken = privateKey;
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json, text/plain, */*',
+  };
+
+  if (privateKey) {
+    headers.Authorization = `Bearer ${privateKey.trim()}`;
   }
 
   const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
-    const detail = await response.text();
+    let detail: string;
+    try {
+      const raw = await response.text();
+      try {
+        const parsed = JSON.parse(raw);
+        detail =
+          (parsed && (parsed.error || parsed.message || parsed.details))
+            ? (parsed.error || parsed.message || parsed.details)
+            : raw;
+      } catch {
+        detail = raw;
+      }
+    } catch {
+      detail = response.statusText;
+    }
     throw new Error(`EmailJS send failed (${response.status}): ${detail || response.statusText}`);
   }
 };
