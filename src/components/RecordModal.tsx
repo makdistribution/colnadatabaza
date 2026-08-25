@@ -113,7 +113,7 @@ const ROUTE_ICON_SLOT_CLASS =
 const ROUTE_BTN_BASE_CLASS =
   'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none align-middle text-center';
 const ROUTE_BTN_ROW_CLASS =
-  'flex flex-nowrap items-center justify-center gap-1.5 sm:gap-2 min-h-[39px] overflow-x-auto';
+  'flex flex-nowrap items-center justify-start gap-1.5 sm:gap-2 min-h-[39px] overflow-x-auto';
 
 type RouteSelectButtonProps = {
   selected: boolean;
@@ -155,7 +155,7 @@ const RouteSelectButton: React.FC<RouteSelectButtonProps> = ({
 
 /** Same outer geometry for UK→EU and EU→UK TRASA panels. */
 const routePanelClassName = (highlighted: boolean, handoffMode: boolean) =>
-  `bg-slate-50/70 p-3 sm:p-3.5 rounded-xl space-y-2 border-solid box-border min-h-[108px] ${
+  `bg-slate-50/70 pl-2 pr-3 pt-3 pb-3 sm:pl-[6px] sm:pr-3 sm:pt-3 sm:pb-3 rounded-xl space-y-2 border-solid box-border min-h-[108px] ${
     handoffMode && highlighted
       ? 'border-[3px] border-[#0f766e]'
       : handoffMode
@@ -196,6 +196,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     euToUk: '',
     faOdUkAgent: 0,
     faOdEuAgent: 0,
+    colKonanie: 0,
     faKlient: 0,
     intPoznamka: '',
     opravaFaktury: '',
@@ -231,6 +232,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     if (savingLockRef.current) return;
 
     if (initialRecord) {
+      const surcharge = ((initialRecord.ukToEu || '').includes('ICS2') ? 25 : 0)
+        + ((initialRecord.euToUk || '').includes('GB ENS') ? 25 : 0);
+      const resolvedColKonanie = initialRecord.colKonanie != null
+        ? Number(initialRecord.colKonanie) || 0
+        : Math.max(0, (Number(initialRecord.faKlient) || 0) - surcharge);
+
       if (copyMode) {
         const {
           id: _id,
@@ -240,30 +247,28 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           customerInvoiceEmailSentAt: _customerSent,
           ...copied
         } = initialRecord;
-        // Copy is a new record — notification must be opt-in for this SAVE.
-        // Keep zakaznik exactly as stored (never rewrite / strip legal form).
         setFormData({
           ...copied,
+          colKonanie: resolvedColKonanie,
+          faKlient: resolvedColKonanie + surcharge,
           zakaznik: copied.zakaznik || '',
           bell: false,
           alert: false,
         });
       } else {
-        // bell/alert checkboxes mean "send notification on THIS save".
-        // Never preload them from DB for edit — persistent OPRAVA must not
-        // auto-trigger a duplicate EmailJS send on the next SAVE.
-        // Accountant view keeps NEW/OPRAVA flags for read-only display.
-        // Keep zakaznik exactly as stored in Supabase (display-only stripping is in <select> labels).
-        setFormData(
-          invoiceHandoffMode
-            ? { ...initialRecord, opravaFaktury: initialRecord.opravaFaktury || '', bell: false }
-            : {
-                ...initialRecord,
-                opravaFaktury: initialRecord.opravaFaktury || '',
-                bell: false,
-                alert: false,
-              },
-        );
+        const baseRecord = invoiceHandoffMode
+          ? { ...initialRecord, opravaFaktury: initialRecord.opravaFaktury || '', bell: false }
+          : {
+              ...initialRecord,
+              opravaFaktury: initialRecord.opravaFaktury || '',
+              bell: false,
+              alert: false,
+            };
+        setFormData({
+          ...baseRecord,
+          colKonanie: resolvedColKonanie,
+          faKlient: resolvedColKonanie + surcharge,
+        });
       }
     } else {
       setFormData({
@@ -278,6 +283,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
         euToUk: '',
         faOdUkAgent: 0,
         faOdEuAgent: 0,
+        colKonanie: 0,
         faKlient: 0,
         intPoznamka: '',
         opravaFaktury: '',
@@ -380,17 +386,16 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
   const toggleUkIcs2 = () => {
     const nextIcs2 = !isUkIcs2Selected;
-    setFormData(prev => {
-      const currentAuto = ((prev.ukToEu || '').includes('ICS2') ? 25 : 0) + ((prev.euToUk || '').includes('GB ENS') ? 25 : 0);
-      const manualValue = (Number(prev.faKlient) || 0) - currentAuto;
-      const nextAuto = ((nextIcs2 ? 25 : 0) + ((prev.euToUk || '').includes('GB ENS') ? 25 : 0));
-      return {
-        ...prev,
-        faKlient: manualValue + nextAuto,
-        ukToEu: buildUkToEuValue(isUkZaclenieSelected, isEuVyclenieSelected, nextIcs2),
-        opravaFaktury: updateAdjustmentNote(prev.opravaFaktury, 'ICS2', !nextIcs2),
-      };
-    });
+    const isNewOrCopy = !initialRecord || copyMode;
+    const nextAuto = (nextIcs2 ? 25 : 0) + (isGbEnsSelected ? 25 : 0);
+    setFormData(prev => ({
+      ...prev,
+      faKlient: Number((prev.colKonanie ?? 0).toFixed(2)) + nextAuto,
+      ukToEu: buildUkToEuValue(isUkZaclenieSelected, isEuVyclenieSelected, nextIcs2),
+      opravaFaktury: isNewOrCopy
+        ? prev.opravaFaktury
+        : updateAdjustmentNote(prev.opravaFaktury, 'ICS2', !nextIcs2),
+    }));
   };
 
   const isEuZaclenieSelected = !!(formData.euToUk && formData.euToUk.includes('zaclenie v EU'));
@@ -421,17 +426,16 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
   const toggleGbEns = () => {
     const nextGbEns = !isGbEnsSelected;
-    setFormData(prev => {
-      const currentAuto = ((prev.ukToEu || '').includes('ICS2') ? 25 : 0) + ((prev.euToUk || '').includes('GB ENS') ? 25 : 0);
-      const manualValue = (Number(prev.faKlient) || 0) - currentAuto;
-      const nextAuto = (((prev.ukToEu || '').includes('ICS2') ? 25 : 0) + (nextGbEns ? 25 : 0));
-      return {
-        ...prev,
-        faKlient: manualValue + nextAuto,
-        euToUk: buildEuToUkValue(isEuZaclenieSelected, isUkVyclenieSelected, nextGbEns),
-        opravaFaktury: updateAdjustmentNote(prev.opravaFaktury, 'GB ENS', !nextGbEns),
-      };
-    });
+    const isNewOrCopy = !initialRecord || copyMode;
+    const nextAuto = (isUkIcs2Selected ? 25 : 0) + (nextGbEns ? 25 : 0);
+    setFormData(prev => ({
+      ...prev,
+      faKlient: Number((prev.colKonanie ?? 0).toFixed(2)) + nextAuto,
+      euToUk: buildEuToUkValue(isEuZaclenieSelected, isUkVyclenieSelected, nextGbEns),
+      opravaFaktury: isNewOrCopy
+        ? prev.opravaFaktury
+        : updateAdjustmentNote(prev.opravaFaktury, 'GB ENS', !nextGbEns),
+    }));
   };
 
   const selectInvoiceFile = (file?: File) => {
@@ -627,7 +631,6 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
   // Auto calculate profit
   const autoFaKlientSurcharge = (isUkIcs2Selected ? 25 : 0) + (isGbEnsSelected ? 25 : 0);
-  const manualFaKlientValue = Math.max(0, (Number(formData.faKlient) || 0) - autoFaKlientSurcharge);
   const calculatedProfit =
     (Number(formData.faKlient) || 0)
     - (Number(formData.faOdUkAgent) || 0)
@@ -809,7 +812,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
 
           {/* Row 1: Customer & Flags — toolbar shares the select row so centres match the dropdown arrow */}
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-            <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+            <label className="block text-slate-700 font-bold mb-[7.5px] text-[11px] uppercase">
               ZÁKAZNÍK{requiredMark}
             </label>
             <div className="flex flex-wrap items-center gap-3">
@@ -1038,71 +1041,187 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </div>
           </div>
 
-          {/* Row 4: Financial Amounts & Live Calculated Profit */}
-          <div className={`bg-slate-50 p-2.5 rounded-lg border space-y-2 ${
+                    {/* Row 4: Financial Amounts & Live Calculated Profit — NEW DESIGN 1:1 */}
+          <div className={`bg-slate-50 p-2.5 rounded-lg border space-y-1 ${
             isNewInvoicingHandoff ? greenPanel : 'border-slate-200'
           }`}>
-            <h4 className="font-bold text-slate-800 flex items-center gap-1 uppercase text-[11px] tracking-wider">
-              Poplatky & Zisk
-            </h4>
+            {/* ============= RIADOK 1: NADPISY =============
+                8-stĺpcový grid:
+                [1] FA UK [2] FA EU  |  SPACER  |  [3] COL.KON [4] ICS2  |  SPACER  |  [5] TOTAL FA [6] ZISK
+            */}
+            <div
+              className="grid items-end w-full"
+              style={{
+                gridTemplateColumns:
+                  'minmax(0, 1fr) minmax(0, 1fr) 22px minmax(0, 0.85fr) minmax(0, 0.85fr) 22px minmax(0, 1.15fr) minmax(0, 1.70fr)',
+                columnGap: '8px',
+                rowGap: '0px',
+              }}
+            >
+              {/* Skupina 1: POPLATKY & ZISK (nad oboma inputmi) — väčšie písmo, posunuté 3mm vyššie */}
+              <div className="min-w-0 flex items-end" style={{ gridColumn: '1 / span 2', marginTop: '-11.3px' }}>
+                <h4 className="font-bold text-slate-800 uppercase tracking-wide m-0 p-0" style={{ fontSize: '15.5px', lineHeight: 1, paddingLeft: '0px' }}>
+                  POPLATKY & ZISK
+                </h4>
+              </div>
+              {/* Spacer 1 (medzi skupinou 1 a 2) */}
+              <div className="min-w-0" style={{ gridColumn: '3 / span 1' }}></div>
+              {/* Skupina 2: prázdne (žiadny nadpis) */}
+              <div className="min-w-0" style={{ gridColumn: '4 / span 2' }}></div>
+              {/* Spacer 2 (medzi skupinou 2 a 3) */}
+              <div className="min-w-0" style={{ gridColumn: '6 / span 1' }}></div>
+              {/* Skupina 3: TOTAL nad 5. stĺpcom — MENŠIE písmo a posunuté BLÍŽŠIE k FA KLIENT */}
+              <div className="min-w-0 flex flex-col items-stretch justify-end">
+                <span className="font-black uppercase tracking-tight text-blue-900 m-0 p-0" style={{ fontSize: '22px', lineHeight: 1, marginBottom: '-2px' }}>
+                  TOTAL
+                </span>
+              </div>
+              {/* 8. stĺpec: prázdne */}
+              <div className="min-w-0"></div>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-start">
-              <div className="min-w-0">
-                <label className="block text-slate-600 font-medium mb-0.5 text-[11px] leading-none">
+            {/* ============= RIADOK 2: LABELY ============= */}
+            <div
+              className="grid items-end w-full"
+              style={{
+                gridTemplateColumns:
+                  'minmax(0, 1fr) minmax(0, 1fr) 22px minmax(0, 0.85fr) minmax(0, 0.85fr) 22px minmax(0, 1.15fr) minmax(0, 1.70fr)',
+                columnGap: '8px',
+                rowGap: '0px',
+              }}
+            >
+              {/* SKUPINA 1 */}
+              {/* 1. FA OD UK AGENT — label presne na ľavý okraj inputu */}
+              <div className="min-w-0 flex items-end">
+                <span className="font-medium text-slate-600 m-0 p-0" style={{ fontSize: '12.5px', lineHeight: 1, paddingLeft: '0px' }}>
                   FA OD UK AGENT (€){requiredMark}
-                </label>
+                </span>
+              </div>
+              {/* 2. FA OD EU AGENT */}
+              <div className="min-w-0 flex items-end">
+                <span className="font-medium text-slate-600 m-0 p-0" style={{ fontSize: '12.5px', lineHeight: 1, paddingLeft: '0px' }}>
+                  FA OD EU AGENT (€){requiredMark}
+                </span>
+              </div>
+              {/* Spacer 1 */}
+              <div className="min-w-0"></div>
+              {/* SKUPINA 2 */}
+              {/* 3. COL. KONANIE — sivý popis */}
+              <div className="min-w-0 flex items-end">
+                <span className="font-medium text-slate-500 m-0 p-0" style={{ fontSize: '12.5px', lineHeight: 1, paddingLeft: '0px' }}>
+                  COL. KONANIE
+                </span>
+              </div>
+              {/* 4. ICS2 / GB ENS — sivý popis */}
+              <div className="min-w-0 flex items-end">
+                <span className="font-medium text-slate-500 m-0 p-0" style={{ fontSize: '12.5px', lineHeight: 1, paddingLeft: '0px' }}>
+                  ICS2 / GB ENS
+                </span>
+              </div>
+              {/* Spacer 2 */}
+              <div className="min-w-0"></div>
+              {/* SKUPINA 3 */}
+              {/* 5. FA ➔ KLIENT — tmavomodrý popis pod TOTAL */}
+              <div className="min-w-0 flex items-end">
+                <span className="font-bold text-blue-900 m-0 p-0" style={{ fontSize: '14px', lineHeight: 1, paddingLeft: '0px' }}>
+                  FA ➔ KLIENT (€)
+                </span>
+              </div>
+              {/* 6. ZISK — žiadny label (label je vnútri zeleného boxu) */}
+              <div className="min-w-0"></div>
+            </div>
+
+            {/* ============= RIADOK 3: VSTUPNÉ POLIA ============= */}
+            <div
+              className="grid items-center w-full"
+              style={{
+                gridTemplateColumns:
+                  'minmax(0, 1fr) minmax(0, 1fr) 22px minmax(0, 0.85fr) minmax(0, 0.85fr) 22px minmax(0, 1.15fr) minmax(0, 1.70fr)',
+                columnGap: '8px',
+                rowGap: '0px',
+              }}
+            >
+              {/* SKUPINA 1 */}
+              {/* 1. FA OD UK AGENT */}
+              <div className="min-w-0">
                 <AmountInput
                   value={formData.faOdUkAgent ?? 0}
                   onChange={(val) => setFormData(prev => ({ ...prev, faOdUkAgent: val }))}
-                  className={`w-full h-[26px] bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border ${
+                  className={`w-full h-[34px] bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border m-0 ${
                     fieldMissing('FA OD UK AGENT (€)') ? 'border-red-500' : 'border-slate-200'
                   }`}
                 />
               </div>
-
+              {/* 2. FA OD EU AGENT */}
               <div className="min-w-0">
-                <label className="block text-slate-600 font-medium mb-0.5 text-[11px] leading-none">
-                  FA OD EU AGENT (€){requiredMark}
-                </label>
                 <AmountInput
                   value={formData.faOdEuAgent ?? 0}
                   onChange={(val) => setFormData(prev => ({ ...prev, faOdEuAgent: val }))}
-                  className={`w-full h-[26px] bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border ${
+                  className={`w-full h-[34px] bg-white border rounded-md px-2.5 py-1 text-slate-900 font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border m-0 ${
                     fieldMissing('FA OD EU AGENT (€)') ? 'border-red-500' : 'border-slate-200'
                   }`}
                 />
               </div>
-
+              {/* Spacer 1 */}
+              <div className="min-w-0"></div>
+              {/* SKUPINA 2 */}
+              {/* 3. COL. KONANIE — modrá farba textu, ručný vpis */}
               <div className="min-w-0">
-                <label className="block text-blue-900 font-bold mb-0.5 text-[11px] leading-none">
-                  FA ➔ KLIENT (€)
-                </label>
-                <div className="grid grid-cols-[minmax(0,1fr)_72px] gap-[1mm]">
-                  <AmountInput
-                    value={manualFaKlientValue}
-                    onChange={(val) => setFormData(prev => {
-                      const currentAuto = ((prev.ukToEu || '').includes('ICS2') ? 25 : 0) + ((prev.euToUk || '').includes('GB ENS') ? 25 : 0);
-                      return {
-                        ...prev,
-                        faKlient: val + currentAuto,
-                      };
-                    })}
-                    className="w-full h-[26px] bg-white border border-blue-400 rounded-md px-2.5 py-1 text-blue-900 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border"
-                  />
-                  <div className="bg-white border border-blue-300 rounded-md px-2 h-[26px] flex items-center justify-end text-blue-900 font-bold font-mono box-border text-[12px]">
-                    {autoFaKlientSurcharge.toFixed(2)}
-                  </div>
+                <AmountInput
+                  value={formData.colKonanie ?? 0}
+                  onChange={(val) => {
+                    const currentAuto = ((formData.ukToEu || '').includes('ICS2') ? 25 : 0)
+                      + ((formData.euToUk || '').includes('GB ENS') ? 25 : 0);
+                    setFormData(prev => ({
+                      ...prev,
+                      colKonanie: val,
+                      faKlient: val + currentAuto,
+                    }));
+                  }}
+                  className="w-full h-[34px] bg-white border border-blue-400 rounded-md px-2 py-1 text-blue-700 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border m-0"
+                />
+              </div>
+              {/* 4. ICS2 / GB ENS — modrá farba textu, iba zobrazenie 0/25/50 */}
+              <div className="min-w-0">
+                <div
+                  className="w-full h-[34px] bg-white border border-blue-400 rounded-md px-2 py-1 text-blue-700 font-bold font-mono text-right box-border m-0 flex items-center justify-end"
+                >
+                  <span style={{ lineHeight: 1 }}>{autoFaKlientSurcharge.toFixed(2)}</span>
                 </div>
               </div>
-
+              {/* Spacer 2 */}
+              <div className="min-w-0"></div>
+              {/* SKUPINA 3 */}
+              {/* 5. FA ➔ KLIENT — modrá farba textu, suma COL. KONANIE + ICS2/GB ENS; aj ručná zmena */}
               <div className="min-w-0">
-                <span className="block text-slate-600 font-medium mb-0.5 text-[11px] leading-none invisible select-none" aria-hidden="true">
-                  VYPOČÍTANÝ ZISK
-                </span>
-                <div className="bg-emerald-100 border border-emerald-300 rounded-md px-2.5 flex w-full h-[26px] box-border items-center justify-center whitespace-nowrap leading-none">
-                  <div className="flex items-center justify-center gap-2 leading-none text-center" style={{ lineHeight: 1 }}>
-                    <span className="font-bold text-emerald-900 text-[11px] leading-none">VYPOČÍTANÝ ZISK:</span>
-                    <span className="font-black font-mono text-emerald-700 text-xs leading-none">
+                <AmountInput
+                  value={Number(formData.faKlient) || 0}
+                  onChange={(val) => {
+                    const currentAuto = ((formData.ukToEu || '').includes('ICS2') ? 25 : 0)
+                      + ((formData.euToUk || '').includes('GB ENS') ? 25 : 0);
+                    const nextColKonanie = Math.max(0, val - currentAuto);
+                    setFormData(prev => ({
+                      ...prev,
+                      colKonanie: nextColKonanie,
+                      faKlient: val,
+                    }));
+                  }}
+                  className="w-full h-[34px] bg-white border border-blue-400 rounded-md px-2.5 py-1 text-blue-900 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border m-0"
+                />
+              </div>
+              {/* 6. VYPOČÍTANÝ ZISK — zelený štítok, najširší */}
+              <div className="min-w-0">
+                <div
+                  className="bg-emerald-100 border border-emerald-300 rounded-md w-full h-[34px] px-2.5 box-border m-0 whitespace-nowrap overflow-hidden flex items-center justify-center"
+                >
+                  <div className="flex items-center justify-center gap-2 flex-nowrap" style={{ lineHeight: 1 }}>
+                    <span
+                      className="font-bold text-emerald-900"
+                      style={{ fontSize: '12.5px', lineHeight: 1, letterSpacing: '0.01em' }}
+                    >
+                      VYPOČÍTANÝ ZISK:
+                    </span>
+                    <span className="font-black font-mono text-emerald-700" style={{ fontSize: '14px', lineHeight: 1 }}>
                       {calculatedProfit.toFixed(2)} €
                     </span>
                   </div>
@@ -1393,7 +1512,16 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           </form>
 
         {/* Bottom Action Footer — submit via form= so Enter and click share one handler */}
-        <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-center shrink-0">
+        <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-center shrink-0 relative">
+          {/* (povinný údaj) vľavo dole — absolútne, aby neovplyvnilo stred tlačidla */}
+          <div
+            aria-hidden="true"
+            className="absolute flex items-center gap-1 m-0 p-0"
+            style={{ left: '1.25rem', top: '50%', transform: 'translateY(-50%)' }}
+          >
+            <span className="text-red-500 font-bold m-0 p-0" style={{ fontSize: '12px', lineHeight: 1 }}>*</span>
+            <span className="text-slate-500 font-medium m-0 p-0" style={{ fontSize: '11.5px', lineHeight: 1 }}>(povinný údaj)</span>
+          </div>
           <button
             type="submit"
             form="colna-record-form"
@@ -1445,6 +1573,18 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             <input
               type="text"
               value={currentCustomer.registrovanaAdresa || ''}
+              readOnly
+              className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-700 font-bold mb-0.5 text-[11px] uppercase">
+              KRAJINA
+            </label>
+            <input
+              type="text"
+              value={currentCustomer.krajina || ''}
               readOnly
               className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
             />

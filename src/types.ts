@@ -11,6 +11,7 @@ export interface ColnaRecord {
   euToUk: string; // e.g., "zaclenie v EU", "vyclenie v UK", ""
   faOdUkAgent: number;
   faOdEuAgent: number;
+  colKonanie?: number;
   faKlient: number;
   intPoznamka: string;
   /** Instructions for accountant when correcting an already issued invoice. */
