@@ -961,6 +961,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
         isOpen={!!invoiceEmailRecord}
         directoryEmails={invoiceEmailRecord ? resolveCustomerEmails(invoiceEmailRecord) : []}
         invoiceNumber={String(invoiceEmailRecord?.cisloFa || '').trim()}
+        recordDate={invoiceEmailRecord?.datumColnice}
         attachmentName={invoiceDisplayNameFromPath(invoiceEmailRecord?.invoicePdfPath)}
         isSending={isSendingCustomerInvoiceEmail}
         sendError={customerInvoiceEmailError}

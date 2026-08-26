@@ -794,12 +794,14 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               }}
             >
               {invoiceHandoffMode
-                ? 'ÚPRAVA FAKTUROVANÉHO ZÁZNAMU COLNICE'
+                ? isAccountantCorrectionMode
+                  ? 'ÚPRAVA ZÁZNAMU VYFAKTUROVANEJ COLNICE'
+                  : 'NOVÝ ZÁZNAM COLNICE - FAKTURÁCIA'
                 : readOnly
                   ? 'NÁHĽAD ZÁZNAMU COLNICE'
                   : initialRecord && !copyMode
                     ? isInvoiceIssued
-                      ? 'ÚPRAVA FAKTUROVANÉHO ZÁZNAMU COLNICE'
+                      ? 'ÚPRAVA ZÁZNAMU VYFAKTUROVANEJ COLNICE'
                       : 'ÚPRAVA ZÁZNAMU COLNICE'
                     : 'NOVÝ ZÁZNAM'}
             </h3>

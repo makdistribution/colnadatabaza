@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Mail, Plus, X, Paperclip } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Mail, X, ChevronDown } from 'lucide-react';
 import { LoadingButtonContent } from './LoadingButtonContent';
 import { EmailRichTextEditor } from './EmailRichTextEditor';
 import {
@@ -11,6 +11,8 @@ import { appApi } from '../lib/appApi';
 interface InvoiceEmailModalProps {
   isOpen: boolean;
   /** Saved emails for the current customer (EMAIL 1–3), in directory order. */
+  /** Date when the record was created (datumColnice). */
+  recordDate?: string;
   directoryEmails: string[];
   invoiceNumber: string;
   attachmentName: string;
@@ -49,10 +51,22 @@ const uniqueEmails = (emails: string[]) => {
 };
 
 /** Compose / confirm customer invoice email before Brevo send. */
+/** Format date string to DD. MM. YYYY */
+const formatDate = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  // Handle YYYY-MM-DD
+  const parts = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (parts) return `${parts[3]}. ${parts[2]}. ${parts[1]}`;
+  // Handle DD. MM. YYYY already formatted
+  if (/\d{1,2}\.\s*\d{1,2}\.\s*\d{4}/.test(dateStr)) return dateStr;
+  return dateStr;
+};
+
 export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
   isOpen,
   directoryEmails,
   invoiceNumber,
+  recordDate,
   attachmentName,
   isSending = false,
   sendError = null,
@@ -66,9 +80,9 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
   const [fromEmail, setFromEmail] = useState(CUSTOMER_INVOICE_FROM);
   const [selectedToEmails, setSelectedToEmails] = useState<string[]>([]);
   const [selectedCcEmails, setSelectedCcEmails] = useState<string[]>([]);
-  const [manualToEmail, setManualToEmail] = useState('');
-  const [manualCcEmail, setManualCcEmail] = useState('');
   const [bccEmail, setBccEmail] = useState(CUSTOMER_INVOICE_FROM);
+  const [ccDropdownOpen, setCcDropdownOpen] = useState(false);
+  const ccDropdownRef = useRef<HTMLDivElement>(null);
 
   const savedEmails = uniqueEmails(directoryEmails);
   const directoryEmailsKey = savedEmails.join('\n');
@@ -79,13 +93,12 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
     setError(null);
     setSignatureStatus(null);
     setFromEmail(CUSTOMER_INVOICE_FROM);
-    setManualToEmail('');
-    setManualCcEmail('');
     setBccEmail(CUSTOMER_INVOICE_FROM);
     // EMAIL 1 is ALWAYS the default in TO
     const initial = directoryEmailsKey ? directoryEmailsKey.split('\n') : [];
     setSelectedToEmails(initial[0] ? [initial[0]] : []);
     setSelectedCcEmails([]);
+    setCcDropdownOpen(false);
 
     void (async () => {
       try {
@@ -106,6 +119,18 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
     };
   }, [isOpen, directoryEmailsKey]);
 
+  // Close CC dropdown when clicking outside
+  useEffect(() => {
+    if (!ccDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ccDropdownRef.current && !ccDropdownRef.current.contains(e.target as Node)) {
+        setCcDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [ccDropdownOpen]);
+
   if (!isOpen) return null;
 
   const subject = buildCustomerInvoiceSubject(invoiceNumber);
@@ -113,24 +138,6 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
   const removeToRecipient = (email: string) => {
     const key = normalizeEmail(email).toLowerCase();
     setSelectedToEmails((prev) => prev.filter((item) => item.toLowerCase() !== key));
-  };
-
-  const addToRecipient = (email: string) => {
-    const normalized = normalizeEmail(email);
-    if (!normalized || !isValidEmail(normalized)) return;
-    setSelectedToEmails((prev) => uniqueEmails([...prev, normalized]));
-  };
-
-  const addManualToRecipient = () => {
-    const email = normalizeEmail(manualToEmail);
-    if (!email) return;
-    if (!isValidEmail(email)) {
-      setError('Zadaná emailová adresa v TO nie je platná.');
-      return;
-    }
-    setError(null);
-    addToRecipient(email);
-    setManualToEmail('');
   };
 
   const removeCcRecipient = (email: string) => {
@@ -144,17 +151,10 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
     setSelectedCcEmails((prev) => uniqueEmails([...prev, normalized]));
   };
 
-  const addManualCcRecipient = () => {
-    const email = normalizeEmail(manualCcEmail);
-    if (!email) return;
-    if (!isValidEmail(email)) {
-      setError('Zadaná emailová adresa v CC nie je platná.');
-      return;
-    }
-    setError(null);
-    addCcRecipient(email);
-    setManualCcEmail('');
-  };
+  // Available emails for CC dropdown (not already in CC)
+  const availableCcEmails = savedEmails.filter(
+    (email) => !selectedCcEmails.some((cc) => cc.toLowerCase() === email.toLowerCase()),
+  );
 
   const handleSend = () => {
     setError(null);
@@ -213,12 +213,37 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
     }
   };
 
-  const emailFieldClass =
-    'w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none focus:ring-1 focus:ring-blue-500';
+  /** Chip for TO / CC recipients */
+  const EmailChip: React.FC<{
+    email: string;
+    onRemove: () => void;
+    variant?: 'to' | 'cc';
+  }> = ({ email, onRemove, variant = 'to' }) => (
+    <span
+      className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium ${
+        variant === 'to'
+          ? 'bg-blue-600 text-white'
+          : 'bg-blue-600 text-white'
+      }`}
+    >
+      {email}
+      <button
+        type="button"
+        disabled={isSending}
+        onClick={onRemove}
+        className="text-white/80 hover:text-white disabled:opacity-50 cursor-pointer ml-0.5"
+        aria-label={`Odstrániť ${email}`}
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </span>
+  );
 
   return (
     <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full overflow-hidden text-slate-900 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
+
+        {/* ─── HEADER ─── */}
         <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
@@ -239,79 +264,49 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
           </button>
         </div>
 
+        {/* ─── BODY ─── */}
         <div className="p-5 space-y-3 text-xs overflow-y-auto flex-1 min-h-0">
+
+          {/* FROM (ODOSIELATEĽ) */}
           <div>
-            <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">FROM (ODOSIELATEĽ)</label>
+            <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
+              FROM (ODOSIELATEĽ)
+            </label>
             <input
               type="email"
               value={fromEmail}
               onChange={(e) => setFromEmail(e.target.value)}
               disabled={isSending}
-              className={emailFieldClass}
+              className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white text-[12px] outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {/* TO (HLAVNÝ PRÍJEMCA) */}
+          {/* TO (PRÍJEMCA)  +  BCC (SKRYTÁ KÓPIA) — side by side */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* TO */}
             <div>
-              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">
-                TO (HLAVNÝ PRÍJEMCA — DEFAULT EMAIL 1)
+              <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
+                TO (PRÍJEMCA)
               </label>
-              <div className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 min-h-[34px]">
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedToEmails.length === 0 ? (
-                    <span className="text-slate-400 py-0.5">Vyberte príjemcu (TO)</span>
-                  ) : (
-                    selectedToEmails.map((email) => (
-                      <span
-                        key={email.toLowerCase()}
-                        className="inline-flex items-center gap-1 rounded bg-blue-50 border border-blue-200 text-blue-800 px-1.5 py-0.5 text-[11px] font-medium"
-                      >
-                        {email}
-                        <button
-                          type="button"
-                          disabled={isSending}
-                          onClick={() => removeToRecipient(email)}
-                          className="text-blue-500 hover:text-blue-800 disabled:opacity-50 cursor-pointer"
-                          aria-label={`Odstrániť ${email}`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-              <div className="mt-1.5 flex gap-1.5">
-                <input
-                  type="email"
-                  value={manualToEmail}
-                  onChange={(e) => setManualToEmail(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addManualToRecipient();
-                    }
-                  }}
-                  disabled={isSending}
-                  placeholder="Pridať ďalší email do TO"
-                  className={emailFieldClass}
-                />
-                <button
-                  type="button"
-                  disabled={isSending}
-                  onClick={addManualToRecipient}
-                  className="shrink-0 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-md px-2.5 py-1.5 cursor-pointer disabled:opacity-50"
-                  aria-label="Pridať príjemcu"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+              <div className="bg-white border border-slate-300 rounded-md px-2 py-1.5 min-h-[36px] flex flex-wrap items-center gap-1.5">
+                {selectedToEmails.length === 0 ? (
+                  <span className="text-slate-400 text-[11px] py-0.5">Žiadny príjemca</span>
+                ) : (
+                  selectedToEmails.map((email) => (
+                    <EmailChip
+                      key={email.toLowerCase()}
+                      email={email}
+                      variant="to"
+                      onRemove={() => removeToRecipient(email)}
+                    />
+                  ))
+                )}
               </div>
             </div>
 
-            {/* BCC (SKRYTÁ KÓPIA) */}
+            {/* BCC */}
             <div>
-              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">
+              <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
                 BCC (SKRYTÁ KÓPIA)
               </label>
               <input
@@ -319,106 +314,88 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
                 value={bccEmail}
                 onChange={(e) => setBccEmail(e.target.value)}
                 disabled={isSending}
-                className={emailFieldClass}
+                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white text-[12px] outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          {/* CC (KÓPIA) */}
+          {/* CC (KÓPIA) — click to pick from address book */}
           <div>
-            <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">
+            <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
               CC (KÓPIA)
             </label>
-            <div className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 min-h-[34px]">
-              <div className="flex flex-wrap gap-1.5">
-                {selectedCcEmails.length === 0 ? (
-                  <span className="text-slate-400 py-0.5">V kópii nie je pridaná žiadna adresa</span>
-                ) : (
-                  selectedCcEmails.map((email) => (
-                    <span
-                      key={email.toLowerCase()}
-                      className="inline-flex items-center gap-1 rounded bg-slate-100 border border-slate-300 text-slate-800 px-1.5 py-0.5 text-[11px] font-medium"
-                    >
-                      {email}
-                      <button
-                        type="button"
-                        disabled={isSending}
-                        onClick={() => removeCcRecipient(email)}
-                        className="text-slate-500 hover:text-red-700 disabled:opacity-50 cursor-pointer"
-                        aria-label={`Odstrániť ${email}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Dropdown for picking CC and manual CC field */}
-            <div className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              <select
-                disabled={isSending}
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) {
-                    addCcRecipient(e.target.value);
+            <div
+              ref={ccDropdownRef}
+              className="relative"
+            >
+              <div
+                className="bg-white border border-slate-300 rounded-md px-2 py-1.5 min-h-[36px] flex flex-wrap items-center gap-1.5 cursor-pointer"
+                onClick={() => {
+                  if (!isSending && availableCcEmails.length > 0) {
+                    setCcDropdownOpen((prev) => !prev);
                   }
                 }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-800 text-[11px] font-medium outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
               >
-                <option value="">+ Vybrať email zákazníka do kópie (CC)...</option>
-                {savedEmails.map((email, index) => {
-                  const isAlreadyInCc = selectedCcEmails.some((item) => item.toLowerCase() === email.toLowerCase());
-                  const isDefaultTo = selectedToEmails.some((item) => item.toLowerCase() === email.toLowerCase());
-                  return (
-                    <option key={email} value={email} disabled={isAlreadyInCc}>
-                      {`EMAIL ${index + 1}: ${email}${isDefaultTo ? ' (v TO)' : ''}${isAlreadyInCc ? ' (už v CC)' : ''}`}
-                    </option>
-                  );
-                })}
-              </select>
-
-              <div className="flex gap-1.5">
-                <input
-                  type="email"
-                  value={manualCcEmail}
-                  onChange={(e) => setManualCcEmail(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addManualCcRecipient();
-                    }
-                  }}
-                  disabled={isSending}
-                  placeholder="Alebo napíšte vlastný email do CC"
-                  className={emailFieldClass}
-                />
-                <button
-                  type="button"
-                  disabled={isSending}
-                  onClick={addManualCcRecipient}
-                  className="shrink-0 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-md px-2.5 py-1.5 cursor-pointer disabled:opacity-50"
-                  aria-label="Pridať do CC"
-                  title="Pridať do CC"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+                {selectedCcEmails.length === 0 && (
+                  <span className="text-slate-400 text-[11px] py-0.5 flex items-center gap-1">
+                    Kliknite pre pridanie príjemcu do kópie
+                    {availableCcEmails.length > 0 && <ChevronDown className="w-3 h-3" />}
+                  </span>
+                )}
+                {selectedCcEmails.map((email) => (
+                  <EmailChip
+                    key={email.toLowerCase()}
+                    email={email}
+                    variant="cc"
+                    onRemove={() => removeCcRecipient(email)}
+                  />
+                ))}
+                {selectedCcEmails.length > 0 && availableCcEmails.length > 0 && (
+                  <span className="text-slate-400 text-[11px] py-0.5 flex items-center gap-0.5 ml-1">
+                    <ChevronDown className="w-3 h-3" />
+                  </span>
+                )}
               </div>
+
+              {/* Dropdown list */}
+              {ccDropdownOpen && availableCcEmails.length > 0 && (
+                <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-300 rounded-md shadow-lg z-50 py-1 max-h-[160px] overflow-y-auto">
+                  {availableCcEmails.map((email, index) => (
+                    <button
+                      key={email}
+                      type="button"
+                      onClick={() => {
+                        addCcRecipient(email);
+                        setCcDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-1.5 text-[11px] text-slate-800 hover:bg-blue-50 hover:text-blue-700 cursor-pointer font-medium"
+                    >
+                      EMAIL {index + 1}: {email}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
+          {/* SUBJECT */}
           <div>
-            <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">SUBJECT</label>
+            <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
+              SUBJECT
+            </label>
             <input
               type="text"
               readOnly
               value={subject}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
+              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-slate-900 text-[12px] outline-none read-only:cursor-default"
             />
           </div>
+
+          {/* EMAIL BODY */}
           <div>
-            <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">EMAIL BODY</label>
+            <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
+              EMAIL BODY
+            </label>
             <EmailRichTextEditor
               valueHtml={bodyHtml}
               onChangeHtml={setBodyHtml}
@@ -430,26 +407,28 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
               <p className="mt-1 text-[11px] text-emerald-700 font-medium">{signatureStatus}</p>
             )}
           </div>
-          <div>
-            <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">ATTACHMENT</label>
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-300 rounded-md px-2.5 py-2 text-slate-900">
-              <Paperclip className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-              <span className="font-mono text-[11px] break-all">{attachmentName}</span>
-            </div>
-          </div>
+
+          {/* Error messages */}
           {(error || sendError) && (
-            <div className="bg-red-50 border border-red-200 text-red-800 rounded-md px-2.5 py-2 font-medium">
+            <div className="bg-red-50 border border-red-200 text-red-800 rounded-md px-2.5 py-2 font-medium text-[11px]">
               {error || sendError}
             </div>
           )}
         </div>
 
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end shrink-0">
+        {/* ─── FOOTER ─── */}
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-slate-400">* Emailové adresy zákazníka sa preberajú z adresára.</span>
+            {recordDate && (
+              <span className="text-[10px] text-slate-400">Záznam pridaný: {formatDate(recordDate)}</span>
+            )}
+          </div>
           <button
             type="button"
             onClick={handleSend}
             disabled={isSending}
-            className="bg-[#1a65ff] hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-lg shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-5 py-2 rounded-lg shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-60"
           >
             <LoadingButtonContent loading={isSending} kind="send">
               <Mail className="w-4 h-4" />
