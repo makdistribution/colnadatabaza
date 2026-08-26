@@ -22,6 +22,7 @@ interface InvoiceEmailModalProps {
     htmlBody: string;
     fromEmail: string;
     toEmails: string[];
+    ccEmails?: string[];
     bccEmail: string;
   }) => void;
 }
@@ -63,10 +64,11 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
   const [signatureHtml, setSignatureHtml] = useState('');
   const [signatureStatus, setSignatureStatus] = useState<string | null>(null);
   const [fromEmail, setFromEmail] = useState(CUSTOMER_INVOICE_FROM);
-  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
-  const [manualEmail, setManualEmail] = useState('');
+  const [selectedToEmails, setSelectedToEmails] = useState<string[]>([]);
+  const [selectedCcEmails, setSelectedCcEmails] = useState<string[]>([]);
+  const [manualToEmail, setManualToEmail] = useState('');
+  const [manualCcEmail, setManualCcEmail] = useState('');
   const [bccEmail, setBccEmail] = useState(CUSTOMER_INVOICE_FROM);
-  const [pickerOpen, setPickerOpen] = useState(false);
 
   const savedEmails = uniqueEmails(directoryEmails);
   const directoryEmailsKey = savedEmails.join('\n');
@@ -77,12 +79,13 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
     setError(null);
     setSignatureStatus(null);
     setFromEmail(CUSTOMER_INVOICE_FROM);
-    setManualEmail('');
-    setPickerOpen(false);
+    setManualToEmail('');
+    setManualCcEmail('');
     setBccEmail(CUSTOMER_INVOICE_FROM);
-    // Preserve previous single-recipient behaviour: pre-select EMAIL 1 when present.
+    // EMAIL 1 is ALWAYS the default in TO
     const initial = directoryEmailsKey ? directoryEmailsKey.split('\n') : [];
-    setSelectedEmails(initial[0] ? [initial[0]] : []);
+    setSelectedToEmails(initial[0] ? [initial[0]] : []);
+    setSelectedCcEmails([]);
 
     void (async () => {
       try {
@@ -107,33 +110,50 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
 
   const subject = buildCustomerInvoiceSubject(invoiceNumber);
 
-  const toggleDirectoryEmail = (email: string) => {
-    const normalized = normalizeEmail(email);
-    if (!normalized) return;
-    setSelectedEmails((prev) => {
-      const exists = prev.some((item) => item.toLowerCase() === normalized.toLowerCase());
-      if (exists) {
-        return prev.filter((item) => item.toLowerCase() !== normalized.toLowerCase());
-      }
-      return uniqueEmails([...prev, normalized]);
-    });
-  };
-
-  const removeRecipient = (email: string) => {
+  const removeToRecipient = (email: string) => {
     const key = normalizeEmail(email).toLowerCase();
-    setSelectedEmails((prev) => prev.filter((item) => item.toLowerCase() !== key));
+    setSelectedToEmails((prev) => prev.filter((item) => item.toLowerCase() !== key));
   };
 
-  const addManualRecipient = () => {
-    const email = normalizeEmail(manualEmail);
+  const addToRecipient = (email: string) => {
+    const normalized = normalizeEmail(email);
+    if (!normalized || !isValidEmail(normalized)) return;
+    setSelectedToEmails((prev) => uniqueEmails([...prev, normalized]));
+  };
+
+  const addManualToRecipient = () => {
+    const email = normalizeEmail(manualToEmail);
     if (!email) return;
     if (!isValidEmail(email)) {
-      setError('Zadaná emailová adresa nie je platná.');
+      setError('Zadaná emailová adresa v TO nie je platná.');
       return;
     }
     setError(null);
-    setSelectedEmails((prev) => uniqueEmails([...prev, email]));
-    setManualEmail('');
+    addToRecipient(email);
+    setManualToEmail('');
+  };
+
+  const removeCcRecipient = (email: string) => {
+    const key = normalizeEmail(email).toLowerCase();
+    setSelectedCcEmails((prev) => prev.filter((item) => item.toLowerCase() !== key));
+  };
+
+  const addCcRecipient = (email: string) => {
+    const normalized = normalizeEmail(email);
+    if (!normalized || !isValidEmail(normalized)) return;
+    setSelectedCcEmails((prev) => uniqueEmails([...prev, normalized]));
+  };
+
+  const addManualCcRecipient = () => {
+    const email = normalizeEmail(manualCcEmail);
+    if (!email) return;
+    if (!isValidEmail(email)) {
+      setError('Zadaná emailová adresa v CC nie je platná.');
+      return;
+    }
+    setError(null);
+    addCcRecipient(email);
+    setManualCcEmail('');
   };
 
   const handleSend = () => {
@@ -142,13 +162,22 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
       setError('Chýba odosielateľ (FROM).');
       return;
     }
-    const recipients = uniqueEmails(selectedEmails);
+    const recipients = uniqueEmails(selectedToEmails);
     if (recipients.length === 0) {
-      setError('Email zákazníka sa nenašiel v adresári.');
+      setError('Zadajte aspoň jednu emailovú adresu príjemcu (TO).');
       return;
     }
     if (recipients.some((email) => !isValidEmail(email))) {
-      setError('Niektorá emailová adresa príjemcu nie je platná.');
+      setError('Niektorá emailová adresa príjemcu (TO) nie je platná.');
+      return;
+    }
+    const ccRecipients = uniqueEmails(selectedCcEmails);
+    if (ccRecipients.some((email) => !isValidEmail(email))) {
+      setError('Niektorá emailová adresa v kópii (CC) nie je platná.');
+      return;
+    }
+    if (bccEmail.trim() && !isValidEmail(bccEmail.trim())) {
+      setError('Emailová adresa v skrytej kópii (BCC) nie je platná.');
       return;
     }
     if (!invoiceNumber.trim()) {
@@ -168,6 +197,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
       htmlBody: html,
       fromEmail: fromEmail.trim(),
       toEmails: recipients,
+      ccEmails: ccRecipients.length > 0 ? ccRecipients : undefined,
       bccEmail: bccEmail.trim(),
     });
   };
@@ -211,7 +241,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
 
         <div className="p-5 space-y-3 text-xs overflow-y-auto flex-1 min-h-0">
           <div>
-            <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">FROM</label>
+            <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">FROM (ODOSIELATEĽ)</label>
             <input
               type="email"
               value={fromEmail}
@@ -220,15 +250,19 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
               className={emailFieldClass}
             />
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* TO (HLAVNÝ PRÍJEMCA) */}
             <div>
-              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">TO</label>
+              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">
+                TO (HLAVNÝ PRÍJEMCA — DEFAULT EMAIL 1)
+              </label>
               <div className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 min-h-[34px]">
                 <div className="flex flex-wrap gap-1.5">
-                  {selectedEmails.length === 0 ? (
-                    <span className="text-slate-400 py-0.5">Vyberte alebo pridajte príjemcov</span>
+                  {selectedToEmails.length === 0 ? (
+                    <span className="text-slate-400 py-0.5">Vyberte príjemcu (TO)</span>
                   ) : (
-                    selectedEmails.map((email) => (
+                    selectedToEmails.map((email) => (
                       <span
                         key={email.toLowerCase()}
                         className="inline-flex items-center gap-1 rounded bg-blue-50 border border-blue-200 text-blue-800 px-1.5 py-0.5 text-[11px] font-medium"
@@ -237,7 +271,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
                         <button
                           type="button"
                           disabled={isSending}
-                          onClick={() => removeRecipient(email)}
+                          onClick={() => removeToRecipient(email)}
                           className="text-blue-500 hover:text-blue-800 disabled:opacity-50 cursor-pointer"
                           aria-label={`Odstrániť ${email}`}
                         >
@@ -248,61 +282,25 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
                   )}
                 </div>
               </div>
-              {savedEmails.length > 0 && (
-                <div className="mt-1.5">
-                  <button
-                    type="button"
-                    disabled={isSending}
-                    onClick={() => setPickerOpen((open) => !open)}
-                    className="text-[11px] font-semibold text-blue-700 hover:text-blue-900 cursor-pointer disabled:opacity-50"
-                  >
-                    {pickerOpen ? 'Skryť emaily z adresára' : 'Vybrať emaily z adresára'}
-                  </button>
-                  {pickerOpen && (
-                    <div className="mt-1.5 border border-slate-200 rounded-md bg-white p-2 space-y-1">
-                      {savedEmails.map((email) => {
-                        const checked = selectedEmails.some(
-                          (item) => item.toLowerCase() === email.toLowerCase(),
-                        );
-                        return (
-                          <label
-                            key={email.toLowerCase()}
-                            className="flex items-center gap-2 text-[11px] text-slate-800 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              disabled={isSending}
-                              onChange={() => toggleDirectoryEmail(email)}
-                              className="rounded border-slate-300"
-                            />
-                            <span>{email}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
               <div className="mt-1.5 flex gap-1.5">
                 <input
                   type="email"
-                  value={manualEmail}
-                  onChange={(e) => setManualEmail(e.target.value)}
+                  value={manualToEmail}
+                  onChange={(e) => setManualToEmail(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      addManualRecipient();
+                      addManualToRecipient();
                     }
                   }}
                   disabled={isSending}
-                  placeholder="Pridať ďalší email"
+                  placeholder="Pridať ďalší email do TO"
                   className={emailFieldClass}
                 />
                 <button
                   type="button"
                   disabled={isSending}
-                  onClick={addManualRecipient}
+                  onClick={addManualToRecipient}
                   className="shrink-0 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-md px-2.5 py-1.5 cursor-pointer disabled:opacity-50"
                   aria-label="Pridať príjemcu"
                 >
@@ -310,8 +308,12 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* BCC (SKRYTÁ KÓPIA) */}
             <div>
-              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">BCC</label>
+              <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">
+                BCC (SKRYTÁ KÓPIA)
+              </label>
               <input
                 type="email"
                 value={bccEmail}
@@ -321,6 +323,91 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
               />
             </div>
           </div>
+
+          {/* CC (KÓPIA) */}
+          <div>
+            <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">
+              CC (KÓPIA)
+            </label>
+            <div className="bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 min-h-[34px]">
+              <div className="flex flex-wrap gap-1.5">
+                {selectedCcEmails.length === 0 ? (
+                  <span className="text-slate-400 py-0.5">V kópii nie je pridaná žiadna adresa</span>
+                ) : (
+                  selectedCcEmails.map((email) => (
+                    <span
+                      key={email.toLowerCase()}
+                      className="inline-flex items-center gap-1 rounded bg-slate-100 border border-slate-300 text-slate-800 px-1.5 py-0.5 text-[11px] font-medium"
+                    >
+                      {email}
+                      <button
+                        type="button"
+                        disabled={isSending}
+                        onClick={() => removeCcRecipient(email)}
+                        className="text-slate-500 hover:text-red-700 disabled:opacity-50 cursor-pointer"
+                        aria-label={`Odstrániť ${email}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Dropdown for picking CC and manual CC field */}
+            <div className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <select
+                disabled={isSending}
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    addCcRecipient(e.target.value);
+                  }
+                }}
+                className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-800 text-[11px] font-medium outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="">+ Vybrať email zákazníka do kópie (CC)...</option>
+                {savedEmails.map((email, index) => {
+                  const isAlreadyInCc = selectedCcEmails.some((item) => item.toLowerCase() === email.toLowerCase());
+                  const isDefaultTo = selectedToEmails.some((item) => item.toLowerCase() === email.toLowerCase());
+                  return (
+                    <option key={email} value={email} disabled={isAlreadyInCc}>
+                      {`EMAIL ${index + 1}: ${email}${isDefaultTo ? ' (v TO)' : ''}${isAlreadyInCc ? ' (už v CC)' : ''}`}
+                    </option>
+                  );
+                })}
+              </select>
+
+              <div className="flex gap-1.5">
+                <input
+                  type="email"
+                  value={manualCcEmail}
+                  onChange={(e) => setManualCcEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addManualCcRecipient();
+                    }
+                  }}
+                  disabled={isSending}
+                  placeholder="Alebo napíšte vlastný email do CC"
+                  className={emailFieldClass}
+                />
+                <button
+                  type="button"
+                  disabled={isSending}
+                  onClick={addManualCcRecipient}
+                  className="shrink-0 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-md px-2.5 py-1.5 cursor-pointer disabled:opacity-50"
+                  aria-label="Pridať do CC"
+                  title="Pridať do CC"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-slate-600 font-semibold mb-0.5 text-[11px] uppercase">SUBJECT</label>
             <input

@@ -2,6 +2,7 @@ import type {
   AdresaRecord,
   AppBootstrap,
   AppDocument,
+  CennikRecord,
   ColnaRecord,
   InfoFaRecord,
   LoginRecord,
@@ -103,7 +104,7 @@ export const appApi = {
   sendCustomerInvoiceEmail: (
     recordId: string,
     htmlBody: string,
-    addresses?: { fromEmail?: string; toEmail?: string; toEmails?: string[]; bccEmail?: string },
+    addresses?: { fromEmail?: string; toEmail?: string; toEmails?: string[]; ccEmails?: string[]; bccEmail?: string },
   ) =>
     request<{ record: ColnaRecord; bootstrap: AppBootstrap }>('/api/app', {
       method: 'POST',
@@ -114,6 +115,7 @@ export const appApi = {
         fromEmail: addresses?.fromEmail,
         toEmail: addresses?.toEmail,
         toEmails: addresses?.toEmails,
+        ccEmails: addresses?.ccEmails,
         bccEmail: addresses?.bccEmail,
       }),
     }),
@@ -188,6 +190,16 @@ export const appApi = {
     request<{ success: true; bootstrap: AppBootstrap }>('/api/app', {
       method: 'POST',
       body: JSON.stringify({ action: 'deleteInfoFaRecord', id }),
+    }),
+  saveCennikRecord: (cennikRecord: CennikRecord) =>
+    request<{ bootstrap: AppBootstrap }>('/api/app', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveCennikRecord', cennikRecord }),
+    }),
+  deleteCennikRecord: (id: string) =>
+    request<{ success: true; bootstrap: AppBootstrap }>('/api/app', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteCennikRecord', id }),
     }),
   uploadDocument: async (file: File, note: string) => {
     if (file.size <= 0 || file.size > 50 * 1024 * 1024) {

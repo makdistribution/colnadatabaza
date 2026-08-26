@@ -10,7 +10,8 @@ import {
   ExternalLink,
   BookOpen,
   Folder,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Tag
 } from 'lucide-react';
 import { VatEoriCheckerModal, type VatEoriRegion } from './VatEoriCheckerModal';
 import { HsCodeCheckerModal } from './HsCodeCheckerModal';
@@ -197,13 +198,13 @@ export const Header: React.FC<HeaderProps> = ({
                 setColnicaDropdownOpen(false);
               }}
               className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 cursor-pointer border-[3px] border-[#07538e] whitespace-nowrap shrink-0 ${
-                ['ADRESY', 'LOGIN_UDAJE', 'INFO_FA'].includes(activeTab) || activeTab.startsWith('REPORTY_')
+                ['ADRESY', 'LOGIN_UDAJE', 'INFO_FA', 'CENNIK'].includes(activeTab) || activeTab.startsWith('REPORTY_')
                   ? 'bg-amber-100/70 text-slate-900 shadow-xs font-bold'
                   : 'bg-white text-[#45556c] hover:bg-slate-50'
               }`}
             >
               <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span className="whitespace-nowrap">FAKTURÁCIA • LOGIN • ADRESY</span>
+              <span className="whitespace-nowrap">FAKTURÁCIA • CENNÍK • LOGIN • ADRESY</span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform shrink-0 ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -221,6 +222,13 @@ export const Header: React.FC<HeaderProps> = ({
                     >
                       <BookOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                       <span>AKO VYSTAVIŤ FA</span>
+                    </button>
+                    <button
+                      onClick={() => { setActiveTab('CENNIK'); setDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
+                    >
+                      <Tag className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span>CENNÍK</span>
                     </button>
                   </div>
 

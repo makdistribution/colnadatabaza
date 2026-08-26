@@ -96,7 +96,7 @@ const AmountInput: React.FC<AmountInputProps> = ({ value, onChange, className })
       onFocus={handleFocus}
       onChange={handleChange}
       onBlur={handleBlur}
-      className={`${className} text-center`}
+      className={`${className} text-center disabled:bg-white disabled:opacity-100`}
       style={{ lineHeight: '1', verticalAlign: 'middle' }}
     />
   );
@@ -107,11 +107,11 @@ const ROUTE_YES_ICON_W = 23;
 const ROUTE_YES_ICON_H = 25;
 const ROUTE_BTN_H = ROUTE_YES_ICON_H + 12 + 2; // icon + py-1.5*2 + border*2
 
-const ROUTE_YES_ICON_CLASS = 'max-w-none object-contain block -translate-y-[1mm]';
+const ROUTE_ICON_CLASS = 'max-w-none object-contain block -translate-y-[1mm]';
 const ROUTE_ICON_SLOT_CLASS =
   'inline-flex items-center justify-center shrink-0 self-center leading-none w-[23px] h-[25px]';
 const ROUTE_BTN_BASE_CLASS =
-  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none align-middle text-center';
+  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none align-middle text-center disabled:opacity-100 disabled:cursor-default';
 const ROUTE_BTN_ROW_CLASS =
   'flex flex-nowrap items-center justify-start gap-1.5 sm:gap-2 min-h-[39px] overflow-x-auto';
 
@@ -142,9 +142,9 @@ const RouteSelectButton: React.FC<RouteSelectButtonProps> = ({
       style={{ width: ROUTE_YES_ICON_W, height: ROUTE_YES_ICON_H }}
     >
       {selected ? (
-        <img src="/yes.png" alt="" className={ROUTE_YES_ICON_CLASS} />
+        <img src="/yes.png" alt="" className={ROUTE_ICON_CLASS} />
       ) : (
-        <span className="flex h-[25px] w-full -translate-y-[1mm] items-center justify-center text-[20px] font-bold leading-[25px]">＋</span>
+        <img src="/yyes.png" alt="" className={ROUTE_ICON_CLASS} />
       )}
     </span>
     <span className="inline-flex h-[25px] items-center justify-center text-center leading-[25px] align-middle">
@@ -549,6 +549,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     }
     if (formData.faOdEuAgent == null || Number.isNaN(Number(formData.faOdEuAgent))) {
       missing.push('FA OD EU AGENT (€)');
+    }
+    if (formData.colKonanie == null || Number.isNaN(Number(formData.colKonanie)) || Number(formData.colKonanie) <= 0) {
+      missing.push('COL. KONANIE');
     }
     return missing;
   };
@@ -1041,107 +1044,91 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </div>
           </div>
 
-                    {/* Row 4: Financial Amounts & Live Calculated Profit — NEW DESIGN 1:1 */}
-          <div className={`bg-slate-50 p-2.5 rounded-lg border space-y-1 ${
-            isNewInvoicingHandoff ? greenPanel : 'border-slate-200'
-          }`}>
-            {/* ============= RIADOK 1: NADPISY =============
-                8-stĺpcový grid:
-                [1] FA UK [2] FA EU  |  SPACER  |  [3] COL.KON [4] ICS2  |  SPACER  |  [5] TOTAL FA [6] ZISK
-            */}
+                    {/* Row 4: Financial Amounts & Live Calculated Profit */}
+          <div
+            className={`bg-slate-50 p-2.5 rounded-lg border space-y-1 ${
+              isNewInvoicingHandoff ? greenPanel : 'border-slate-200'
+            }`}
+          >
+            {/* Row 1: Headers (POPLATKY & ZISK on left, TOTAL above Col 5) */}
             <div
               className="grid items-end w-full"
               style={{
                 gridTemplateColumns:
-                  'minmax(0, 1fr) minmax(0, 1fr) 22px minmax(0, 0.85fr) minmax(0, 0.85fr) 22px minmax(0, 1.15fr) minmax(0, 1.70fr)',
+                  'minmax(0, 1.15fr) minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.2fr) minmax(0, 2fr)',
                 columnGap: '8px',
-                rowGap: '0px',
               }}
             >
-              {/* Skupina 1: POPLATKY & ZISK (nad oboma inputmi) — väčšie písmo, posunuté 3mm vyššie */}
-              <div className="min-w-0 flex items-end" style={{ gridColumn: '1 / span 2', marginTop: '-11.3px' }}>
-                <h4 className="font-bold text-slate-800 uppercase tracking-wide m-0 p-0" style={{ fontSize: '15.5px', lineHeight: 1, paddingLeft: '0px' }}>
+              {/* POPLATKY & ZISK */}
+              <div className="col-span-2 min-w-0">
+                <span className="font-bold text-slate-800 uppercase tracking-wide text-[13px] block leading-none -translate-y-[1mm]">
                   POPLATKY & ZISK
-                </h4>
+                </span>
               </div>
-              {/* Spacer 1 (medzi skupinou 1 a 2) */}
-              <div className="min-w-0" style={{ gridColumn: '3 / span 1' }}></div>
-              {/* Skupina 2: prázdne (žiadny nadpis) */}
-              <div className="min-w-0" style={{ gridColumn: '4 / span 2' }}></div>
-              {/* Spacer 2 (medzi skupinou 2 a 3) */}
-              <div className="min-w-0" style={{ gridColumn: '6 / span 1' }}></div>
-              {/* Skupina 3: TOTAL nad 5. stĺpcom — MENŠIE písmo a posunuté BLÍŽŠIE k FA KLIENT */}
-              <div className="min-w-0 flex flex-col items-stretch justify-end">
-                <span className="font-black uppercase tracking-tight text-blue-900 m-0 p-0" style={{ fontSize: '22px', lineHeight: 1, marginBottom: '-2px' }}>
+              {/* Spacers for col 3 & 4 */}
+              <div className="col-span-2 min-w-0"></div>
+              {/* TOTAL above column 5 */}
+              <div className="min-w-0">
+                <span className="font-black text-blue-900 uppercase tracking-tight text-[13px] block leading-none">
                   TOTAL
                 </span>
               </div>
-              {/* 8. stĺpec: prázdne */}
+              {/* Spacer for col 6 */}
               <div className="min-w-0"></div>
             </div>
 
-            {/* ============= RIADOK 2: LABELY ============= */}
+            {/* Row 2: Labels */}
             <div
               className="grid items-end w-full"
               style={{
                 gridTemplateColumns:
-                  'minmax(0, 1fr) minmax(0, 1fr) 22px minmax(0, 0.85fr) minmax(0, 0.85fr) 22px minmax(0, 1.15fr) minmax(0, 1.70fr)',
+                  'minmax(0, 1.15fr) minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.2fr) minmax(0, 2fr)',
                 columnGap: '8px',
-                rowGap: '0px',
               }}
             >
-              {/* SKUPINA 1 */}
-              {/* 1. FA OD UK AGENT — label presne na ľavý okraj inputu */}
-              <div className="min-w-0 flex items-end">
-                <span className="font-medium text-slate-600 m-0 p-0" style={{ fontSize: '12.5px', lineHeight: 1, paddingLeft: '0px' }}>
+              {/* 1. FA OD UK AGENT */}
+              <div className="min-w-0">
+                <label className="block text-slate-600 font-semibold text-[11px] uppercase tracking-wide leading-none whitespace-nowrap overflow-hidden text-ellipsis">
                   FA OD UK AGENT (€){requiredMark}
-                </span>
+                </label>
               </div>
               {/* 2. FA OD EU AGENT */}
-              <div className="min-w-0 flex items-end">
-                <span className="font-medium text-slate-600 m-0 p-0" style={{ fontSize: '12.5px', lineHeight: 1, paddingLeft: '0px' }}>
+              <div className="min-w-0">
+                <label className="block text-slate-600 font-semibold text-[11px] uppercase tracking-wide leading-none whitespace-nowrap overflow-hidden text-ellipsis">
                   FA OD EU AGENT (€){requiredMark}
-                </span>
+                </label>
               </div>
-              {/* Spacer 1 */}
-              <div className="min-w-0"></div>
-              {/* SKUPINA 2 */}
-              {/* 3. COL. KONANIE — sivý popis */}
-              <div className="min-w-0 flex items-end">
-                <span className="font-medium text-slate-500 m-0 p-0" style={{ fontSize: '12.5px', lineHeight: 1, paddingLeft: '0px' }}>
-                  COL. KONANIE
-                </span>
+              {/* 3. COL. KONANIE */}
+              <div className="min-w-0">
+                <label className="block text-slate-500 font-semibold text-[11px] uppercase tracking-wide leading-none whitespace-nowrap overflow-hidden text-ellipsis">
+                  COL. KONANIE{requiredMark}
+                </label>
               </div>
-              {/* 4. ICS2 / GB ENS — sivý popis */}
-              <div className="min-w-0 flex items-end">
-                <span className="font-medium text-slate-500 m-0 p-0" style={{ fontSize: '12.5px', lineHeight: 1, paddingLeft: '0px' }}>
+              {/* 4. ICS2 / GB ENS */}
+              <div className="min-w-0">
+                <label className="block text-slate-500 font-semibold text-[11px] uppercase tracking-wide leading-none whitespace-nowrap overflow-hidden text-ellipsis">
                   ICS2 / GB ENS
-                </span>
+                </label>
               </div>
-              {/* Spacer 2 */}
-              <div className="min-w-0"></div>
-              {/* SKUPINA 3 */}
-              {/* 5. FA ➔ KLIENT — tmavomodrý popis pod TOTAL */}
-              <div className="min-w-0 flex items-end">
-                <span className="font-bold text-blue-900 m-0 p-0" style={{ fontSize: '14px', lineHeight: 1, paddingLeft: '0px' }}>
+              {/* 5. FA ➔ KLIENT */}
+              <div className="min-w-0">
+                <label className="block text-blue-900 font-bold text-[12px] uppercase tracking-wide leading-none whitespace-nowrap overflow-hidden text-ellipsis">
                   FA ➔ KLIENT (€)
-                </span>
+                </label>
               </div>
-              {/* 6. ZISK — žiadny label (label je vnútri zeleného boxu) */}
+              {/* 6. Empty label above profit box */}
               <div className="min-w-0"></div>
             </div>
 
-            {/* ============= RIADOK 3: VSTUPNÉ POLIA ============= */}
+            {/* Row 3: Inputs & Profit badge */}
             <div
               className="grid items-center w-full"
               style={{
                 gridTemplateColumns:
-                  'minmax(0, 1fr) minmax(0, 1fr) 22px minmax(0, 0.85fr) minmax(0, 0.85fr) 22px minmax(0, 1.15fr) minmax(0, 1.70fr)',
+                  'minmax(0, 1.15fr) minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.2fr) minmax(0, 2fr)',
                 columnGap: '8px',
-                rowGap: '0px',
               }}
             >
-              {/* SKUPINA 1 */}
               {/* 1. FA OD UK AGENT */}
               <div className="min-w-0">
                 <AmountInput
@@ -1162,10 +1149,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   }`}
                 />
               </div>
-              {/* Spacer 1 */}
-              <div className="min-w-0"></div>
-              {/* SKUPINA 2 */}
-              {/* 3. COL. KONANIE — modrá farba textu, ručný vpis */}
+              {/* 3. COL. KONANIE */}
               <div className="min-w-0">
                 <AmountInput
                   value={formData.colKonanie ?? 0}
@@ -1178,10 +1162,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                       faKlient: val + currentAuto,
                     }));
                   }}
-                  className="w-full h-[34px] bg-white border border-blue-400 rounded-md px-2 py-1 text-blue-700 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border m-0"
+                  className={`w-full h-[34px] bg-white border rounded-md px-2 py-1 text-blue-700 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border m-0 ${
+                    fieldMissing('COL. KONANIE') ? 'border-red-500' : 'border-blue-400'
+                  }`}
                 />
               </div>
-              {/* 4. ICS2 / GB ENS — modrá farba textu, iba zobrazenie 0/25/50 */}
+              {/* 4. ICS2 / GB ENS */}
               <div className="min-w-0">
                 <div
                   className="w-full h-[34px] bg-white border border-blue-400 rounded-md px-2 py-1 text-blue-700 font-bold font-mono text-right box-border m-0 flex items-center justify-end"
@@ -1189,10 +1175,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   <span style={{ lineHeight: 1 }}>{autoFaKlientSurcharge.toFixed(2)}</span>
                 </div>
               </div>
-              {/* Spacer 2 */}
-              <div className="min-w-0"></div>
-              {/* SKUPINA 3 */}
-              {/* 5. FA ➔ KLIENT — modrá farba textu, suma COL. KONANIE + ICS2/GB ENS; aj ručná zmena */}
+              {/* 5. FA ➔ KLIENT */}
               <div className="min-w-0">
                 <AmountInput
                   value={Number(formData.faKlient) || 0}
@@ -1209,19 +1192,18 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                   className="w-full h-[34px] bg-white border border-blue-400 rounded-md px-2.5 py-1 text-blue-900 font-bold font-mono text-right focus:ring-1 focus:ring-blue-500 outline-none box-border m-0"
                 />
               </div>
-              {/* 6. VYPOČÍTANÝ ZISK — zelený štítok, najširší */}
+              {/* 6. VYPOČÍTANÝ ZISK */}
               <div className="min-w-0">
                 <div
                   className="bg-emerald-100 border border-emerald-300 rounded-md w-full h-[34px] px-2.5 box-border m-0 whitespace-nowrap overflow-hidden flex items-center justify-center"
                 >
-                  <div className="flex items-center justify-center gap-2 flex-nowrap" style={{ lineHeight: 1 }}>
+                  <div className="flex items-center justify-center gap-1.5 flex-nowrap" style={{ lineHeight: 1 }}>
                     <span
-                      className="font-bold text-emerald-900"
-                      style={{ fontSize: '12.5px', lineHeight: 1, letterSpacing: '0.01em' }}
+                      className="font-bold text-emerald-900 text-[12.5px] leading-none"
                     >
                       VYPOČÍTANÝ ZISK:
                     </span>
-                    <span className="font-black font-mono text-emerald-700" style={{ fontSize: '14px', lineHeight: 1 }}>
+                    <span className="font-bold font-mono text-emerald-800 text-[14px] leading-none">
                       {calculatedProfit.toFixed(2)} €
                     </span>
                   </div>

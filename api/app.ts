@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type {
   AdresaRecord,
+  CennikRecord,
   ColnaRecord,
   InfoFaRecord,
   LoginRecord,
@@ -17,6 +18,7 @@ import {
 import {
   deleteAdresaRecord,
   deleteAppDocumentMeta,
+  deleteCennikRecord,
   deleteInfoFaRecord,
   deleteLoginRecord,
   getAppDocumentMeta,
@@ -25,6 +27,7 @@ import {
   reorderLoginRecords,
   upsertAdresaRecord,
   upsertAppDocumentMeta,
+  upsertCennikRecord,
   upsertInfoFaRecord,
   upsertLoginRecord,
   type LoginOrderMap,
@@ -66,6 +69,8 @@ type ActionBody = {
     | 'reorderLoginRecords'
     | 'saveInfoFaRecord'
     | 'deleteInfoFaRecord'
+    | 'saveCennikRecord'
+    | 'deleteCennikRecord'
     | 'prepareDocumentUpload'
     | 'completeDocumentUpload'
     | 'deleteDocument'
@@ -78,6 +83,7 @@ type ActionBody = {
   loginRecord?: LoginRecord;
   loginOrder?: LoginOrderMap;
   infoFaRecord?: InfoFaRecord;
+  cennikRecord?: CennikRecord;
   adresyRecords?: AdresaRecord[];
   loginRecords?: LoginRecord[];
   infoFaRecords?: InfoFaRecord[];
@@ -96,6 +102,7 @@ type ActionBody = {
   fromEmail?: string;
   toEmail?: string;
   toEmails?: string[];
+  ccEmails?: string[];
   bccEmail?: string;
   signatureHtml?: string;
   number?: string;
@@ -748,6 +755,7 @@ const sendCustomerInvoiceEmailAction = async (
     fromEmail?: string;
     toEmail?: string;
     toEmails?: string[];
+    ccEmails?: string[];
     bccEmail?: string;
   },
 ) => {
@@ -827,6 +835,7 @@ const sendCustomerInvoiceEmailAction = async (
     toEmails,
     toName: customer?.nazovFirmy || customerName,
     fromEmail: addressOverrides?.fromEmail,
+    ccEmails: addressOverrides?.ccEmails,
     bccEmail: addressOverrides?.bccEmail,
     invoiceNumber,
     attachmentFileName,
@@ -950,6 +959,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
         fromEmail: body.fromEmail,
         toEmail: body.toEmail,
         toEmails: body.toEmails,
+        ccEmails: body.ccEmails,
         bccEmail: body.bccEmail,
       });
       sendJson(response, 200, { record, bootstrap: await loadBootstrapData() });
@@ -1081,6 +1091,18 @@ export default async function handler(request: ApiRequest, response: ApiResponse
 
     if (body.action === 'deleteInfoFaRecord' && body.id) {
       await deleteInfoFaRecord(supabase, body.id);
+      sendJson(response, 200, { success: true, bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'saveCennikRecord' && body.cennikRecord) {
+      await upsertCennikRecord(supabase, body.cennikRecord);
+      sendJson(response, 200, { bootstrap: await loadBootstrapData() });
+      return;
+    }
+
+    if (body.action === 'deleteCennikRecord' && body.id) {
+      await deleteCennikRecord(supabase, body.id);
       sendJson(response, 200, { success: true, bootstrap: await loadBootstrapData() });
       return;
     }

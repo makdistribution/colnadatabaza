@@ -310,6 +310,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     htmlBody: string;
     fromEmail: string;
     toEmails: string[];
+    ccEmails?: string[];
     bccEmail: string;
   }) => {
     if (!invoiceEmailRecord?.id || isSendingCustomerInvoiceEmail) return;
@@ -319,6 +320,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
       const result = await appApi.sendCustomerInvoiceEmail(invoiceEmailRecord.id, payload.htmlBody, {
         fromEmail: payload.fromEmail,
         toEmails: payload.toEmails,
+        ccEmails: payload.ccEmails,
         bccEmail: payload.bccEmail,
       });
       setInvoiceEmailRecord(null);

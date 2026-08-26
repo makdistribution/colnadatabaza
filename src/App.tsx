@@ -7,6 +7,7 @@ import {
   AdresaRecord, 
   LoginRecord, 
   InfoFaRecord, 
+  CennikRecord,
   ActiveTab 
 } from './types';
 import { parseMonthYear, formatMonthYear } from './utils/monthUtils';
@@ -17,6 +18,7 @@ import { RecordModal } from './components/RecordModal';
 import { AdresyView } from './components/AdresyView';
 import { LoginUdajeView } from './components/LoginUdajeView';
 import { InfoFaView } from './components/InfoFaView';
+import { CennikView } from './components/CennikView';
 import { ReportyView } from './components/ReportyView';
 import { SuboryView } from './components/SuboryView';
 import { ColnicaEmptyView } from './components/ColnicaEmptyView';
@@ -59,6 +61,7 @@ export default function App() {
   const [adresyRecords, setAdresyRecords] = useState<AdresaRecord[]>([]);
   const [loginRecords, setLoginRecords] = useState<LoginRecord[]>([]);
   const [infoFaRecords, setInfoFaRecords] = useState<InfoFaRecord[]>([]);
+  const [cennikRecords, setCennikRecords] = useState<CennikRecord[]>([]);
   const [documents, setDocuments] = useState<AppDocument[]>([]);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('COLNA_DATABAZA');
@@ -90,6 +93,7 @@ export default function App() {
     setAdresyRecords(bootstrap.adresyRecords || []);
     setLoginRecords(bootstrap.loginRecords || []);
     setInfoFaRecords(bootstrap.infoFaRecords || []);
+    setCennikRecords(bootstrap.cennikRecords || []);
     setDocuments(bootstrap.documents || []);
   };
 
@@ -415,6 +419,24 @@ export default function App() {
     }
   };
 
+  const handleSaveCennikRecord = async (record: CennikRecord) => {
+    try {
+      const { bootstrap } = await appApi.saveCennikRecord(record);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Cenník sa nepodarilo uložiť.');
+    }
+  };
+
+  const handleDeleteCennikRecord = async (id: string) => {
+    try {
+      const { bootstrap } = await appApi.deleteCennikRecord(id);
+      applyBootstrap(bootstrap);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'Položku cenníka sa nepodarilo vymazať.');
+    }
+  };
+
   const handleUploadDocument = async (file: File, note: string) => {
     const { bootstrap } = await appApi.uploadDocument(file, note);
     applyBootstrap(bootstrap);
@@ -573,6 +595,14 @@ export default function App() {
             records={infoFaRecords}
             onSaveRecord={handleSaveInfoFaRecord}
             onDeleteRecord={handleDeleteInfoFaRecord}
+          />
+        )}
+
+        {activeTab === 'CENNIK' && (
+          <CennikView
+            records={cennikRecords}
+            onSaveRecord={handleSaveCennikRecord}
+            onDeleteRecord={handleDeleteCennikRecord}
           />
         )}
 

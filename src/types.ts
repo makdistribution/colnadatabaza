@@ -62,6 +62,7 @@ export interface AppBootstrap {
   adresyRecords: AdresaRecord[];
   loginRecords: LoginRecord[];
   infoFaRecords: InfoFaRecord[];
+  cennikRecords?: CennikRecord[];
   documents: AppDocument[];
 }
 
@@ -103,11 +104,18 @@ export interface InfoFaRecord {
   doleziteAlert?: boolean;
 }
 
+export interface CennikRecord {
+  id: string;
+  importText: string;
+  exportText: string;
+}
+
 export type ActiveTab =
   | 'COLNA_DATABAZA'
   | 'ADRESY'
   | 'LOGIN_UDAJE'
   | 'INFO_FA'
+  | 'CENNIK'
   | 'SUBORY'
   | 'COLNICA_GB_VAT_EORI'
   | 'COLNICA_EU_VAT_EORI'

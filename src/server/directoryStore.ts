@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AdresaRecord, AppDocument, InfoFaRecord, LoginRecord } from '../types.js';
+import type { AdresaRecord, AppDocument, CennikRecord, InfoFaRecord, LoginRecord } from '../types.js';
 import {
   INITIAL_ADRESY_RECORDS,
   INITIAL_INFO_FA_RECORDS,
@@ -16,6 +16,7 @@ const META = {
   logins: 'meta/login_credentials.json',
   loginOrder: 'meta/login_credentials_order.json',
   infoFa: 'meta/invoice_info_records.json',
+  cennik: 'meta/cennik_records.json',
   documents: 'meta/app_documents.json',
 } as const;
 
@@ -280,20 +281,26 @@ const ensureStorageSeeded = async (supabase: SupabaseClient) => {
   if (documents === null) {
     await writeJsonArray(supabase, META.documents, []);
   }
+  const cennik = await readJsonArray<CennikRecord>(supabase, META.cennik);
+  if (cennik === null) {
+    await writeJsonArray(supabase, META.cennik, []);
+  }
 };
 
 const loadFromStorage = async (supabase: SupabaseClient) => {
   await ensureStorageSeeded(supabase);
-  const [customers, logins, infos, documents] = await Promise.all([
+  const [customers, logins, infos, documents, cennik] = await Promise.all([
     readJsonArray<AdresaRecord>(supabase, META.customers),
     readJsonArray<LoginRecord>(supabase, META.logins),
     readJsonArray<InfoFaRecord>(supabase, META.infoFa),
     readJsonArray<Record<string, unknown>>(supabase, META.documents),
+    readJsonArray<CennikRecord>(supabase, META.cennik),
   ]);
   return {
     adresyRecords: customers || [],
     loginRecords: await applyStoredLoginOrder(supabase, logins || []),
     infoFaRecords: infos || [],
+    cennikRecords: cennik || [],
     documents: (documents || []).map(fromAppDocumentRow),
   };
 };
@@ -410,7 +417,7 @@ const loadFromTables = async (supabase: SupabaseClient) => {
   throwIfError(customers.error);
   throwIfError(logins.error);
   throwIfError(infos.error);
-  throwIfError(documents.error);
+  const cennik = await readJsonArray<CennikRecord>(supabase, META.cennik);
 
   return {
     adresyRecords: (customers.data || []).map(fromCustomerDirectoryRow),
@@ -419,6 +426,7 @@ const loadFromTables = async (supabase: SupabaseClient) => {
       (logins.data || []).map(fromLoginCredentialsRow),
     ),
     infoFaRecords: (infos.data || []).map(fromInvoiceInfoRow),
+    cennikRecords: cennik || [],
     documents: (documents.data || []).map(fromAppDocumentRow),
   };
 };
@@ -700,6 +708,27 @@ export const deleteInfoFaRecord = async (supabase: SupabaseClient, id: string) =
   await writeJsonArray(
     supabase,
     META.infoFa,
+    list.filter((item) => item.id !== id),
+  );
+};
+
+export const upsertCennikRecord = async (
+  supabase: SupabaseClient,
+  record: CennikRecord,
+): Promise<CennikRecord> => {
+  const list = (await readJsonArray<CennikRecord>(supabase, META.cennik)) || [];
+  const idx = list.findIndex((item) => item.id === record.id);
+  if (idx >= 0) list[idx] = record;
+  else list.unshift(record);
+  await writeJsonArray(supabase, META.cennik, list);
+  return record;
+};
+
+export const deleteCennikRecord = async (supabase: SupabaseClient, id: string) => {
+  const list = (await readJsonArray<CennikRecord>(supabase, META.cennik)) || [];
+  await writeJsonArray(
+    supabase,
+    META.cennik,
     list.filter((item) => item.id !== id),
   );
 };

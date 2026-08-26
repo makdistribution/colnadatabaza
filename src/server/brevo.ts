@@ -15,6 +15,7 @@ interface CustomerInvoiceEmail {
   toEmails: string[];
   toName?: string;
   fromEmail?: string;
+  ccEmails?: string[];
   bccEmail?: string;
   invoiceNumber: string;
   attachmentFileName: string;
@@ -62,6 +63,8 @@ export const sendCustomerInvoiceEmail = async (email: CustomerInvoiceEmail) => {
     throw new Error('Chýba platný email zákazníka v adresári.');
   }
 
+  const ccEmails = normalizeRecipients(email.ccEmails || []);
+
   const fromEmail = String(email.fromEmail || CUSTOMER_INVOICE_FROM).trim() || CUSTOMER_INVOICE_FROM;
   if (!fromEmail.includes('@')) {
     throw new Error('Chýba platný odosielateľ (FROM).');
@@ -103,6 +106,13 @@ export const sendCustomerInvoiceEmail = async (email: CustomerInvoiceEmail) => {
         email: toEmail,
         ...(index === 0 && toName ? { name: toName } : {}),
       })),
+      ...(ccEmails.length > 0
+        ? {
+            cc: ccEmails.map((ccEmail) => ({
+              email: ccEmail,
+            })),
+          }
+        : {}),
       ...(bccEmail && bccEmail.includes('@')
         ? {
             bcc: [
