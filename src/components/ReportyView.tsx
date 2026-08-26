@@ -417,8 +417,10 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                             <td className="p-2 text-black border-r border-slate-300 font-sans text-[11px]">
                               {r.intPoznamka}
                             </td>
-                            <td className="p-2 text-right border-r border-slate-300 font-extrabold text-emerald-700 bg-emerald-50/50">
-                              {(r.zisk || 0).toFixed(2).replace('.', ',')}
+                            <td className="p-2 border-r border-slate-300 font-extrabold text-emerald-700 bg-emerald-50/50 align-middle">
+                              <div className="flex items-center justify-end w-full h-full">
+                                {(r.zisk || 0).toFixed(2).replace('.', ',')}
+                              </div>
                             </td>
                             <td className="p-2 text-black border-r border-slate-300 font-medium">
                               {r.cisloFa}
@@ -449,8 +451,10 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                             {formatMoney(totalFaKlient)}
                           </td>
                           <td className="p-2.5 border-r border-slate-300"></td>
-                          <td className="p-2.5 text-right border-r border-slate-300 text-emerald-900 bg-emerald-100/60">
-                            {formatMoney(totalZisk)}
+                          <td className="p-2.5 border-r border-slate-300 text-emerald-900 bg-emerald-100/60 align-middle">
+                            <div className="flex items-center justify-end w-full h-full">
+                              {formatMoney(totalZisk)}
+                            </div>
                           </td>
                           <td colSpan={3} className="p-2.5"></td>
                         </tr>

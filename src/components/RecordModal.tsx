@@ -639,6 +639,17 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     - (Number(formData.faOdUkAgent) || 0)
     - (Number(formData.faOdEuAgent) || 0);
 
+  const isInvoiceIssued = Boolean(
+    initialRecord?.invoicePdfPath ||
+    initialRecord?.cisloFa ||
+    initialRecord?.invoiceCorrected ||
+    formData.invoicePdfPath
+  );
+  const isEditOfInvoicedRecord = Boolean(
+    initialRecord && !copyMode && !readOnly && !invoiceHandoffMode && isInvoiceIssued
+  );
+  const requiresInvoiceDeletionFirst = isEditOfInvoicedRecord && hasUploadedInvoice;
+
   const isCreateOrCopy = !initialRecord || copyMode;
   /** Create, copy, and NÁHĽAD late-send use bell ("Odoslať na fakturáciu"). */
   const usesBellSend = isCreateOrCopy || isPreviewMode;
@@ -646,16 +657,17 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     !invoiceHandoffMode &&
     (!readOnly || isPreviewMode) &&
     (usesBellSend ? Boolean(formData.bell) : Boolean(formData.alert));
-  const saveButtonLabel = isAccountantCorrectionMode
-    ? 'ULOŽIŤ A ODOSLAŤ OPRAVENÚ FAKTÚRU'
-    : isNewInvoicingHandoff
-      ? 'ULOŽIŤ A ODOSLAŤ'
-    : willSendNotification
+  const saveButtonLabel = invoiceHandoffMode
+    ? 'ODOSLAŤ'
+    : isAccountantCorrectionMode
+      ? 'ULOŽIŤ A ODOSLAŤ OPRAVENÚ FAKTÚRU'
+      : willSendNotification
         ? usesBellSend
           ? 'ULOŽIŤ A ODOSLAŤ NA FAKTURÁCIU'
           : 'ULOŽIŤ A ODOSLAŤ NOTIFIKÁCIU'
         : 'ULOŽIŤ';
   const saveLoadingKind =
+    invoiceHandoffMode ||
     isAccountantCorrectionMode ||
     isNewInvoicingHandoff ||
     willSendNotification
@@ -782,13 +794,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               }}
             >
               {invoiceHandoffMode
-                ? isAccountantCorrectionMode
-                  ? 'FAKTURÁCIA – OPRAVA FAKTÚRY'
-                  : 'FAKTURÁCIA NOVEJ COLNICE'
+                ? 'ÚPRAVA FAKTUROVANÉHO ZÁZNAMU COLNICE'
                 : readOnly
                   ? 'NÁHĽAD ZÁZNAMU COLNICE'
                   : initialRecord && !copyMode
-                    ? 'ÚPRAVA ZÁZNAMU COLNICE'
+                    ? isInvoiceIssued
+                      ? 'ÚPRAVA FAKTUROVANÉHO ZÁZNAMU COLNICE'
+                      : 'ÚPRAVA ZÁZNAMU COLNICE'
                     : 'NOVÝ ZÁZNAM'}
             </h3>
           </div>
@@ -1197,13 +1209,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <div
                   className="bg-emerald-100 border border-emerald-300 rounded-md w-full h-[34px] px-2.5 box-border m-0 whitespace-nowrap overflow-hidden flex items-center justify-center"
                 >
-                  <div className="flex items-center justify-center gap-1.5 flex-nowrap" style={{ lineHeight: 1 }}>
+                  <div className="flex items-center justify-center gap-1.5 flex-nowrap h-full">
                     <span
-                      className="font-bold text-emerald-900 text-[12.5px] leading-none"
+                      className="font-bold text-emerald-900 text-[12.5px] flex items-center leading-none"
                     >
                       VYPOČÍTANÝ ZISK:
                     </span>
-                    <span className="font-bold font-mono text-emerald-800 text-[14px] leading-none">
+                    <span className="font-bold font-mono text-emerald-800 text-[14px] flex items-center leading-none">
                       {calculatedProfit.toFixed(2)} €
                     </span>
                   </div>
@@ -1507,8 +1519,9 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           <button
             type="submit"
             form="colna-record-form"
-            disabled={(readOnly && !isPreviewMode) || isSaving || handoffRequiresInvoice}
+            disabled={(readOnly && !isPreviewMode) || isSaving || handoffRequiresInvoice || requiresInvoiceDeletionFirst}
             className="bg-[#1a65ff] hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 text-white font-bold text-xs px-10 py-2 rounded-lg shadow-md flex items-center justify-center cursor-pointer transition-colors uppercase tracking-wider"
+            title={requiresInvoiceDeletionFirst ? 'Najskôr vymažte existujúcu faktúru' : undefined}
           >
             <LoadingButtonContent loading={isSaving} kind={saveLoadingKind}>
               {saveButtonLabel}
@@ -1522,15 +1535,15 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     if (!showCustomerSidePanel || !customerPanelOpen || !currentCustomer) return null;
     return (
       <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-[22rem] shrink-0 text-slate-800 overflow-hidden flex flex-col max-h-[98vh]">
-        <div className="px-4 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0">
-          <span className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
-            Údaje zákazníka
+        <div className="px-4 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50">
+          <span className="font-bold text-slate-800 text-[12px] uppercase tracking-wider">
+            ÚDAJE KLIENTA
           </span>
           <button
             type="button"
             onClick={() => setCustomerPanelOpen(false)}
             className="text-slate-400 p-1 rounded-md transition-colors hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-            title="Zavrieť panel s údajmi zákazníka"
+            title="Zavrieť panel s údajmi klienta"
           >
             <X className="w-4 h-4" />
           </button>

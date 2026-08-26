@@ -816,8 +816,10 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     </td>
 
                     {/* ZISK */}
-                    <td className="box-border py-2 px-1 w-[78px] min-w-[78px] max-w-[78px] text-right border-r border-slate-200 font-extrabold text-emerald-700 bg-emerald-50/50 font-mono text-[14px]">
-                      {r.zisk ? `${r.zisk.toFixed(2).replace('.', ',')}` : '0,00'}
+                    <td className="box-border py-2 px-1 w-[78px] min-w-[78px] max-w-[78px] border-r border-slate-200 font-extrabold text-emerald-700 bg-emerald-50/50 font-mono text-[14px] align-middle">
+                      <div className="flex items-center justify-end w-full h-full">
+                        {r.zisk ? `${r.zisk.toFixed(2).replace('.', ',')}` : '0,00'}
+                      </div>
                     </td>
 
                     <td className="w-[1.5cm] min-w-[1.5cm] max-w-[1.5cm] box-border p-0 text-center border-r border-slate-200 overflow-hidden h-[1.6cm] max-h-[1.6cm]">
@@ -904,8 +906,10 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 {totalFaKlient.toFixed(2).replace('.', ',')}
               </td>
               <td className="px-2.5 py-[calc(0.625rem-1mm)] border-r border-slate-300"></td>
-              <td className="px-2.5 py-[calc(0.625rem-1mm)] text-right border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900 bg-emerald-100/60">
-                {totalZisk.toFixed(2).replace('.', ',')}
+              <td className="px-2.5 py-[calc(0.625rem-1mm)] border-r border-slate-300 font-sans text-[16px] font-bold text-slate-900 bg-emerald-100/60 align-middle">
+                <div className="flex items-center justify-end w-full h-full">
+                  {totalZisk.toFixed(2).replace('.', ',')}
+                </div>
               </td>
               <td className="px-2.5 py-[calc(0.625rem-1mm)] border-r border-slate-300"></td>
               <td colSpan={4} className="px-2.5 py-[calc(0.625rem-1mm)]"></td>
