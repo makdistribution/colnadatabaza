@@ -69,12 +69,34 @@ export default function App() {
   const [currentMonthYear, setCurrentMonthYear] = useState('');
   const [statusFilter, setStatusFilter] = useState<'OFF' | 'ALL' | 'UNPAID' | 'NEW'>('OFF');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastError, setToastError] = useState<string | null>(null);
+  const toastDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isApplicationLocked, setIsApplicationLocked] = useState(true);
   const [applicationPassword, setApplicationPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [applicationError, setApplicationError] = useState('');
   const [isRefreshingCustoms, setIsRefreshingCustoms] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  const showToastSuccess = (msg: string, durationMs = 6000) => {
+    if (toastDismissTimerRef.current) clearTimeout(toastDismissTimerRef.current);
+    setToastError(null);
+    setToastMessage(msg);
+    toastDismissTimerRef.current = setTimeout(() => {
+      setToastMessage(null);
+      toastDismissTimerRef.current = null;
+    }, durationMs);
+  };
+
+  const showToastError = (msg: string, durationMs = 9000) => {
+    if (toastDismissTimerRef.current) clearTimeout(toastDismissTimerRef.current);
+    setToastMessage(null);
+    setToastError(msg);
+    toastDismissTimerRef.current = setTimeout(() => {
+      setToastError(null);
+      toastDismissTimerRef.current = null;
+    }, durationMs);
+  };
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -123,7 +145,7 @@ export default function App() {
       // Never surface "not found" / unauthorized as a pre-login dead end.
       // Login gate already ran; only show a soft error if lookup truly failed after auth.
       if (message === 'Unauthorized.' || message === 'Nesprávne heslo') return;
-      setToastMessage(
+      showToastError(
         message && message !== 'Colný záznam sa nenašiel.'
           ? message
           : 'Colný záznam z odkazu sa nepodarilo otvoriť. Skúste obnoviť stránku po prihlásení.',
@@ -193,8 +215,10 @@ export default function App() {
     const [nextYear, nextMonth] = response.bootstrap.activeMonth.split('-').map(Number);
     const nextMY = formatMonthYear(nextMonth, nextYear);
     setActiveTab('COLNA_DATABAZA');
-    setToastMessage(`Mesiac ${monthYearToClose} bol úspešne uzatvorený. Dáta a zisk boli prenesené do REPORTY ${targetYear}. Automaticky bola vytvorená nová čisto prázdna databáza pre mesiac ${nextMY}.`);
-    setTimeout(() => setToastMessage(null), 9000);
+    showToastSuccess(
+      `Mesiac ${monthYearToClose} bol úspešne uzatvorený. Dáta a zisk boli prenesené do REPORTY ${targetYear}. Automaticky bola vytvorená nová čisto prázdna databáza pre mesiac ${nextMY}.`,
+      9000,
+    );
   };
 
   const handleToggleReportPaid = async (monthStart: string, isPaid: boolean) => {
@@ -301,7 +325,7 @@ export default function App() {
         setEditingColnaRecord(savedRecord);
         setIsModalOpen(true);
       }
-      setToastMessage(error instanceof Error ? error.message : 'Záznam sa nepodarilo uložiť.');
+      showToastError(error instanceof Error ? error.message : 'Záznam sa nepodarilo uložiť.');
       throw error;
     }
   };
@@ -317,7 +341,7 @@ export default function App() {
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Faktúru sa nepodarilo stiahnuť.');
+      showToastError(error instanceof Error ? error.message : 'Faktúru sa nepodarilo stiahnuť.');
     }
   };
 
@@ -326,7 +350,7 @@ export default function App() {
       const { bootstrap } = await appApi.deleteRecords(ids);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Záznamy sa nepodarilo vymazať.');
+      showToastError(error instanceof Error ? error.message : 'Záznamy sa nepodarilo vymazať.');
     }
   };
 
@@ -336,7 +360,7 @@ export default function App() {
       applyBootstrap(bootstrap);
       setEditingColnaRecord(record);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Faktúru sa nepodarilo vymazať.');
+      showToastError(error instanceof Error ? error.message : 'Faktúru sa nepodarilo vymazať.');
       throw error;
     }
   };
@@ -346,7 +370,7 @@ export default function App() {
       const { bootstrap } = await appApi.togglePaid(id, zaplatena);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Stav úhrady sa nepodarilo uložiť.');
+      showToastError(error instanceof Error ? error.message : 'Stav úhrady sa nepodarilo uložiť.');
     }
   };
 
@@ -356,7 +380,7 @@ export default function App() {
       const { bootstrap } = await appApi.saveAdresaRecord(record);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Adresu sa nepodarilo uložiť.');
+      showToastError(error instanceof Error ? error.message : 'Adresu sa nepodarilo uložiť.');
     }
   };
 
@@ -365,7 +389,7 @@ export default function App() {
       const { bootstrap } = await appApi.deleteAdresaRecord(id);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Adresu sa nepodarilo vymazať.');
+      showToastError(error instanceof Error ? error.message : 'Adresu sa nepodarilo vymazať.');
     }
   };
 
@@ -375,7 +399,7 @@ export default function App() {
       const { bootstrap } = await appApi.saveLoginRecord(record);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Prihlasovacie údaje sa nepodarilo uložiť.');
+      showToastError(error instanceof Error ? error.message : 'Prihlasovacie údaje sa nepodarilo uložiť.');
     }
   };
 
@@ -384,7 +408,7 @@ export default function App() {
       const { bootstrap } = await appApi.deleteLoginRecord(id);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Prihlasovacie údaje sa nepodarilo vymazať.');
+      showToastError(error instanceof Error ? error.message : 'Prihlasovacie údaje sa nepodarilo vymazať.');
     }
   };
 
@@ -393,7 +417,7 @@ export default function App() {
       const { bootstrap } = await appApi.reorderLoginRecords(loginOrder);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(
+      showToastError(
         error instanceof Error ? error.message : 'Poradie prihlasovacích údajov sa nepodarilo uložiť.',
       );
       throw error;
@@ -406,7 +430,7 @@ export default function App() {
       const { bootstrap } = await appApi.saveInfoFaRecord(record);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Info FA sa nepodarilo uložiť.');
+      showToastError(error instanceof Error ? error.message : 'Info FA sa nepodarilo uložiť.');
     }
   };
 
@@ -415,7 +439,7 @@ export default function App() {
       const { bootstrap } = await appApi.deleteInfoFaRecord(id);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Info FA sa nepodarilo vymazať.');
+      showToastError(error instanceof Error ? error.message : 'Info FA sa nepodarilo vymazať.');
     }
   };
 
@@ -424,7 +448,7 @@ export default function App() {
       const { bootstrap } = await appApi.saveCennikRecord(record);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Cenník sa nepodarilo uložiť.');
+      showToastError(error instanceof Error ? error.message : 'Cenník sa nepodarilo uložiť.');
     }
   };
 
@@ -433,7 +457,7 @@ export default function App() {
       const { bootstrap } = await appApi.deleteCennikRecord(id);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Položku cenníka sa nepodarilo vymazať.');
+      showToastError(error instanceof Error ? error.message : 'Položku cenníka sa nepodarilo vymazať.');
     }
   };
 
@@ -447,7 +471,7 @@ export default function App() {
       const { bootstrap } = await appApi.deleteDocument(id);
       applyBootstrap(bootstrap);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Súbor sa nepodarilo vymazať.');
+      showToastError(error instanceof Error ? error.message : 'Súbor sa nepodarilo vymazať.');
     }
   };
 
@@ -461,7 +485,7 @@ export default function App() {
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      setToastMessage(error instanceof Error ? error.message : 'Súbor sa nepodarilo stiahnuť.');
+      showToastError(error instanceof Error ? error.message : 'Súbor sa nepodarilo stiahnuť.');
     }
   };
 
@@ -512,16 +536,38 @@ export default function App() {
         />
       </div>
 
-      {/* Success / Notification Banner */}
-      {toastMessage && (
+      {/* Success Banner (green) */}
+      {toastMessage && !toastError && (
         <div className="bg-emerald-600 text-white px-4 py-3 border-b border-emerald-500 shadow-md flex items-center justify-between font-medium text-xs animate-in slide-in-from-top duration-200 print:hidden">
           <div className="flex items-center gap-2.5">
             <img src="/yes.png" alt="" className="max-w-none object-contain shrink-0" />
             <span>{toastMessage}</span>
           </div>
-          <button 
-            onClick={() => setToastMessage(null)}
+          <button
+            onClick={() => {
+              if (toastDismissTimerRef.current) clearTimeout(toastDismissTimerRef.current);
+              setToastMessage(null);
+            }}
             className="text-emerald-100 hover:text-white text-base font-bold px-2 py-0.5 rounded cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Error Banner (red) */}
+      {toastError && (
+        <div className="bg-red-600 text-white px-4 py-3 border-b border-red-500 shadow-md flex items-center justify-between font-medium text-xs animate-in slide-in-from-top duration-200 print:hidden">
+          <div className="flex items-center gap-2.5">
+            <span className="shrink-0 w-5 h-5 inline-flex items-center justify-center text-white text-lg leading-none" aria-hidden="true">✕</span>
+            <span>{toastError}</span>
+          </div>
+          <button
+            onClick={() => {
+              if (toastDismissTimerRef.current) clearTimeout(toastDismissTimerRef.current);
+              setToastError(null);
+            }}
+            className="text-red-100 hover:text-white text-base font-bold px-2 py-0.5 rounded cursor-pointer"
           >
             ✕
           </button>
