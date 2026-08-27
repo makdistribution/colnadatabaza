@@ -290,16 +290,37 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             initialRecord.invoicePdfPath
           )
         );
+        const issued = Boolean(
+          initialRecord.invoicePdfPath ||
+          initialRecord.cisloFa ||
+          initialRecord.invoiceCorrected
+        );
+        const isEditOfInvoicedRecord = !readOnly && !invoiceHandoffMode && issued;
+        const shouldClearInvoice = isEditOfInvoicedRecord || isCorrectionHandoff;
         const baseRecord = invoiceHandoffMode
           ? {
               ...initialRecord,
               opravaFaktury: initialRecord.opravaFaktury || '',
               bell: isCorrectionHandoff,
               alert: isCorrectionHandoff,
+              ...(shouldClearInvoice
+                ? {
+                    invoicePdfPath: '',
+                    cisloFa: '',
+                    splatna: '',
+                  }
+                : {}),
             }
           : {
               ...initialRecord,
               opravaFaktury: initialRecord.opravaFaktury || '',
+              ...(shouldClearInvoice
+                ? {
+                    invoicePdfPath: '',
+                    cisloFa: '',
+                    splatna: '',
+                  }
+                : {}),
             };
         setFormData({
           ...baseRecord,
@@ -1260,13 +1281,14 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <div
                   className="bg-emerald-100 border border-emerald-300 rounded-md w-full h-[34px] px-2.5 box-border m-0 whitespace-nowrap overflow-hidden flex items-center justify-center"
                 >
-                  <div className="flex items-center justify-center gap-1.5 flex-nowrap h-full">
+                  <div className="flex items-baseline justify-center gap-1.5 flex-nowrap h-full">
                     <span
-                      className="font-bold text-emerald-900 text-[12.5px] flex items-center leading-none"
+                      className="font-bold text-emerald-900 text-[12.5px] leading-none align-baseline"
+                      style={{ verticalAlign: 'baseline' }}
                     >
                       VYPOČÍTANÝ ZISK:
                     </span>
-                    <span className="font-bold font-mono text-emerald-800 text-[14px] flex items-center leading-none">
+                    <span className="font-bold font-mono text-emerald-800 text-[14px] leading-none align-baseline" style={{ verticalAlign: 'baseline' }}>
                       {calculatedProfit.toFixed(2)} €
                     </span>
                   </div>

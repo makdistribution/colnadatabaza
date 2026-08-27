@@ -370,7 +370,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
                       }}
                       className="w-full text-left px-3 py-1.5 text-[11px] text-slate-800 hover:bg-blue-50 hover:text-blue-700 cursor-pointer font-medium"
                     >
-                      EMAIL {index + 1}: {email}
+                      {email}
                     </button>
                   ))}
                 </div>
