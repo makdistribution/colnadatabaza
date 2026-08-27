@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Mail, X, ChevronDown } from 'lucide-react';
+import { Mail, X, ChevronDown, Paperclip } from 'lucide-react';
 import { LoadingButtonContent } from './LoadingButtonContent';
 import { EmailRichTextEditor } from './EmailRichTextEditor';
 import {
@@ -16,6 +16,8 @@ interface InvoiceEmailModalProps {
   directoryEmails: string[];
   invoiceNumber: string;
   attachmentName: string;
+  /** Full Supabase Storage path to the invoice PDF (e.g. records/<id>/<file>.pdf). */
+  invoicePdfPath?: string | null;
   isSending?: boolean;
   sendError?: string | null;
   onCancel: () => void;
@@ -26,6 +28,7 @@ interface InvoiceEmailModalProps {
     toEmails: string[];
     ccEmails?: string[];
     bccEmail: string;
+    invoicePdfPath?: string | null;
   }) => void;
 }
 
@@ -68,6 +71,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
   invoiceNumber,
   recordDate,
   attachmentName,
+  invoicePdfPath,
   isSending = false,
   sendError = null,
   onCancel,
@@ -199,6 +203,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
       toEmails: recipients,
       ccEmails: ccRecipients.length > 0 ? ccRecipients : undefined,
       bccEmail: bccEmail.trim(),
+      invoicePdfPath,
     });
   };
 
@@ -389,6 +394,26 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
               value={subject}
               className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-slate-900 text-[12px] outline-none read-only:cursor-default"
             />
+          </div>
+
+          {/* PRÍLOHA */}
+          <div>
+            <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
+              PRÍLOHA
+            </label>
+            <div className="bg-white border border-slate-300 rounded-md px-3 py-2 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-md bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                <Paperclip className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] font-semibold text-slate-900 truncate">
+                  {attachmentName || '—'}
+                </p>
+                <p className="text-[10px] text-slate-500 font-medium">
+                  PDF dokument · priložené k emailu
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* EMAIL BODY */}

@@ -104,7 +104,7 @@ export const appApi = {
   sendCustomerInvoiceEmail: (
     recordId: string,
     htmlBody: string,
-    addresses?: { fromEmail?: string; toEmail?: string; toEmails?: string[]; ccEmails?: string[]; bccEmail?: string },
+    addresses?: { fromEmail?: string; toEmail?: string; toEmails?: string[]; ccEmails?: string[]; bccEmail?: string; invoicePdfPath?: string | null },
   ) =>
     request<{ record: ColnaRecord; bootstrap: AppBootstrap }>('/api/app', {
       method: 'POST',
@@ -117,6 +117,7 @@ export const appApi = {
         toEmails: addresses?.toEmails,
         ccEmails: addresses?.ccEmails,
         bccEmail: addresses?.bccEmail,
+        invoicePdfPath: addresses?.invoicePdfPath,
       }),
     }),
   getEmailSignature: () =>

@@ -104,6 +104,7 @@ type ActionBody = {
   toEmails?: string[];
   ccEmails?: string[];
   bccEmail?: string;
+  invoicePdfPath?: string | null;
   signatureHtml?: string;
   number?: string;
   region?: 'GB' | 'EU';
@@ -760,6 +761,7 @@ const sendCustomerInvoiceEmailAction = async (
     toEmails?: string[];
     ccEmails?: string[];
     bccEmail?: string;
+    invoicePdfPath?: string | null;
   },
 ) => {
   const supabase = getSupabaseAdmin();
@@ -771,7 +773,9 @@ const sendCustomerInvoiceEmailAction = async (
   throwIfError(recordError);
 
   const record = fromDatabaseRecord(recordRow);
-  const storagePath = record.invoicePdfPath ? String(record.invoicePdfPath) : '';
+  const dbStoragePath = record.invoicePdfPath ? String(record.invoicePdfPath) : '';
+  const overrideStoragePath = addressOverrides?.invoicePdfPath ? String(addressOverrides.invoicePdfPath) : '';
+  const storagePath = dbStoragePath || overrideStoragePath;
   if (!storagePath) throw new Error('Faktúra nie je nahratá.');
 
   const invoiceNumber = String(record.cisloFa || '').trim()
@@ -964,6 +968,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
         toEmails: body.toEmails,
         ccEmails: body.ccEmails,
         bccEmail: body.bccEmail,
+        invoicePdfPath: body.invoicePdfPath,
       });
       sendJson(response, 200, { record, bootstrap: await loadBootstrapData() });
       return;

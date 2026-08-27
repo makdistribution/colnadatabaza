@@ -312,6 +312,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     toEmails: string[];
     ccEmails?: string[];
     bccEmail: string;
+    invoicePdfPath?: string | null;
   }) => {
     if (!invoiceEmailRecord?.id || isSendingCustomerInvoiceEmail) return;
     setIsSendingCustomerInvoiceEmail(true);
@@ -322,6 +323,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
         toEmails: payload.toEmails,
         ccEmails: payload.ccEmails,
         bccEmail: payload.bccEmail,
+        invoicePdfPath: payload.invoicePdfPath ?? invoiceEmailRecord.invoicePdfPath,
       });
       setInvoiceEmailRecord(null);
       onCustomerInvoiceEmailSent?.(result.record);
@@ -963,6 +965,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
         invoiceNumber={String(invoiceEmailRecord?.cisloFa || '').trim()}
         recordDate={invoiceEmailRecord?.datumColnice}
         attachmentName={invoiceDisplayNameFromPath(invoiceEmailRecord?.invoicePdfPath)}
+        invoicePdfPath={invoiceEmailRecord?.invoicePdfPath}
         isSending={isSendingCustomerInvoiceEmail}
         sendError={customerInvoiceEmailError}
         onCancel={() => {
