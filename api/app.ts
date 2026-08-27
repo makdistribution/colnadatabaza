@@ -135,6 +135,7 @@ const toDatabaseRecord = (record: Partial<ColnaRecord>, id: string, monthStart: 
   eu_to_uk: record.euToUk || '',
   fa_od_uk_agent: Number(record.faOdUkAgent) || 0,
   fa_od_eu_agent: Number(record.faOdEuAgent) || 0,
+  col_konanie: Number(record.colKonanie) || 0,
   fa_klient: Number(record.faKlient) || 0,
   // Pack POZNÁMKA + OPRAVA + invoice clip flags into oprava_faktury.
   oprava_faktury: packCustomsNotes(
@@ -178,6 +179,7 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
     euToUk: String(record.eu_to_uk || ''),
     faOdUkAgent: Number(record.fa_od_uk_agent) || 0,
     faOdEuAgent: Number(record.fa_od_eu_agent) || 0,
+    colKonanie: Number(record.col_konanie) || 0,
     faKlient: Number(record.fa_klient) || 0,
     ...(() => {
       const packed = unpackCustomsNotes(String(record.oprava_faktury || ''));

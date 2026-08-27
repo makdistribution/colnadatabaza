@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { ColnaRecord } from '../src/types';
+import type { AdresaRecord, ColnaRecord } from '../src/types';
 import {
   ApiRequest,
   ApiResponse,
@@ -9,6 +9,7 @@ import {
   sendJson,
 } from '../src/server/apiUtils.js';
 import { unpackCustomsNotes } from '../src/utils/customsNotes.js';
+import { loadDirectoryBootstrap } from '../src/server/directoryStore.js';
 
 const isPermanentToken = (value: string) => /^[A-Za-z0-9_-]{43}$/.test(value);
 
@@ -120,7 +121,11 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       return;
     }
 
-    sendJson(response, 200, { record: fromDatabaseRecord(data) });
+    const directory = await loadDirectoryBootstrap(supabase);
+    sendJson(response, 200, {
+      record: fromDatabaseRecord(data),
+      adresyRecords: directory.adresyRecords,
+    });
   } catch (error) {
     sendError(response, error);
   }

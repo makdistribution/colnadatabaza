@@ -281,6 +281,31 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           colKonanie: resolvedColKonanie,
           faKlient: resolvedColKonanie + surcharge,
         });
+      } else {
+        const isCorrectionHandoff = Boolean(
+          invoiceHandoffMode && (
+            initialRecord.invoiceCorrectionPending ||
+            initialRecord.invoiceCorrected ||
+            initialRecord.cisloFa ||
+            initialRecord.invoicePdfPath
+          )
+        );
+        const baseRecord = invoiceHandoffMode
+          ? {
+              ...initialRecord,
+              opravaFaktury: initialRecord.opravaFaktury || '',
+              bell: isCorrectionHandoff,
+              alert: isCorrectionHandoff,
+            }
+          : {
+              ...initialRecord,
+              opravaFaktury: initialRecord.opravaFaktury || '',
+            };
+        setFormData({
+          ...baseRecord,
+          colKonanie: resolvedColKonanie,
+          faKlient: resolvedColKonanie + surcharge,
+        });
       }
     } else {
       setFormData({
@@ -1569,7 +1594,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
     );
 
   const renderCustomerSidePanel = () => {
-    if (!showCustomerSidePanel || !customerPanelOpen || !currentCustomer) return null;
+    if (!showCustomerSidePanel || !customerPanelOpen) return null;
+    const customerName = String(formData.zakaznik || '').trim();
+    if (!customerName) return null;
+    const displayCustomer = currentCustomer || ({
+      nazovFirmy: customerName,
+      skratka: customerName,
+    } as AdresaRecord);
     return (
       <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-[22rem] shrink-0 text-slate-800 overflow-hidden flex flex-col max-h-[98vh]">
         <div className="px-4 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50">
@@ -1592,7 +1623,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </label>
             <input
               type="text"
-              value={currentCustomer.nazovFirmy || ''}
+              value={displayCustomer.nazovFirmy || customerName}
               readOnly
               className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
             />
@@ -1604,7 +1635,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </label>
             <input
               type="text"
-              value={currentCustomer.registrovanaAdresa || ''}
+              value={displayCustomer.registrovanaAdresa || ''}
               readOnly
               className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
             />
@@ -1616,7 +1647,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </label>
             <input
               type="text"
-              value={currentCustomer.krajina || ''}
+              value={displayCustomer.krajina || ''}
               readOnly
               className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
             />
@@ -1629,7 +1660,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </label>
               <input
                 type="text"
-                value={currentCustomer.ico || ''}
+                value={displayCustomer.ico || ''}
                 readOnly
                 className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
               />
@@ -1640,7 +1671,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </label>
               <input
                 type="text"
-                value={currentCustomer.dic || ''}
+                value={displayCustomer.dic || ''}
                 readOnly
                 className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
               />
@@ -1651,7 +1682,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               </label>
               <input
                 type="text"
-                value={currentCustomer.icDph || ''}
+                value={displayCustomer.icDph || ''}
                 readOnly
                 className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
               />
@@ -1665,7 +1696,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             <div className="w-[42%]">
               <input
                 type="text"
-                value={currentCustomer.telefonneCislo || ''}
+                value={displayCustomer.telefonneCislo || ''}
                 readOnly
                 className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
               />
@@ -1678,7 +1709,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
             </label>
             <input
               type="text"
-              value={currentCustomer.poznamka || ''}
+              value={displayCustomer.poznamka || ''}
               readOnly
               className="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none read-only:cursor-default"
             />
