@@ -255,9 +255,21 @@ export const RecordModal: React.FC<RecordModalProps> = ({
           bell: false,
           alert: false,
         });
-      } else {
+        const isCorrectionHandoff = Boolean(
+          invoiceHandoffMode && (
+            initialRecord.invoiceCorrectionPending ||
+            initialRecord.invoiceCorrected ||
+            initialRecord.cisloFa ||
+            initialRecord.invoicePdfPath
+          )
+        );
         const baseRecord = invoiceHandoffMode
-          ? { ...initialRecord, opravaFaktury: initialRecord.opravaFaktury || '', bell: false }
+          ? {
+              ...initialRecord,
+              opravaFaktury: initialRecord.opravaFaktury || '',
+              bell: isCorrectionHandoff,
+              alert: isCorrectionHandoff,
+            }
           : {
               ...initialRecord,
               opravaFaktury: initialRecord.opravaFaktury || '',
@@ -860,10 +872,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <option value="Iný zákazník">+ Pridať nového zákazníka</option>
               </select>
 
-            {!invoiceHandoffMode && !(isPreviewMode && hasUploadedInvoice) && (
+            {(!invoiceHandoffMode || isAccountantCorrectionMode) && !(isPreviewMode && hasUploadedInvoice) && (
             <div className="flex items-center justify-end shrink-0">
               <div className="inline-flex items-center gap-2.5 shrink-0">
-              {!initialRecord || copyMode || readOnly ? (
+              {!initialRecord || copyMode || (readOnly && !initialRecord.invoicingEmailSentAt) ? (
                 <>
                   <label className="inline-flex items-center gap-2.5 m-0 p-0 cursor-pointer">
                     <input
@@ -875,24 +887,36 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                     <img src="/new1.png" alt="NEW" className="h-6.5 w-auto object-contain shrink-0 block self-center" title="Nové colné konanie v evidencii" />
                   </label>
 
-                  <label className="inline-flex items-center gap-2.5 m-0 p-0 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.bell}
-                      onChange={(e) => setFormData({ ...formData, bell: e.target.checked })}
-                      className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 shrink-0 self-center"
-                    />
-                    <img
-                      src="/mail.png"
-                      alt="Mail"
-                      className="object-contain shrink-0 block max-w-none self-center"
-                      style={{ width: 48, height: 56 }}
-                    />
-                    <span className="inline-flex items-center self-center text-slate-600 font-medium text-[12px] whitespace-nowrap leading-none">
-                      Odoslať Mirovi na fakturáciu
-                    </span>
-                  </label>
+                  {!initialRecord?.invoicingEmailSentAt && (
+                    <label className="inline-flex items-center gap-2.5 m-0 p-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.bell}
+                        onChange={(e) => setFormData({ ...formData, bell: e.target.checked })}
+                        className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 shrink-0 self-center"
+                      />
+                      <img
+                        src="/mail.png"
+                        alt="Mail"
+                        className="object-contain shrink-0 block max-w-none self-center"
+                        style={{ width: 48, height: 56 }}
+                      />
+                      <span className="inline-flex items-center self-center text-slate-600 font-medium text-[12px] whitespace-nowrap leading-none">
+                        Odoslať Mirovi na fakturáciu
+                      </span>
+                    </label>
+                  )}
                 </>
+              ) : readOnly ? (
+                <label className="inline-flex items-center gap-2.5 m-0 p-0 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isNew}
+                    onChange={(e) => setFormData({ ...formData, isNew: e.target.checked })}
+                    className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 shrink-0 self-center"
+                  />
+                  <img src="/new1.png" alt="NEW" className="h-6.5 w-auto object-contain shrink-0 block self-center" title="Nové colné konanie v evidencii" />
+                </label>
               ) : (
                 <label className="inline-flex items-center gap-2 m-0 p-0 cursor-pointer text-slate-700">
                   <input
@@ -1529,6 +1553,17 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               {saveButtonLabel}
             </LoadingButtonContent>
           </button>
+          {/* Info kedy bol záznam pridaný vpravo dole — absolútne */}
+          {formData.datumColnice && (
+            <div
+              className="absolute flex items-center gap-1 m-0 p-0"
+              style={{ right: '1.25rem', top: '50%', transform: 'translateY(-50%)' }}
+            >
+              <span className="text-slate-500 font-medium m-0 p-0" style={{ fontSize: '11.5px', lineHeight: 1 }}>
+                Záznam pridaný: {formatHandoffDate(formData.datumColnice)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     );
