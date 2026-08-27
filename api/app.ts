@@ -201,6 +201,7 @@ const fromDatabaseRecord = (record: Record<string, unknown>): ColnaRecord => {
     invoicingEmailSentAt: record.invoicing_email_sent_at
       ? String(record.invoicing_email_sent_at)
       : undefined,
+    updatedAt: record.updated_at ? String(record.updated_at) : undefined,
   };
 };
 

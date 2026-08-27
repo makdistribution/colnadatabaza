@@ -1281,14 +1281,13 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <div
                   className="bg-emerald-100 border border-emerald-300 rounded-md w-full h-[34px] px-2.5 box-border m-0 whitespace-nowrap overflow-hidden flex items-center justify-center"
                 >
-                  <div className="flex items-baseline justify-center gap-1.5 flex-nowrap h-full">
+                  <div className="flex items-center justify-center gap-1.5 flex-nowrap w-full h-full">
                     <span
-                      className="font-bold text-emerald-900 text-[12.5px] leading-none align-baseline"
-                      style={{ verticalAlign: 'baseline' }}
+                      className="font-bold text-emerald-900 text-[12.5px] leading-none"
                     >
                       VYPOČÍTANÝ ZISK:
                     </span>
-                    <span className="font-bold font-mono text-emerald-800 text-[14px] leading-none align-baseline" style={{ verticalAlign: 'baseline' }}>
+                    <span className="font-bold font-mono text-emerald-800 text-[14px] leading-none">
                       {calculatedProfit.toFixed(2)} €
                     </span>
                   </div>
@@ -1600,17 +1599,41 @@ export const RecordModal: React.FC<RecordModalProps> = ({
               {saveButtonLabel}
             </LoadingButtonContent>
           </button>
-          {/* Info kedy bol záznam pridaný vpravo dole — absolútne */}
-          {formData.datumColnice && (
-            <div
-              className="absolute flex items-center gap-1 m-0 p-0"
-              style={{ right: '1.25rem', top: '50%', transform: 'translateY(-50%)' }}
-            >
-              <span className="text-slate-500 font-medium m-0 p-0" style={{ fontSize: '11.5px', lineHeight: 1 }}>
-                Záznam pridaný: {formatHandoffDate(formData.datumColnice)}
-              </span>
-            </div>
-          )}
+          {/* Info vpravo dole — absolútne: Dátum úpravy (ak je dostupný) ináč Záznam pridaný */}
+          {(() => {
+            const showUpdated = formData.updatedAt && formData.updatedAt.trim() !== '';
+            if (!showUpdated && !formData.datumColnice) return null;
+            let label = '';
+            let value = '';
+            if (showUpdated) {
+              label = 'Dátum úpravy:';
+              const iso = String(formData.updatedAt || '');
+              const dt = new Date(iso);
+              if (!Number.isNaN(dt.getTime())) {
+                const d = String(dt.getDate()).padStart(2, '0');
+                const m = String(dt.getMonth() + 1).padStart(2, '0');
+                const y = dt.getFullYear();
+                const hh = String(dt.getHours()).padStart(2, '0');
+                const mm = String(dt.getMinutes()).padStart(2, '0');
+                value = `${d}.${m}.${y} | ${hh}:${mm}`;
+              } else {
+                value = iso.slice(0, 16);
+              }
+            } else {
+              label = 'Záznam pridaný:';
+              value = formatHandoffDate(formData.datumColnice);
+            }
+            return (
+              <div
+                className="absolute flex items-center gap-1 m-0 p-0"
+                style={{ right: '1.25rem', top: '50%', transform: 'translateY(-50%)' }}
+              >
+                <span className="text-slate-500 font-medium m-0 p-0" style={{ fontSize: '11.5px', lineHeight: 1 }}>
+                  {label} {value}
+                </span>
+              </div>
+            );
+          })()}
         </div>
       </div>
     );
@@ -1783,7 +1806,7 @@ export const RecordModal: React.FC<RecordModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-start justify-center gap-2 flex-nowrap p-2 sm:p-4 overflow-x-auto overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-start justify-center gap-2 flex-nowrap pt-[2.5cm] px-2 sm:px-4 pb-2 sm:pb-4 overflow-x-auto overflow-y-auto">
       {renderMainModal()}
       {renderCustomerSidePanel()}
       {renderConfirmModals()}

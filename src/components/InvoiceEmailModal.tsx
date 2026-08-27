@@ -240,7 +240,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[60] flex items-start justify-center pt-[2.5cm] px-4 pb-4">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden text-slate-900 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
 
         {/* ─── HEADER ─── */}

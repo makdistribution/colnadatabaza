@@ -32,6 +32,8 @@ export interface ColnaRecord {
   invoicingEmailSentAt?: string;
   /** Customer invoice email sent via Brevo (ISO timestamp; packed in oprava_faktury). */
   customerInvoiceEmailSentAt?: string;
+  /** Last record modification timestamp (ISO from Supabase updated_at). */
+  updatedAt?: string;
 }
 
 export interface MonthlyReport {
