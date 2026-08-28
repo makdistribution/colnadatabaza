@@ -246,7 +246,7 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[60] flex items-start justify-center pt-[2.5cm] px-4 pb-4">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden text-slate-900 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full h-fit self-start overflow-hidden text-slate-900 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
 
         {/* ─── HEADER ─── */}
         <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800 shrink-0">
@@ -270,30 +270,43 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
         </div>
 
         {/* ─── BODY ─── */}
-        <div className="p-5 space-y-3 text-xs overflow-y-auto flex-1 min-h-0">
+        <div className="p-5 space-y-3 text-xs overflow-y-auto">
 
-          {/* FROM (ODOSIELATEĽ) */}
-          <div>
-            <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
-              FROM (ODOSIELATEĽ)
-            </label>
-            <input
-              type="email"
-              value={fromEmail}
-              onChange={(e) => setFromEmail(e.target.value)}
-              disabled={isSending}
-              className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white text-[12px] outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* TO (PRÍJEMCA)  +  BCC (SKRYTÁ KÓPIA) — side by side */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* TO */}
-            <div>
+            {/* FROM (ODOSIELATEĽ) */}
+            <div className="flex flex-col">
+              <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
+                FROM (ODOSIELATEĽ)
+              </label>
+              <input
+                type="email"
+                value={fromEmail}
+                onChange={(e) => setFromEmail(e.target.value)}
+                disabled={isSending}
+                className="w-full h-[38px] bg-slate-800 border border-slate-700 rounded-md px-3 text-white text-[12px] outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* BCC (SKRYTÁ KÓPIA) */}
+            <div className="flex flex-col">
+              <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
+                BCC (SKRYTÁ KÓPIA)
+              </label>
+              <input
+                type="email"
+                value={bccEmail}
+                onChange={(e) => setBccEmail(e.target.value)}
+                disabled={isSending}
+                className="w-full h-[38px] bg-slate-800 border border-slate-700 rounded-md px-3 text-white text-[12px] outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* TO (PRÍJEMCA) */}
+            <div className="flex flex-col">
               <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
                 TO (PRÍJEMCA)
               </label>
-              <div className="bg-white border border-slate-300 rounded-md px-2 py-1.5 min-h-[36px] flex flex-wrap items-center gap-1.5">
+              <div className="bg-white border border-slate-300 rounded-md px-2 py-1.5 h-[38px] flex flex-wrap items-center gap-1.5 overflow-hidden">
                 {selectedToEmails.length === 0 ? (
                   <span className="text-slate-400 text-[11px] py-0.5">Žiadny príjemca</span>
                 ) : (
@@ -309,109 +322,94 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
               </div>
             </div>
 
-            {/* BCC */}
-            <div>
+            {/* CC (KÓPIA) — click to pick from address book */}
+            <div className="flex flex-col">
               <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
-                BCC (SKRYTÁ KÓPIA)
+                CC (KÓPIA)
+              </label>
+              <div
+                ref={ccDropdownRef}
+                className="relative"
+              >
+                <div
+                  className="bg-white border border-slate-300 rounded-md px-2 py-1.5 h-[38px] flex flex-wrap items-center gap-1.5 cursor-pointer overflow-hidden"
+                  onClick={() => {
+                    if (!isSending && availableCcEmails.length > 0) {
+                      setCcDropdownOpen((prev) => !prev);
+                    }
+                  }}
+                >
+                  {selectedCcEmails.length === 0 && (
+                    <span className="text-slate-400 text-[11px] py-0.5 flex items-center gap-1">
+                      Kliknite pre pridanie príjemcu do kópie
+                      {availableCcEmails.length > 0 && <ChevronDown className="w-3 h-3" />}
+                    </span>
+                  )}
+                  {selectedCcEmails.map((email) => (
+                    <EmailChip
+                      key={email.toLowerCase()}
+                      email={email}
+                      variant="cc"
+                      onRemove={() => removeCcRecipient(email)}
+                    />
+                  ))}
+                  {selectedCcEmails.length > 0 && availableCcEmails.length > 0 && (
+                    <span className="text-slate-400 text-[11px] py-0.5 flex items-center gap-0.5 ml-1">
+                      <ChevronDown className="w-3 h-3" />
+                    </span>
+                  )}
+                </div>
+
+                {ccDropdownOpen && availableCcEmails.length > 0 && (
+                  <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-300 rounded-md shadow-lg z-50 py-1 max-h-[160px] overflow-y-auto">
+                    {availableCcEmails.map((email) => (
+                      <button
+                        key={email}
+                        type="button"
+                        onClick={() => {
+                          addCcRecipient(email);
+                          setCcDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-1.5 text-[11px] text-slate-800 hover:bg-blue-50 hover:text-blue-700 cursor-pointer font-medium"
+                      >
+                        {email}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* SUBJECT */}
+            <div className="flex flex-col">
+              <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
+                SUBJECT
               </label>
               <input
-                type="email"
-                value={bccEmail}
-                onChange={(e) => setBccEmail(e.target.value)}
-                disabled={isSending}
-                className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-white text-[12px] outline-none focus:ring-1 focus:ring-blue-500"
+                type="text"
+                readOnly
+                value={subject}
+                className="w-full h-[52px] bg-white border border-slate-300 rounded-md px-3 text-slate-900 text-[12px] outline-none read-only:cursor-default"
               />
             </div>
-          </div>
 
-          {/* CC (KÓPIA) — click to pick from address book */}
-          <div>
-            <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
-              CC (KÓPIA)
-            </label>
-            <div
-              ref={ccDropdownRef}
-              className="relative"
-            >
-              <div
-                className="bg-white border border-slate-300 rounded-md px-2 py-1.5 min-h-[36px] flex flex-wrap items-center gap-1.5 cursor-pointer"
-                onClick={() => {
-                  if (!isSending && availableCcEmails.length > 0) {
-                    setCcDropdownOpen((prev) => !prev);
-                  }
-                }}
-              >
-                {selectedCcEmails.length === 0 && (
-                  <span className="text-slate-400 text-[11px] py-0.5 flex items-center gap-1">
-                    Kliknite pre pridanie príjemcu do kópie
-                    {availableCcEmails.length > 0 && <ChevronDown className="w-3 h-3" />}
-                  </span>
-                )}
-                {selectedCcEmails.map((email) => (
-                  <EmailChip
-                    key={email.toLowerCase()}
-                    email={email}
-                    variant="cc"
-                    onRemove={() => removeCcRecipient(email)}
-                  />
-                ))}
-                {selectedCcEmails.length > 0 && availableCcEmails.length > 0 && (
-                  <span className="text-slate-400 text-[11px] py-0.5 flex items-center gap-0.5 ml-1">
-                    <ChevronDown className="w-3 h-3" />
-                  </span>
-                )}
-              </div>
-
-              {/* Dropdown list */}
-              {ccDropdownOpen && availableCcEmails.length > 0 && (
-                <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-300 rounded-md shadow-lg z-50 py-1 max-h-[160px] overflow-y-auto">
-                  {availableCcEmails.map((email, index) => (
-                    <button
-                      key={email}
-                      type="button"
-                      onClick={() => {
-                        addCcRecipient(email);
-                        setCcDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-1.5 text-[11px] text-slate-800 hover:bg-blue-50 hover:text-blue-700 cursor-pointer font-medium"
-                    >
-                      {email}
-                    </button>
-                  ))}
+            {/* PRÍLOHA */}
+            <div className="flex flex-col">
+              <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
+                PRÍLOHA
+              </label>
+              <div className="bg-white border border-slate-300 rounded-md px-3 h-[52px] flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-md bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                  <Paperclip className="w-4 h-4" />
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* SUBJECT */}
-          <div>
-            <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
-              SUBJECT
-            </label>
-            <input
-              type="text"
-              readOnly
-              value={subject}
-              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-slate-900 text-[12px] outline-none read-only:cursor-default"
-            />
-          </div>
-
-          {/* PRÍLOHA */}
-          <div>
-            <label className="block text-slate-500 font-semibold mb-1 text-[11px] uppercase tracking-wide">
-              PRÍLOHA
-            </label>
-            <div className="bg-white border border-slate-300 rounded-md px-3 py-2 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-md bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
-                <Paperclip className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[12px] font-semibold text-slate-900 truncate">
-                  {attachmentName || '—'}
-                </p>
-                <p className="text-[10px] text-slate-500 font-medium">
-                  PDF dokument · priložené k emailu
-                </p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] font-semibold text-slate-900 truncate">
+                    {attachmentName || '—'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    PDF dokument · priložené k emailu
+                  </p>
+                </div>
               </div>
             </div>
           </div>
