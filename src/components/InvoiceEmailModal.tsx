@@ -213,7 +213,7 @@ export const EmailRichTextEditor: React.FC<EmailRichTextEditorProps> = ({
         suppressContentEditableWarning
         onInput={emitChange}
         onBlur={emitChange}
-        className="min-h-[calc(180px+1cm)] max-h-[calc(320px+1cm)] overflow-y-auto px-2.5 py-2 text-[12px] text-slate-900 leading-relaxed outline-none prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto"
+        className="min-h-[calc(180px+1cm)] max-h-[calc(340px)] overflow-y-auto px-2.5 py-2 text-[12px] text-slate-900 leading-relaxed outline-none prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto"
       />
     </div>
   );
