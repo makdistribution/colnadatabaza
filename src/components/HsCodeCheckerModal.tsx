@@ -420,9 +420,19 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
 
                         {/* Colný kód a základná sadzba */}
                         <div className="space-y-1.5 pt-3 border-t border-slate-200">
-                          <p className="text-slate-600 text-sm">
-                            Commodity code: <span className="font-mono font-bold text-slate-900">{detail.code}</span>
-                          </p>
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-slate-600 text-sm">
+                              Commodity code: <span className="font-mono font-bold text-slate-900">{detail.code}</span>
+                            </p>
+                            <a
+                              href={`${UK_TARIFF_COMMODITY_URL}/${detail.code}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#1a65ff] hover:underline font-semibold inline-flex items-center gap-1 text-sm shrink-0"
+                            >
+                              Otvoriť na trade-tariff.service.gov.uk →
+                            </a>
+                          </div>
                           {detail.basicDutyRate && (
                             <p className="text-slate-600 text-sm">
                               Základná colná sadzba:{' '}
@@ -444,14 +454,17 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
                               </thead>
                               <tbody>
                                 {detail.dutyRows.map((row) => {
-                                  // Zistenie, či ide o DPH (Value added tax / VAT) pre tučné písmo
-                                  const isVat = row.measureType.toLowerCase().includes('value added tax') || row.measureType === 'VAT';
+                                  const measure = row.measureType.toLowerCase();
+                                  const area = row.geoArea.toLowerCase();
+                                  const isVat = measure.includes('value added tax') || row.measureType === 'VAT';
+                                  const isEuPreference = measure.includes('tariff preference') && area.includes('european union');
+                                  const isHighlight = isVat || isEuPreference;
                                   
                                   return (
-                                    <tr key={row.key} className={`border-b border-slate-100 ${isVat ? 'bg-blue-50/40' : ''}`}>
-                                      <td className={`py-2 px-3 text-slate-700 ${isVat ? 'font-bold !text-slate-900' : ''}`}>{row.measureType}</td>
-                                      <td className={`py-2 px-3 text-slate-700 ${isVat ? 'font-bold !text-slate-900' : ''}`}>{row.geoArea}</td>
-                                      <td className={`py-2 px-3 whitespace-nowrap ${isVat ? 'font-bold !text-slate-900' : 'font-semibold text-slate-900'}`}>
+                                    <tr key={row.key} className={`border-b border-slate-100 ${isHighlight ? 'bg-blue-50/40' : ''}`}>
+                                      <td className={`py-2 px-3 text-slate-700 ${isHighlight ? 'font-bold !text-slate-900' : ''}`}>{row.measureType}</td>
+                                      <td className={`py-2 px-3 text-slate-700 ${isHighlight ? 'font-bold !text-slate-900' : ''}`}>{row.geoArea}</td>
+                                      <td className={`py-2 px-3 whitespace-nowrap ${isHighlight ? 'font-bold !text-slate-900' : 'font-semibold text-slate-900'}`}>
                                         {row.dutyRate || '—'}
                                       </td>
                                     </tr>
@@ -461,17 +474,6 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
                             </table>
                           </div>
                         )}
-
-                        <div className="pt-2">
-                          <a
-                            href={`${UK_TARIFF_COMMODITY_URL}/${detail.code}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#1a65ff] hover:underline font-semibold inline-flex items-center gap-1 text-sm"
-                          >
-                            Otvoriť na trade-tariff.service.gov.uk →
-                          </a>
-                        </div>
                       </div>
                     )}
                   </div>
