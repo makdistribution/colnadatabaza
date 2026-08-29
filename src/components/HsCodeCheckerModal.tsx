@@ -117,8 +117,13 @@ async function fetchExactMatchDescription(endpoint: string, id: string): Promise
 
 /** Fetches full commodity detail (description + import duty rates) directly from UK Tariff API. */
 async function fetchCommodityDetail(code: string): Promise<TariffDetail> {
-  // OPRAVA: Prepojenie priamo na API britskej vlády namiesto lokálneho servera
-  const response = await fetch(`${UK_TARIFF_API_BASE}/commodities/${code}`);
+  // OPRAVA: Pridaná koncovka .json a hlavička Accept, aby API nevracalo HTML stránku
+  const response = await fetch(`${UK_TARIFF_API_BASE}/commodities/${code}.json`, {
+    headers: {
+      'Accept': 'application/json'
+    }
+  });
+  
   if (!response.ok) throw new Error('detail lookup failed');
   const json = (await response.json()) as CommodityDetailResponse;
 
