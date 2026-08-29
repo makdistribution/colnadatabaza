@@ -105,13 +105,10 @@ const AmountInput: React.FC<AmountInputProps> = ({ value, onChange, className })
 /** Native yes.png size (public/yes.png) — reserved so selected state cannot grow the button. */
 const ROUTE_YES_ICON_W = 23;
 const ROUTE_YES_ICON_H = 25;
-const ROUTE_BTN_H = ROUTE_YES_ICON_H + 12 + 2; // icon + py-1.5*2 + border*2
+const ROUTE_BTN_H = ROUTE_YES_ICON_H + 12 + 2; // icon + vertical inset + border*2
 
-const ROUTE_ICON_CLASS = 'max-w-none object-contain block -translate-y-[1mm]';
-const ROUTE_ICON_SLOT_CLASS =
-  'inline-flex items-center justify-center shrink-0 self-center leading-none w-[23px] h-[25px]';
 const ROUTE_BTN_BASE_CLASS =
-  'box-border h-[39px] min-h-[39px] px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none align-middle text-center disabled:opacity-100 disabled:cursor-default';
+  'box-border h-[39px] min-h-[39px] px-3 rounded-lg text-[12px] font-bold cursor-pointer border transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap leading-none text-center disabled:opacity-100 disabled:cursor-default';
 const ROUTE_BTN_ROW_CLASS =
   'flex flex-nowrap items-center justify-start gap-1.5 sm:gap-2 min-h-[39px] overflow-x-auto';
 
@@ -137,19 +134,15 @@ const RouteSelectButton: React.FC<RouteSelectButtonProps> = ({
     className={`${ROUTE_BTN_BASE_CLASS} ${selected ? selectedClassName : idleClassName}`}
     style={{ height: ROUTE_BTN_H, minHeight: ROUTE_BTN_H }}
   >
-    <span
-      className={ROUTE_ICON_SLOT_CLASS}
+    <img
+      src={selected ? '/yes.png' : '/yyes.png'}
+      alt=""
+      width={ROUTE_YES_ICON_W}
+      height={ROUTE_YES_ICON_H}
+      className="block shrink-0 object-contain"
       style={{ width: ROUTE_YES_ICON_W, height: ROUTE_YES_ICON_H }}
-    >
-      {selected ? (
-        <img src="/yes.png" alt="" className={ROUTE_ICON_CLASS} />
-      ) : (
-        <img src="/yyes.png" alt="" className={ROUTE_ICON_CLASS} />
-      )}
-    </span>
-    <span className="inline-flex h-[25px] items-center justify-center text-center leading-[25px] align-middle -translate-y-[0.5mm]">
-      {label}
-    </span>
+    />
+    <span className="block leading-none">{label}</span>
   </button>
 );
 
@@ -939,12 +932,12 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                         type="checkbox"
                         checked={formData.bell}
                         onChange={(e) => setFormData({ ...formData, bell: e.target.checked })}
-                        className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 shrink-0 self-center"
+                        className="rounded text-blue-600 focus:ring-0 w-4 h-4 m-0 bg-white border-slate-300 shrink-0 self-center translate-x-[2mm]"
                       />
                       <img
                         src="/mail.png"
                         alt="Mail"
-                        className="object-contain shrink-0 block max-w-none self-center"
+                        className="object-contain shrink-0 block max-w-none self-center translate-x-[2mm]"
                         style={{ width: 48, height: 56 }}
                       />
                       <span className="inline-flex items-center self-center text-slate-600 font-medium text-[12px] whitespace-nowrap leading-none">
