@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { VatEoriCheckerModal, type VatEoriRegion } from './VatEoriCheckerModal';
 import { HsCodeCheckerModal } from './HsCodeCheckerModal';
-import { VatEoriSearchModal } from './VatEoriSearchModal';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -27,7 +26,6 @@ interface HeaderProps {
 type ColnicaModal =
   | { kind: 'vatEori'; region: VatEoriRegion }
   | { kind: 'tariff'; title: string; flagSrc: string }
-  | { kind: 'search' }
   | null;
 
 export const Header: React.FC<HeaderProps> = ({
@@ -349,23 +347,6 @@ export const Header: React.FC<HeaderProps> = ({
                       <span>ONLINE TARIFF</span>
                     </button>
                   </div>
-
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setColnicaModal({ kind: 'search' });
-                        setColnicaDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer text-xs font-medium whitespace-nowrap"
-                    >
-                      <img src="/uk1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
-                      <img src="/eu1.png" alt="" className="w-5 h-5 object-contain shrink-0 self-center" />
-                      <span>
-                        VAT/EORI no. SEARCH{' '}
-                        <span className="font-normal text-[11px] text-slate-500">(by company name)</span>
-                      </span>
-                    </button>
-                  </div>
                 </div>
               </>
             )}
@@ -434,10 +415,6 @@ export const Header: React.FC<HeaderProps> = ({
     isOpen={colnicaModal?.kind === 'tariff'}
     title={colnicaModal?.kind === 'tariff' ? colnicaModal.title : ''}
     flagSrc={colnicaModal?.kind === 'tariff' ? colnicaModal.flagSrc : '/uk1.png'}
-    onClose={() => setColnicaModal(null)}
-  />
-  <VatEoriSearchModal
-    isOpen={colnicaModal?.kind === 'search'}
     onClose={() => setColnicaModal(null)}
   />
   </>
