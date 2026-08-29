@@ -11,7 +11,7 @@ import {
   BookOpen,
   Folder,
   ArrowLeftRight,
-  Tag
+  Euro
 } from 'lucide-react';
 import { VatEoriCheckerModal, type VatEoriRegion } from './VatEoriCheckerModal';
 import { HsCodeCheckerModal } from './HsCodeCheckerModal';
@@ -225,7 +225,7 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={() => { setActiveTab('CENNIK'); setDropdownOpen(false); }}
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 cursor-pointer text-xs font-medium"
                     >
-                      <Tag className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <Euro className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>CENNÍK</span>
                     </button>
                   </div>

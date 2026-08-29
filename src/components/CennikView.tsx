@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CennikRecord } from '../types';
-import { Tag, Plus, Edit3, Trash2 } from 'lucide-react';
+import { Euro, Plus, Edit3, Trash2 } from 'lucide-react';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 interface CennikViewProps {
@@ -41,7 +41,7 @@ export const CennikView: React.FC<CennikViewProps> = ({
       {/* Title Header */}
       <div className="bg-slate-50 px-5 py-3.5 border-b-2 border-slate-600 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <Tag className="w-5 h-5 text-blue-600" />
+          <Euro className="w-5 h-5 text-emerald-600" />
           <h2 className="text-base font-bold text-slate-900 tracking-tight uppercase">
             CENNÍK
           </h2>
