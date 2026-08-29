@@ -1,27 +1,36 @@
 @import "tailwindcss";
 
+html, body, #root {
+  height: 100%;
+  max-height: 100%;
+}
+
 html {
-  overflow-y: auto;
+  overflow: hidden;
   scrollbar-gutter: auto;
 }
 
 html, body {
   overflow-x: hidden;
+  overflow-y: hidden;
   max-width: 100vw;
 }
 
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 10mm;
+    size: A4 landscape;
+    margin: 8mm 8mm 10mm 8mm;
   }
 
   html,
-  body {
+  body,
+  #root {
     overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
     max-width: none !important;
     background: #fff !important;
-    color: #000 !important;
+    color: #0f172a !important;
   }
 
   body * {
@@ -30,7 +39,7 @@ html, body {
 
   main {
     background: #fff !important;
-    color: #000 !important;
+    color: #0f172a !important;
     padding: 0 !important;
     margin: 0 !important;
   }
@@ -38,71 +47,168 @@ html, body {
   .print-customs-sheet {
     display: block !important;
     width: 100%;
-    color: #000;
+    color: #0f172a;
     background: #fff;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Segoe UI", system-ui, Arial, Helvetica, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .print-customs-header {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 6mm;
-    border-bottom: 1px solid #000;
-    padding-bottom: 3mm;
+    gap: 8mm;
+    margin-bottom: 4.5mm;
+    padding: 3.5mm 4.5mm;
+    background: #000a2f;
+    color: #fff;
+    border-radius: 2mm;
   }
 
-  .print-customs-header h1 {
+  .print-customs-brand {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    min-width: 0;
+  }
+
+  .print-customs-brand img {
+    width: 11mm;
+    height: 11mm;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 1.4mm;
+    padding: 0.6mm;
+  }
+
+  .print-customs-company {
     font-size: 13pt;
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
     margin: 0;
-    letter-spacing: 0.02em;
   }
 
-  .print-customs-header p {
-    font-size: 9pt;
+  .print-customs-doc-type {
+    margin: 0.6mm 0 0;
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #bfdbfe;
+  }
+
+  .print-customs-meta {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .print-customs-month {
     margin: 0;
+    font-size: 16pt;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1;
+  }
+
+  .print-customs-date {
+    margin: 1.4mm 0 0;
+    font-size: 8pt;
+    font-weight: 600;
+    color: #cbd5e1;
   }
 
   .print-customs-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
-    font-size: 7.5pt;
-    line-height: 1.25;
+    font-size: 8pt;
+    line-height: 1.3;
+  }
+
+  .print-customs-table thead {
+    display: table-header-group;
+  }
+
+  .print-customs-table tfoot {
+    display: table-footer-group;
+  }
+
+  .print-customs-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .print-customs-table th,
   .print-customs-table td {
-    border: 0.4pt solid #000;
-    padding: 1.2mm 1mm;
+    border: 0.3pt solid #c5d0de;
+    padding: 1.5mm 1.3mm;
     vertical-align: top;
     word-wrap: break-word;
     overflow-wrap: anywhere;
-    color: #000;
-    background: #fff !important;
+    color: #0f172a;
+    background: #fff;
   }
 
   .print-customs-table th {
+    background: #07538e !important;
+    color: #fff !important;
+    border-color: #064675;
     font-weight: 700;
     text-align: left;
-    font-size: 7pt;
+    font-size: 6.8pt;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .print-customs-table tbody tr:nth-child(even) td {
+    background: #f4f7fb !important;
   }
 
   .print-customs-table .num {
     text-align: right;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  .print-customs-table .status-yes {
+    color: #047857;
+    font-weight: 700;
+  }
+
+  .print-customs-table .status-no {
+    color: #b45309;
+    font-weight: 700;
   }
 
   .print-customs-table tfoot td {
-    font-weight: 700;
+    background: #000a2f !important;
+    color: #fff !important;
+    border-color: #000a2f;
+    font-weight: 800;
+    padding-top: 2mm;
+    padding-bottom: 2mm;
   }
 
   .print-customs-table .totals-label {
     text-align: right;
     text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 7.5pt;
+  }
+
+  .print-customs-footnote {
+    margin-top: 3.5mm;
+    padding-top: 2mm;
+    border-top: 0.6pt solid #c5d0de;
+    font-size: 7.5pt;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    gap: 6mm;
   }
 }
 

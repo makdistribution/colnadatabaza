@@ -511,9 +511,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-blue-600 selection:text-white">
-      {/* Header and Quick Stats Block connected together */}
-      <div className="sticky top-0 z-40 bg-[#000a2f] print:hidden">
+    <div className="h-dvh max-h-dvh bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-blue-600 selection:text-white print:h-auto print:max-h-none print:overflow-visible">
+      {/* Menu + month row stay pinned; page content scrolls below */}
+      <div className="shrink-0 z-40 bg-[#000a2f] print:hidden">
         <Header
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -574,8 +574,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Workspace */}
-      <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-1.5 overflow-x-hidden print:p-0 print:overflow-visible" style={{ backgroundColor: '#000a2f' }}>
+      {/* Main Workspace — scrolls under the pinned header rows */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden print:overflow-visible print:h-auto">
+      <main className="w-full px-3 sm:px-6 lg:px-8 py-1.5 print:p-0 print:overflow-visible" style={{ backgroundColor: '#000a2f' }}>
         {activeTab === 'COLNA_DATABAZA' && (
           <ColnaDatagrid
             records={colnaRecords}
@@ -691,6 +692,16 @@ export default function App() {
         )}
       </main>
 
+      {/* Bottom Footer */}
+      <footer className="border-t border-slate-900 bg-[#060a12] py-4 text-center text-xs text-slate-500 print:hidden">
+        <div className="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+          <div>
+            © 2026 <strong className="text-slate-300 ml-3">MAK DISTRIBUTION</strong>
+          </div>
+        </div>
+      </footer>
+      </div>
+
       {/* Add / Edit Record Modal */}
       <RecordModal
         isOpen={isModalOpen}
@@ -716,15 +727,6 @@ export default function App() {
           return `${y}-${m}-${d}`;
         })()}
       />
-
-      {/* Bottom Footer */}
-      <footer className="border-t border-slate-900 bg-[#060a12] py-4 text-center text-xs text-slate-500 print:hidden">
-        <div className="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-          <div>
-            © 2026 <strong className="text-slate-300 ml-3">MAK DISTRIBUTION</strong>
-          </div>
-        </div>
-      </footer>
 
       {isApplicationLocked && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/20 backdrop-blur-md print:hidden">

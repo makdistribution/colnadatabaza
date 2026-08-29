@@ -203,6 +203,11 @@ async function fetchCommodityDetail(code: string): Promise<TariffDetail> {
   };
 }
 
+function looksLikeCommodityCode(value: string): boolean {
+  const digits = value.replace(/[\s./-]/g, '');
+  return /^\d{6,10}$/.test(digits);
+}
+
 async function searchUkTariff(query: string): Promise<TariffResult[]> {
   const response = await fetch(`${UK_TARIFF_SEARCH_URL}?q=${encodeURIComponent(query)}`);
   if (!response.ok) throw new Error('search failed');
@@ -253,6 +258,23 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleOpenDetail = async (result: TariffResult) => {
+    const seq = ++detailSeq.current;
+    setDetailLoading(true);
+    setDetailError(null);
+    setDetail(null);
+    try {
+      const found = await fetchCommodityDetail(result.code);
+      if (seq !== detailSeq.current) return;
+      setDetail({ ...found, description: found.description || result.description });
+    } catch {
+      if (seq !== detailSeq.current) return;
+      setDetailError('Detail tovaru sa nepodarilo načítať. Skúste to prosím neskôr.');
+    } finally {
+      if (seq === detailSeq.current) setDetailLoading(false);
+    }
+  };
+
   const handleSearch = async () => {
     const trimmed = query.trim();
     if (!trimmed || loading) return;
@@ -269,6 +291,11 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
         setErrorMessage('Nenašli sa žiadne výsledky pre zadaný výraz.');
       } else {
         setResults(found);
+        const digits = trimmed.replace(/[\s./-]/g, '');
+        const codeMatch = found.find((item) => item.code.replace(/\D/g, '') === digits) ?? found[0];
+        if (looksLikeCommodityCode(trimmed) && (found.length === 1 || codeMatch.code.replace(/\D/g, '') === digits)) {
+          await handleOpenDetail(codeMatch);
+        }
       }
     } catch {
       if (seq !== requestSeq.current) return;
@@ -282,23 +309,6 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       void handleSearch();
-    }
-  };
-
-  const handleOpenDetail = async (result: TariffResult) => {
-    const seq = ++detailSeq.current;
-    setDetailLoading(true);
-    setDetailError(null);
-    setDetail(null);
-    try {
-      const found = await fetchCommodityDetail(result.code);
-      if (seq !== detailSeq.current) return;
-      setDetail({ ...found, description: found.description || result.description });
-    } catch {
-      if (seq !== detailSeq.current) return;
-      setDetailError('Detail tovaru sa nepodarilo načítať. Skúste to prosím neskôr.');
-    } finally {
-      if (seq === detailSeq.current) setDetailLoading(false);
     }
   };
 
@@ -378,13 +388,15 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
 
                 {!loading && !errorMessage && showDetailView && (
                   <div className="space-y-4">
-                    <button
-                      type="button"
-                      onClick={handleBackToResults}
-                      className="text-[#1a65ff] hover:underline font-semibold"
-                    >
-                      ← Späť na výsledky
-                    </button>
+                    {(results?.length ?? 0) > 1 && (
+                      <button
+                        type="button"
+                        onClick={handleBackToResults}
+                        className="text-[#1a65ff] hover:underline font-semibold"
+                      >
+                        ← Späť na výsledky
+                      </button>
+                    )}
                     {detailLoading && <p className="font-semibold text-slate-600">Načítavam detail…</p>}
                     {!detailLoading && detailError && (
                       <p className="text-amber-700 font-semibold">{detailError}</p>

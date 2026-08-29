@@ -1086,13 +1086,38 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
       )}
     </div>
 
-    {/* Print-only monthly customs table (A4 portrait) */}
+    {/* Print-only monthly customs table (A4 landscape) */}
     <div className="hidden print:block print-customs-sheet">
       <header className="print-customs-header">
-        <h1>COLNÁ DATABÁZA — {currentMonthYear}</h1>
-        <p>Dátum tlače: {printDateStr}</p>
+        <div className="print-customs-brand">
+          <img src="/mklogo.png" alt="" />
+          <div>
+            <p className="print-customs-company">MAK DISTRIBUTION</p>
+            <p className="print-customs-doc-type">Colná databáza</p>
+          </div>
+        </div>
+        <div className="print-customs-meta">
+          <p className="print-customs-month">{currentMonthYear}</p>
+          <p className="print-customs-date">Dátum tlače: {printDateStr}</p>
+        </div>
       </header>
       <table className="print-customs-table">
+        <colgroup>
+          <col style={{ width: '11%' }} />
+          <col style={{ width: '6.5%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '8%' }} />
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '6%' }} />
+          <col style={{ width: '6%' }} />
+          <col style={{ width: '6.5%' }} />
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '6%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '6%' }} />
+          <col style={{ width: '4%' }} />
+        </colgroup>
         <thead>
           <tr>
             <th>Zákazník</th>
@@ -1136,14 +1161,16 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 <td className="num">{formatMoney(r.zisk || 0)}</td>
                 <td>{r.cisloFa}</td>
                 <td>{formatDueDateDisplay(r.splatna)}</td>
-                <td>{r.zaplatena ? 'Áno' : 'Nie'}</td>
+                <td className={r.zaplatena ? 'status-yes' : 'status-no'}>
+                  {r.zaplatena ? 'Áno' : 'Nie'}
+                </td>
               </tr>
             ))
           )}
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={6} className="totals-label">SUMÁR</td>
+            <td colSpan={6} className="totals-label">Sumár</td>
             <td className="num">{formatMoney(printTotalFaUk)}</td>
             <td className="num">{formatMoney(printTotalFaEu)}</td>
             <td className="num">{formatMoney(printTotalFaKlient)}</td>
@@ -1153,6 +1180,10 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
           </tr>
         </tfoot>
       </table>
+      <footer className="print-customs-footnote">
+        <span>MAK DISTRIBUTION · interný prehľad colných konaní</span>
+        <span>{printRecords.length} {printRecords.length === 1 ? 'záznam' : printRecords.length >= 2 && printRecords.length <= 4 ? 'záznamy' : 'záznamov'}</span>
+      </footer>
     </div>
     </>
   );
