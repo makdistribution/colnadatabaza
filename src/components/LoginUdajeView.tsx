@@ -368,7 +368,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
           </div>
 
           <span className="inline-flex items-center justify-center gap-1.5 bg-[#E6F9F3] text-[#004D40] border border-[#B2EAD5] px-3 py-1 rounded-full font-mono text-xs whitespace-nowrap shrink-0">
-            <img src="/yes.png" alt="" className="w-[23px] h-[25px] object-contain shrink-0 -translate-y-[1.5mm]" />
+            <img src="/yes.png" alt="" className="w-[23px] h-[25px] object-contain shrink-0 -translate-y-[1mm]" />
             Zašifrované v relácii
           </span>
         </div>
