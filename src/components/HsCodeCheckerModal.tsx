@@ -51,6 +51,7 @@ interface CommodityDetailResponse {
     };
     relationships?: {
       import_measures?: { data?: { id: string; type: string }[] };
+      ancestors?: { data?: { id: string; type: string }[] };
     };
   };
   included?: JsonApiResource[];
@@ -107,21 +108,44 @@ function flattenMatchGroup(group?: TariffSearchMatchGroup): TariffResult[] {
     .filter((result): result is TariffResult => result !== null);
 }
 
+/** Vytvorí kompletný názov pospájaním všetkých nadradených kategórií */
+function buildFullDescription(json: CommodityDetailResponse): string {
+  const attributes = json.data?.attributes;
+  let description = attributes?.description ?? '';
+
+  const included = json.included ?? [];
+  const ancestorsRefs = json.data?.relationships?.ancestors?.data ?? [];
+
+  if (ancestorsRefs.length > 0) {
+    const ancestorParts = ancestorsRefs.map((ref) => {
+      const inc = included.find((i) => i.id === ref.id && i.type === ref.type);
+      return (inc?.attributes?.description as string) ?? '';
+    }).filter((d) => d.trim().length > 0);
+
+    if (ancestorParts.length > 0) {
+      // Pospája kategórie do cesty a odstráni zbytočné medzery a odriadkovania
+      description = [...ancestorParts, description]
+        .map(s => s.replace(/(\r\n|\n|\r)/gm, ' ').replace(/\s+/g, ' ').trim())
+        .join(' > ');
+    }
+  }
+  return description.replace(/(\r\n|\n|\r)/gm, ' ').replace(/\s+/g, ' ').trim();
+}
+
 /** Looks up the description for an exact-match entry (e.g. a single commodity/heading code). */
 async function fetchExactMatchDescription(endpoint: string, id: string): Promise<string> {
-  const response = await fetch(`${UK_TARIFF_API_BASE}/${endpoint}/${id}.json`);
+  const response = await fetch(`${UK_TARIFF_API_BASE}/${endpoint}/${id}.json`, {
+    headers: { 'Accept': 'application/json' }
+  });
   if (!response.ok) throw new Error('lookup failed');
-  const json = (await response.json()) as { data?: { attributes?: { description?: string } } };
-  return json.data?.attributes?.description ?? '';
+  const json = (await response.json()) as CommodityDetailResponse;
+  return buildFullDescription(json);
 }
 
 /** Fetches full commodity detail (description + import duty rates) directly from UK Tariff API. */
 async function fetchCommodityDetail(code: string): Promise<TariffDetail> {
-  // OPRAVA: Pridaná koncovka .json a hlavička Accept, aby API nevracalo HTML stránku
   const response = await fetch(`${UK_TARIFF_API_BASE}/commodities/${code}.json`, {
-    headers: {
-      'Accept': 'application/json'
-    }
+    headers: { 'Accept': 'application/json' }
   });
   
   if (!response.ok) throw new Error('detail lookup failed');
@@ -129,6 +153,10 @@ async function fetchCommodityDetail(code: string): Promise<TariffDetail> {
 
   const attributes = json.data?.attributes;
   const included = json.included ?? [];
+  
+  // Získanie plného názvu tovaru namiesto obyčajného "Other"
+  const fullDescription = buildFullDescription(json);
+
   const findIncluded = (ref?: JsonApiRelationshipRef) => {
     if (!ref?.data) return undefined;
     return included.find((item) => item.type === ref.data!.type && item.id === ref.data!.id);
@@ -169,7 +197,7 @@ async function fetchCommodityDetail(code: string): Promise<TariffDetail> {
 
   return {
     code,
-    description: attributes?.description ?? '',
+    description: fullDescription,
     basicDutyRate: attributes?.basic_duty_rate ?? null,
     dutyRows,
   };
