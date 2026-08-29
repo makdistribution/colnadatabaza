@@ -6,6 +6,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignJustify,
   List,
   ListOrdered,
   Link as LinkIcon,
@@ -147,6 +148,9 @@ export const EmailRichTextEditor: React.FC<EmailRichTextEditorProps> = ({
         <button type="button" className={btnClass} title="Zarovnať vpravo" disabled={disabled} onClick={() => handleToolbar('justifyRight')}>
           <AlignRight className="w-3.5 h-3.5" />
         </button>
+        <button type="button" className={btnClass} title="Zarovnať do bloku" disabled={disabled} onClick={() => handleToolbar('justifyFull')}>
+          <AlignJustify className="w-3.5 h-3.5" />
+        </button>
         <button type="button" className={btnClass} title="Odrážky" disabled={disabled} onClick={() => handleToolbar('insertUnorderedList')}>
           <List className="w-3.5 h-3.5" />
         </button>
@@ -181,31 +185,33 @@ export const EmailRichTextEditor: React.FC<EmailRichTextEditorProps> = ({
         <button type="button" className={btnClass} title="Znova" disabled={disabled} onClick={() => handleToolbar('redo')}>
           <Redo2 className="w-3.5 h-3.5" />
         </button>
-        <button
-          type="button"
-          className={`${btnClass} gap-1 text-[10px] font-semibold px-2`}
-          title="Vložiť uložený podpis"
-          disabled={disabled || !signatureHtml}
-          onClick={() => {
-            if (!signatureHtml) return;
-            focusEditor();
-            runCommand('insertHTML', signatureHtml);
-            emitChange();
-          }}
-        >
-          <PenLine className="w-3.5 h-3.5" />
-          Vložiť podpis
-        </button>
-        <button
-          type="button"
-          className={`${btnClass} gap-1 text-[10px] font-semibold px-2`}
-          title="Uložiť označený obsah ako trvalý podpis"
-          disabled={disabled}
-          onClick={handleSaveSignature}
-        >
-          <Save className="w-3.5 h-3.5" />
-          Uložiť podpis
-        </button>
+        <span className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            className={`${btnClass} gap-1 text-[10px] font-semibold px-2`}
+            title="Vložiť uložený podpis"
+            disabled={disabled || !signatureHtml}
+            onClick={() => {
+              if (!signatureHtml) return;
+              focusEditor();
+              runCommand('insertHTML', signatureHtml);
+              emitChange();
+            }}
+          >
+            <PenLine className="w-3.5 h-3.5" />
+            Vložiť podpis
+          </button>
+          <button
+            type="button"
+            className={`${btnClass} gap-1 text-[10px] font-semibold px-2`}
+            title="Uložiť označený obsah ako trvalý podpis"
+            disabled={disabled}
+            onClick={handleSaveSignature}
+          >
+            <Save className="w-3.5 h-3.5" />
+            Uložiť podpis
+          </button>
+        </span>
       </div>
       <div
         ref={editorRef}
@@ -213,7 +219,7 @@ export const EmailRichTextEditor: React.FC<EmailRichTextEditorProps> = ({
         suppressContentEditableWarning
         onInput={emitChange}
         onBlur={emitChange}
-        className="min-h-[180px] max-h-[320px] overflow-y-auto px-2.5 py-2 text-[12px] text-slate-900 leading-relaxed outline-none prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto"
+        className="min-h-[260px] px-3 py-2.5 text-[13px] text-slate-900 leading-relaxed outline-none prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto"
       />
     </div>
   );
