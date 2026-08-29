@@ -163,6 +163,12 @@ html, body {
     white-space: nowrap;
   }
 
+  .print-customs-table th:last-child,
+  .print-customs-table td:last-child {
+    white-space: nowrap;
+    overflow: visible;
+  }
+
   .print-customs-table tbody tr:nth-child(even) td {
     background: #f4f7fb !important;
   }

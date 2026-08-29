@@ -284,6 +284,19 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
     return `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
   })();
   const formatMoney = (value: number) => value.toFixed(2).replace('.', ',');
+  const handlePrint = () => {
+    const { month, year } = parseMonthYear(currentMonthYear);
+    const mm = String(month).padStart(2, '0');
+    const yyyy = year > 0 ? String(year) : String(new Date().getFullYear());
+    const previousTitle = document.title;
+    document.title = `MAK DISTRIBUTION - Colná databáza ${mm}${yyyy}`;
+    const restoreTitle = () => {
+      document.title = previousTitle;
+      window.removeEventListener('afterprint', restoreTitle);
+    };
+    window.addEventListener('afterprint', restoreTitle);
+    window.print();
+  };
 
   const resolveCustomerEmails = (record: ColnaRecord): string[] => {
     const name = String(record.zakaznik || '').trim();
@@ -499,7 +512,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
             <Download className="w-3.5 h-3.5 text-blue-600" /> CSV
           </button>
           <button
-            onClick={() => window.print()}
+            onClick={handlePrint}
             className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 p-1.5 rounded-lg flex items-center justify-center cursor-pointer shadow-2xs"
             title="Tlač tabuľky"
           >
@@ -1112,11 +1125,11 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
           <col style={{ width: '6%' }} />
           <col style={{ width: '6%' }} />
           <col style={{ width: '6.5%' }} />
-          <col style={{ width: '10%' }} />
-          <col style={{ width: '6%' }} />
+          <col style={{ width: '9%' }} />
+          <col style={{ width: '4%' }} />
           <col style={{ width: '7%' }} />
           <col style={{ width: '6%' }} />
-          <col style={{ width: '4%' }} />
+          <col style={{ width: '7%' }} />
         </colgroup>
         <thead>
           <tr>

@@ -430,7 +430,7 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
                               rel="noopener noreferrer"
                               className="text-[#1a65ff] hover:underline font-semibold inline-flex items-center gap-1 text-sm shrink-0"
                             >
-                              Otvoriť na trade-tariff.service.gov.uk →
+                              Otvoriť na trade-tariff.service.gov.uk
                             </a>
                           </div>
                           {detail.basicDutyRate && (

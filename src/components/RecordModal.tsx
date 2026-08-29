@@ -147,7 +147,7 @@ const RouteSelectButton: React.FC<RouteSelectButtonProps> = ({
         <img src="/yyes.png" alt="" className={ROUTE_ICON_CLASS} />
       )}
     </span>
-    <span className="inline-flex h-[25px] items-center justify-center text-center leading-[25px] align-middle">
+    <span className="inline-flex h-[25px] items-center justify-center text-center leading-[25px] align-middle -translate-y-[0.5mm]">
       {label}
     </span>
   </button>
@@ -1281,16 +1281,10 @@ export const RecordModal: React.FC<RecordModalProps> = ({
                 <div
                   className="bg-emerald-100 border border-emerald-300 rounded-md w-full h-[34px] px-2.5 box-border m-0 whitespace-nowrap overflow-hidden flex items-center justify-center"
                 >
-                  <div className="flex items-center justify-center gap-1.5 flex-nowrap w-full h-full">
-                    <span
-                      className="font-bold text-emerald-900 text-[12.5px] leading-none"
-                    >
-                      VYPOČÍTANÝ ZISK:
-                    </span>
-                    <span className="font-bold font-mono text-emerald-800 text-[14px] leading-none">
-                      {calculatedProfit.toFixed(2)} €
-                    </span>
-                  </div>
+                  <span className="font-bold text-emerald-900 text-[12.5px] leading-none">
+                    VYPOČÍTANÝ ZISK:{' '}
+                    <span className="text-emerald-800 tabular-nums">{calculatedProfit.toFixed(2)} €</span>
+                  </span>
                 </div>
               </div>
             </div>
