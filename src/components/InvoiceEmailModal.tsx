@@ -62,6 +62,19 @@ const readonlyClass = `${inputClass} bg-slate-50 read-only:cursor-default`;
 
 const labelClass = 'block text-slate-700 font-bold mb-0.5 text-[11px] uppercase';
 
+const htmlContainsGreeting = (html: string) =>
+  /Dobrý deň/i.test(html) && /v prílohe Vám zasielame/i.test(html);
+
+/** Keep only the logo/contact block after the closing line, so the greeting is never duplicated. */
+const signatureAfterClosing = (html: string) => {
+  const match = html.match(/S pozdravom\s*\/\s*best regards/i);
+  if (!match || match.index == null) return '';
+  return html
+    .slice(match.index + match[0].length)
+    .replace(/^(\s|<br\s*\/?>|<\/div>|<\/p>|<\/span>|&nbsp;)+/i, '')
+    .trim();
+};
+
 /** Compose-and-send customer invoice email — layout matches the invoice email template. */
 export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
   isOpen,
@@ -106,10 +119,20 @@ export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
         const result = await appApi.getEmailSignature();
         if (cancelled) return;
         const html = String(result.html || '').trim();
-        setSignatureHtml(html);
-        if (html) {
-          setHtmlBody(`${buildCustomerInvoiceEmailHtml()}${html}`);
+        const defaultHtml = buildCustomerInvoiceEmailHtml();
+        if (!html) {
+          setSignatureHtml('');
+          setHtmlBody(defaultHtml);
+          return;
         }
+        if (htmlContainsGreeting(html)) {
+          const logoPart = signatureAfterClosing(html);
+          setSignatureHtml(logoPart || '');
+          setHtmlBody(logoPart ? `${defaultHtml}${logoPart}` : html);
+          return;
+        }
+        setSignatureHtml(html);
+        setHtmlBody(`${defaultHtml}${html}`);
       } catch {
         if (!cancelled) setSignatureHtml('');
       }
