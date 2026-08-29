@@ -1,226 +1,285 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Mail, Paperclip, Send, X } from 'lucide-react';
+import { EmailRichTextEditor, plainTextToEmailHtml } from './EmailRichTextEditor';
+import { LoadingButtonContent } from './LoadingButtonContent';
+import { appApi } from '../lib/appApi';
 import {
-  Bold,
-  Italic,
-  Underline,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  List,
-  ListOrdered,
-  Link as LinkIcon,
-  Image as ImageIcon,
-  Undo2,
-  Redo2,
-  PenLine,
-  Save,
-} from 'lucide-react';
+  CUSTOMER_INVOICE_EMAIL_BODY,
+  CUSTOMER_INVOICE_FROM,
+  buildCustomerInvoiceSubject,
+} from '../server/brevoClient';
 
-interface EmailRichTextEditorProps {
-  valueHtml: string;
-  onChangeHtml: (html: string) => void;
-  onSaveSignature: (html: string) => void | Promise<void>;
-  signatureHtml: string;
-  disabled?: boolean;
+interface InvoiceEmailModalProps {
+  isOpen: boolean;
+  directoryEmails: string[];
+  invoiceNumber: string;
+  recordDate?: string;
+  attachmentName?: string;
+  invoicePdfPath?: string | null;
+  isSending: boolean;
+  sendError?: string | null;
+  onCancel: () => void;
+  onSend: (payload: {
+    htmlBody: string;
+    fromEmail: string;
+    toEmails: string[];
+    ccEmails?: string[];
+    bccEmail: string;
+    invoicePdfPath?: string | null;
+  }) => void;
 }
 
-const runCommand = (command: string, value?: string) => {
-  document.execCommand(command, false, value);
+const parseEmailList = (value: string): string[] => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const part of String(value || '').split(/[,;\n]+/)) {
+    const email = part.trim();
+    if (!email || !email.includes('@')) continue;
+    const key = email.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(email);
+  }
+  return result;
 };
 
-/** Lightweight contentEditable email body editor (formatting + images + signature). */
-export const EmailRichTextEditor: React.FC<EmailRichTextEditorProps> = ({
-  valueHtml,
-  onChangeHtml,
-  onSaveSignature,
-  signatureHtml,
-  disabled = false,
+const joinEmails = (emails: string[]) => emails.filter(Boolean).join(', ');
+
+const inputClass =
+  'w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-900 outline-none focus:ring-1 focus:ring-blue-500 text-xs disabled:opacity-60 disabled:bg-slate-50';
+
+const labelClass = 'block text-slate-700 font-bold mb-0.5 text-[11px] uppercase';
+
+/** Compose-and-send customer invoice email — same chrome as other app modals. */
+export const InvoiceEmailModal: React.FC<InvoiceEmailModalProps> = ({
+  isOpen,
+  directoryEmails,
+  invoiceNumber,
+  recordDate,
+  attachmentName,
+  invoicePdfPath,
+  isSending,
+  sendError,
+  onCancel,
+  onSend,
 }) => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const syncingRef = useRef(false);
+  const [fromEmail, setFromEmail] = useState(CUSTOMER_INVOICE_FROM);
+  const [toEmailsText, setToEmailsText] = useState('');
+  const [ccEmailsText, setCcEmailsText] = useState('');
+  const [bccEmail, setBccEmail] = useState(CUSTOMER_INVOICE_FROM);
+  const [htmlBody, setHtmlBody] = useState('');
+  const [signatureHtml, setSignatureHtml] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [signatureError, setSignatureError] = useState<string | null>(null);
+  const directoryEmailsKey = directoryEmails.join('|').toLowerCase();
 
   useEffect(() => {
-    const el = editorRef.current;
-    if (!el) return;
-    if (syncingRef.current) return;
-    if (el.innerHTML !== valueHtml) {
-      el.innerHTML = valueHtml;
-    }
-  }, [valueHtml]);
+    if (!isOpen) return;
 
-  const emitChange = () => {
-    const el = editorRef.current;
-    if (!el) return;
-    syncingRef.current = true;
-    onChangeHtml(el.innerHTML);
-    queueMicrotask(() => {
-      syncingRef.current = false;
+    setFromEmail(CUSTOMER_INVOICE_FROM);
+    setToEmailsText(joinEmails(directoryEmails));
+    setCcEmailsText('');
+    setBccEmail(CUSTOMER_INVOICE_FROM);
+    setHtmlBody(plainTextToEmailHtml(CUSTOMER_INVOICE_EMAIL_BODY));
+    setSignatureHtml('');
+    setLocalError(null);
+    setSignatureError(null);
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await appApi.getEmailSignature();
+        if (cancelled) return;
+        const html = String(result.html || '').trim();
+        setSignatureHtml(html);
+        if (html) {
+          setHtmlBody(`${plainTextToEmailHtml(CUSTOMER_INVOICE_EMAIL_BODY)}${html}`);
+        }
+      } catch {
+        if (!cancelled) setSignatureHtml('');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, directoryEmailsKey]);
+
+  if (!isOpen) return null;
+
+  const subject = buildCustomerInvoiceSubject(invoiceNumber);
+
+  const handleSaveSignature = async (html: string) => {
+    setSignatureError(null);
+    try {
+      const result = await appApi.saveEmailSignature(html);
+      setSignatureHtml(result.html);
+    } catch (err) {
+      setSignatureError(err instanceof Error ? err.message : 'Uloženie podpisu zlyhalo.');
+    }
+  };
+
+  const handleSend = () => {
+    if (isSending) return;
+    const toEmails = parseEmailList(toEmailsText);
+    const ccEmails = parseEmailList(ccEmailsText);
+    const from = fromEmail.trim();
+    const bcc = bccEmail.trim();
+
+    if (!from.includes('@')) {
+      setLocalError('Zadajte platný odosielateľ (FROM).');
+      return;
+    }
+    if (toEmails.length === 0) {
+      setLocalError('Zadajte aspoň jedného príjemcu (TO). Email musí byť v adresári alebo zadaný ručne.');
+      return;
+    }
+    if (!String(htmlBody || '').trim()) {
+      setLocalError('Text emailu je prázdny.');
+      return;
+    }
+
+    setLocalError(null);
+    onSend({
+      htmlBody,
+      fromEmail: from,
+      toEmails,
+      ccEmails: ccEmails.length > 0 ? ccEmails : undefined,
+      bccEmail: bcc,
+      invoicePdfPath,
     });
   };
 
-  const focusEditor = () => {
-    editorRef.current?.focus();
-  };
-
-  const handleToolbar = (command: string, value?: string) => {
-    if (disabled) return;
-    focusEditor();
-    runCommand(command, value);
-    emitChange();
-  };
-
-  const handleLink = () => {
-    if (disabled) return;
-    const url = window.prompt('Zadajte URL odkazu:', 'https://');
-    if (!url) return;
-    handleToolbar('createLink', url);
-  };
-
-  const handleImageFile = (file: File | null | undefined) => {
-    if (!file || disabled) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || '');
-      if (!dataUrl) return;
-      focusEditor();
-      runCommand('insertImage', dataUrl);
-      emitChange();
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveSignature = () => {
-    if (disabled) return;
-    const selection = window.getSelection();
-    const selectedHtml = (() => {
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return '';
-      const range = selection.getRangeAt(0);
-      const container = document.createElement('div');
-      container.appendChild(range.cloneContents());
-      return container.innerHTML.trim();
-    })();
-
-    const htmlToSave = selectedHtml || (editorRef.current?.innerHTML || '').trim();
-    if (!htmlToSave) {
-      window.alert('Najprv vytvorte alebo označte text/obrázky podpisu.');
-      return;
-    }
-    if (!selectedHtml) {
-      const ok = window.confirm(
-        'Nie je označený výber. Uložiť celý obsah emailu ako podpis?',
-      );
-      if (!ok) return;
-    }
-    void onSaveSignature(htmlToSave);
-  };
-
-  const btnClass =
-    'inline-flex items-center justify-center h-7 min-w-7 px-1.5 rounded border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed';
+  const errorText = localError || sendError;
 
   return (
-    <div className="border border-slate-200 rounded-md overflow-hidden bg-white">
-      <div className="flex flex-wrap items-center gap-1 p-1.5 border-b border-slate-200 bg-slate-50">
-        <button type="button" className={btnClass} title="Tučné" disabled={disabled} onClick={() => handleToolbar('bold')}>
-          <Bold className="w-3.5 h-3.5" />
-        </button>
-        <button type="button" className={btnClass} title="Kurzíva" disabled={disabled} onClick={() => handleToolbar('italic')}>
-          <Italic className="w-3.5 h-3.5" />
-        </button>
-        <button type="button" className={btnClass} title="Podčiarknuté" disabled={disabled} onClick={() => handleToolbar('underline')}>
-          <Underline className="w-3.5 h-3.5" />
-        </button>
-        <label className={`${btnClass} cursor-pointer`} title="Farba textu">
-          <input
-            type="color"
-            disabled={disabled}
-            className="w-4 h-4 p-0 border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed"
-            onChange={(e) => handleToolbar('foreColor', e.target.value)}
-          />
-        </label>
-        <button type="button" className={btnClass} title="Zarovnať vľavo" disabled={disabled} onClick={() => handleToolbar('justifyLeft')}>
-          <AlignLeft className="w-3.5 h-3.5" />
-        </button>
-        <button type="button" className={btnClass} title="Zarovnať na stred" disabled={disabled} onClick={() => handleToolbar('justifyCenter')}>
-          <AlignCenter className="w-3.5 h-3.5" />
-        </button>
-        <button type="button" className={btnClass} title="Zarovnať vpravo" disabled={disabled} onClick={() => handleToolbar('justifyRight')}>
-          <AlignRight className="w-3.5 h-3.5" />
-        </button>
-        <button type="button" className={btnClass} title="Odrážky" disabled={disabled} onClick={() => handleToolbar('insertUnorderedList')}>
-          <List className="w-3.5 h-3.5" />
-        </button>
-        <button type="button" className={btnClass} title="Číslovaný zoznam" disabled={disabled} onClick={() => handleToolbar('insertOrderedList')}>
-          <ListOrdered className="w-3.5 h-3.5" />
-        </button>
-        <button type="button" className={btnClass} title="Odkaz" disabled={disabled} onClick={handleLink}>
-          <LinkIcon className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          className={btnClass}
-          title="Vložiť obrázok"
-          disabled={disabled}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <ImageIcon className="w-3.5 h-3.5" />
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            handleImageFile(e.target.files?.[0]);
-            e.target.value = '';
-          }}
-        />
-        <button type="button" className={btnClass} title="Späť" disabled={disabled} onClick={() => handleToolbar('undo')}>
-          <Undo2 className="w-3.5 h-3.5" />
-        </button>
-        <button type="button" className={btnClass} title="Znova" disabled={disabled} onClick={() => handleToolbar('redo')}>
-          <Redo2 className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          className={`${btnClass} gap-1 text-[10px] font-semibold px-2`}
-          title="Vložiť uložený podpis"
-          disabled={disabled || !signatureHtml}
-          onClick={() => {
-            if (!signatureHtml) return;
-            focusEditor();
-            runCommand('insertHTML', signatureHtml);
-            emitChange();
-          }}
-        >
-          <PenLine className="w-3.5 h-3.5" />
-          Vložiť podpis
-        </button>
-        <button
-          type="button"
-          className={`${btnClass} gap-1 text-[10px] font-semibold px-2`}
-          title="Uložiť označený obsah ako trvalý podpis"
-          disabled={disabled}
-          onClick={handleSaveSignature}
-        >
-          <Save className="w-3.5 h-3.5" />
-          Uložiť podpis
-        </button>
+    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden text-slate-900 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
+        <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30 shrink-0">
+              <Mail className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-base leading-tight">ODOSLAŤ FA EMAIL</h3>
+              <p className="text-[11px] text-slate-400 truncate">
+                {invoiceNumber ? `Faktúra č. ${invoiceNumber}` : 'Faktúra'}
+                {recordDate ? ` · ${recordDate}` : ''}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSending}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-3 overflow-y-auto flex-1 min-h-0 text-xs">
+          <div>
+            <label className={labelClass}>From</label>
+            <input
+              type="email"
+              value={fromEmail}
+              onChange={(e) => setFromEmail(e.target.value)}
+              disabled={isSending}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>To</label>
+            <input
+              type="text"
+              value={toEmailsText}
+              onChange={(e) => setToEmailsText(e.target.value)}
+              disabled={isSending}
+              placeholder="email@firma.sk, dalsi@firma.sk"
+              className={inputClass}
+            />
+            {directoryEmails.length === 0 && (
+              <p className="mt-1 text-[11px] font-semibold text-amber-700">
+                Email zákazníka sa nenašiel v adresári. Doplňte ho ručne alebo v ADRESÁR ZÁKAZNÍKOV.
+              </p>
+            )}
+          </div>
+          <div>
+            <label className={labelClass}>Cc</label>
+            <input
+              type="text"
+              value={ccEmailsText}
+              onChange={(e) => setCcEmailsText(e.target.value)}
+              disabled={isSending}
+              placeholder="voliteľné"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Bcc</label>
+            <input
+              type="email"
+              value={bccEmail}
+              onChange={(e) => setBccEmail(e.target.value)}
+              disabled={isSending}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Predmet</label>
+            <input type="text" value={subject} readOnly className={`${inputClass} bg-slate-50 read-only:cursor-default`} />
+          </div>
+          {attachmentName ? (
+            <div className="flex items-center gap-1.5 text-slate-700">
+              <Paperclip className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span className="font-semibold truncate">{attachmentName}</span>
+            </div>
+          ) : null}
+
+          <div>
+            <label className={labelClass}>Text emailu</label>
+            <EmailRichTextEditor
+              valueHtml={htmlBody}
+              onChangeHtml={setHtmlBody}
+              onSaveSignature={handleSaveSignature}
+              signatureHtml={signatureHtml}
+              disabled={isSending}
+            />
+            {signatureError && (
+              <p className="mt-1.5 text-[11px] font-semibold text-red-600">{signatureError}</p>
+            )}
+          </div>
+
+          {errorText && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-950 font-medium">
+              {errorText}
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSending}
+            className="px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-200 font-medium transition-colors cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Zrušiť
+          </button>
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={isSending}
+            className="bg-[#1a65ff] hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 text-white font-bold px-4 py-2 rounded-lg shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer text-xs"
+          >
+            <LoadingButtonContent loading={isSending} kind="send">
+              <Send className="w-4 h-4" />
+              <span>Odoslať</span>
+            </LoadingButtonContent>
+          </button>
+        </div>
       </div>
-      <div
-        ref={editorRef}
-        contentEditable={!disabled}
-        suppressContentEditableWarning
-        onInput={emitChange}
-        onBlur={emitChange}
-        className="min-h-[190px] max-h-[330px] overflow-y-auto px-2.5 py-2 text-[12px] text-slate-900 leading-relaxed outline-none prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto"
-      />
     </div>
   );
 };
-
-export const plainTextToEmailHtml = (text: string) =>
-  text
-    .split('\n')
-    .map((line) => (line ? `<div>${line}</div>` : '<div><br></div>'))
-    .join('');
