@@ -357,7 +357,7 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
   return (
     <div className="my-4">
       <div className="bg-white border-2 border-slate-500 rounded-xl shadow-xs p-4 space-y-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
               <Key className="w-5 h-5" />
@@ -367,7 +367,12 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <span className="inline-flex items-center justify-center gap-1.5 bg-[#E6F9F3] text-[#004D40] border border-[#B2EAD5] px-3 py-1 rounded-full font-mono text-xs whitespace-nowrap">
+            <img src="/yes.png" alt="" className="w-[23px] h-[25px] object-contain shrink-0" />
+            Zašifrované v relácii
+          </span>
+
+          <div className="flex items-center justify-end shrink-0">
             <button
               type="button"
               onClick={() => handleOpenAdd('I')}
@@ -375,9 +380,6 @@ export const LoginUdajeView: React.FC<LoginUdajeViewProps> = ({
             >
               <Plus className="w-4 h-4" /> Pridať prístup
             </button>
-            <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-full font-mono font-bold flex items-center gap-1.5">
-              <img src="/yes.png" alt="" className="max-w-none object-contain" /> Zašifrované v relácii
-            </span>
           </div>
         </div>
 
