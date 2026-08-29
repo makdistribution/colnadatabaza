@@ -24,6 +24,7 @@ interface DutyRow {
 interface TariffDetail {
   code: string;
   description: string;
+  ancestors: string[];
   basicDutyRate: string | null;
   dutyRows: DutyRow[];
 }
@@ -108,41 +109,39 @@ function flattenMatchGroup(group?: TariffSearchMatchGroup): TariffResult[] {
     .filter((result): result is TariffResult => result !== null);
 }
 
-/** Vytvorí kompletný názov pospájaním všetkých nadradených kategórií */
-function buildFullDescription(json: CommodityDetailResponse): string {
+/** Vytiahne kategórie (predkov) a samotný názov tovaru do samostatného poľa a reťazca */
+function extractAncestorsAndDesc(json: CommodityDetailResponse): { ancestors: string[], description: string } {
   const attributes = json.data?.attributes;
-  let description = attributes?.description ?? '';
+  const description = (attributes?.description ?? '').replace(/(\r\n|\n|\r)/gm, ' ').replace(/\s+/g, ' ').trim();
 
   const included = json.included ?? [];
   const ancestorsRefs = json.data?.relationships?.ancestors?.data ?? [];
+  const ancestors: string[] = [];
 
-  if (ancestorsRefs.length > 0) {
-    const ancestorParts = ancestorsRefs.map((ref) => {
-      const inc = included.find((i) => i.id === ref.id && i.type === ref.type);
-      return (inc?.attributes?.description as string) ?? '';
-    }).filter((d) => d.trim().length > 0);
-
-    if (ancestorParts.length > 0) {
-      // Pospája kategórie do cesty a odstráni zbytočné medzery a odriadkovania
-      description = [...ancestorParts, description]
-        .map(s => s.replace(/(\r\n|\n|\r)/gm, ' ').replace(/\s+/g, ' ').trim())
-        .join(' > ');
+  for (const ref of ancestorsRefs) {
+    const inc = included.find((i) => i.id === ref.id && i.type === ref.type);
+    if (inc?.attributes?.description) {
+      ancestors.push(String(inc.attributes.description).replace(/(\r\n|\n|\r)/gm, ' ').replace(/\s+/g, ' ').trim());
     }
   }
-  return description.replace(/(\r\n|\n|\r)/gm, ' ').replace(/\s+/g, ' ').trim();
+
+  return { ancestors, description };
 }
 
-/** Looks up the description for an exact-match entry (e.g. a single commodity/heading code). */
+/** Looks up the description for an exact-match entry. */
 async function fetchExactMatchDescription(endpoint: string, id: string): Promise<string> {
   const response = await fetch(`${UK_TARIFF_API_BASE}/${endpoint}/${id}.json`, {
     headers: { 'Accept': 'application/json' }
   });
   if (!response.ok) throw new Error('lookup failed');
   const json = (await response.json()) as CommodityDetailResponse;
-  return buildFullDescription(json);
+  
+  // Pre vyhľadávací zoznam ponecháme plochý text s '>' aby nezaberal veľa miesta
+  const { ancestors, description } = extractAncestorsAndDesc(json);
+  return [...ancestors, description].filter(Boolean).join(' > ');
 }
 
-/** Fetches full commodity detail (description + import duty rates) directly from UK Tariff API. */
+/** Fetches full commodity detail directly from UK Tariff API. */
 async function fetchCommodityDetail(code: string): Promise<TariffDetail> {
   const response = await fetch(`${UK_TARIFF_API_BASE}/commodities/${code}.json`, {
     headers: { 'Accept': 'application/json' }
@@ -154,8 +153,8 @@ async function fetchCommodityDetail(code: string): Promise<TariffDetail> {
   const attributes = json.data?.attributes;
   const included = json.included ?? [];
   
-  // Získanie plného názvu tovaru namiesto obyčajného "Other"
-  const fullDescription = buildFullDescription(json);
+  // Získame hierarchiu kategórií pre stromové zobrazenie
+  const { ancestors, description } = extractAncestorsAndDesc(json);
 
   const findIncluded = (ref?: JsonApiRelationshipRef) => {
     if (!ref?.data) return undefined;
@@ -197,7 +196,8 @@ async function fetchCommodityDetail(code: string): Promise<TariffDetail> {
 
   return {
     code,
-    description: fullDescription,
+    description,
+    ancestors,
     basicDutyRate: attributes?.basic_duty_rate ?? null,
     dutyRows,
   };
@@ -232,7 +232,7 @@ async function searchUkTariff(query: string): Promise<TariffResult[]> {
   return [];
 }
 
-/** HS code checker modal. UK ("ONLINE TARIFF") has a live UK Trade Tariff search; other regions remain a placeholder. */
+/** HS code checker modal. UK ("ONLINE TARIFF") has a live UK Trade Tariff search. */
 export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
   isOpen,
   title,
@@ -377,7 +377,7 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
                 {!loading && errorMessage && <p className="text-amber-700 font-semibold">{errorMessage}</p>}
 
                 {!loading && !errorMessage && showDetailView && (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <button
                       type="button"
                       onClick={handleBackToResults}
@@ -390,51 +390,76 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
                       <p className="text-amber-700 font-semibold">{detailError}</p>
                     )}
                     {!detailLoading && !detailError && detail && (
-                      <div className="border border-slate-200 rounded-md p-3 bg-slate-50/60 space-y-3">
-                        <p className="font-semibold text-slate-900 text-sm">{detail.description}</p>
-                        <p className="text-slate-600">
-                          Commodity code: <span className="font-mono font-semibold">{detail.code}</span>
-                        </p>
-                        {detail.basicDutyRate && (
-                          <p className="text-slate-600">
-                            Základná colná sadzba:{' '}
-                            <span className="font-semibold text-slate-900">{detail.basicDutyRate}</span>
-                          </p>
-                        )}
+                      <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/60 space-y-4 shadow-sm">
+                        
+                        {/* Vykreslenie stromovej hierarchie kategórií */}
+                        <div className="text-sm">
+                          {detail.ancestors.map((anc, index) => (
+                            <div key={index} className="flex items-start text-slate-600 mb-1" style={{ paddingLeft: `${index * 14}px` }}>
+                              {index > 0 && <span className="text-slate-400 mr-2 font-normal select-none">└</span>}
+                              <span className="leading-snug">{anc}</span>
+                            </div>
+                          ))}
+                          <div className="flex items-start text-slate-900 font-bold mt-1.5" style={{ paddingLeft: `${detail.ancestors.length * 14}px` }}>
+                            {detail.ancestors.length > 0 && <span className="text-slate-400 mr-2 font-normal select-none">└</span>}
+                            <span className="leading-snug">{detail.description}</span>
+                          </div>
+                        </div>
 
+                        {/* Colný kód a základná sadzba */}
+                        <div className="space-y-1.5 pt-3 border-t border-slate-200">
+                          <p className="text-slate-600 text-sm">
+                            Commodity code: <span className="font-mono font-bold text-slate-900">{detail.code}</span>
+                          </p>
+                          {detail.basicDutyRate && (
+                            <p className="text-slate-600 text-sm">
+                              Základná colná sadzba:{' '}
+                              <span className="font-bold text-slate-900">{detail.basicDutyRate}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Tabuľka s clami a opatreniami */}
                         {detail.dutyRows.length > 0 && (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-[11px] border-collapse">
+                          <div className="overflow-x-auto rounded-md border border-slate-200">
+                            <table className="w-full text-xs border-collapse bg-white">
                               <thead>
-                                <tr className="text-left text-slate-500 uppercase border-b border-slate-200">
-                                  <th className="py-1.5 pr-2 font-semibold">Typ opatrenia</th>
-                                  <th className="py-1.5 pr-2 font-semibold">Oblasť</th>
-                                  <th className="py-1.5 pr-2 font-semibold">Sadzba</th>
+                                <tr className="text-left text-slate-500 uppercase border-b border-slate-200 bg-slate-100/50">
+                                  <th className="py-2.5 px-3 font-semibold">Typ opatrenia</th>
+                                  <th className="py-2.5 px-3 font-semibold">Oblasť</th>
+                                  <th className="py-2.5 px-3 font-semibold">Sadzba</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {detail.dutyRows.map((row) => (
-                                  <tr key={row.key} className="border-b border-slate-100">
-                                    <td className="py-1.5 pr-2 text-slate-700">{row.measureType}</td>
-                                    <td className="py-1.5 pr-2 text-slate-700">{row.geoArea}</td>
-                                    <td className="py-1.5 pr-2 font-semibold text-slate-900 whitespace-nowrap">
-                                      {row.dutyRate || '—'}
-                                    </td>
-                                  </tr>
-                                ))}
+                                {detail.dutyRows.map((row) => {
+                                  // Zistenie, či ide o DPH (Value added tax / VAT) pre tučné písmo
+                                  const isVat = row.measureType.toLowerCase().includes('value added tax') || row.measureType === 'VAT';
+                                  
+                                  return (
+                                    <tr key={row.key} className={`border-b border-slate-100 ${isVat ? 'bg-blue-50/40' : ''}`}>
+                                      <td className={`py-2 px-3 text-slate-700 ${isVat ? 'font-bold !text-slate-900' : ''}`}>{row.measureType}</td>
+                                      <td className={`py-2 px-3 text-slate-700 ${isVat ? 'font-bold !text-slate-900' : ''}`}>{row.geoArea}</td>
+                                      <td className={`py-2 px-3 whitespace-nowrap ${isVat ? 'font-bold !text-slate-900' : 'font-semibold text-slate-900'}`}>
+                                        {row.dutyRate || '—'}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>
                         )}
 
-                        <a
-                          href={`${UK_TARIFF_COMMODITY_URL}/${detail.code}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#1a65ff] hover:underline font-semibold inline-block"
-                        >
-                          Otvoriť na trade-tariff.service.gov.uk →
-                        </a>
+                        <div className="pt-2">
+                          <a
+                            href={`${UK_TARIFF_COMMODITY_URL}/${detail.code}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#1a65ff] hover:underline font-semibold inline-flex items-center gap-1 text-sm"
+                          >
+                            Otvoriť na trade-tariff.service.gov.uk →
+                          </a>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -443,18 +468,18 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
                 {!loading && !errorMessage && !showDetailView && results && (
                   <ul className="space-y-2">
                     {results.map((result) => (
-                      <li key={result.code} className="border border-slate-200 rounded-md p-2.5 bg-slate-50/60">
-                        <p className="font-semibold text-slate-900">{result.description}</p>
-                        <p className="text-slate-600 mt-0.5">
+                      <li key={result.code} className="border border-slate-200 rounded-md p-3 bg-slate-50/60 transition-colors hover:bg-slate-100/50">
+                        <p className="font-semibold text-slate-900 line-clamp-2" title={result.description}>{result.description}</p>
+                        <p className="text-slate-600 mt-1">
                           Commodity code: <span className="font-mono font-semibold">{result.code}</span>
                         </p>
-                        <div className="flex items-center gap-3 mt-1">
+                        <div className="flex items-center gap-4 mt-2">
                           <button
                             type="button"
                             onClick={() => {
                               void handleOpenDetail(result);
                             }}
-                            className="text-[#1a65ff] hover:underline font-semibold cursor-pointer"
+                            className="text-[#1a65ff] hover:underline font-semibold cursor-pointer text-sm"
                           >
                             Zobraziť detail →
                           </button>
@@ -462,9 +487,9 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
                             href={`${UK_TARIFF_COMMODITY_URL}/${result.code}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-slate-500 hover:underline"
+                            className="text-slate-500 hover:underline text-sm"
                           >
-                            Otvoriť na trade-tariff.service.gov.uk
+                            Otvoriť na webe
                           </a>
                         </div>
                       </li>
@@ -472,9 +497,11 @@ export const HsCodeCheckerModal: React.FC<HsCodeCheckerModalProps> = ({
                   </ul>
                 )}
                 {!loading && !errorMessage && !showDetailView && !results && (
-                  <p className="text-slate-500">
-                    Zadajte HS kód alebo názov tovaru a vyhľadajte ho v britskom colnom sadzobníku.
-                  </p>
+                  <div className="h-full flex items-center justify-center text-center p-6">
+                    <p className="text-slate-500">
+                      Zadajte HS kód alebo názov tovaru a vyhľadajte ho v britskom colnom sadzobníku.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
