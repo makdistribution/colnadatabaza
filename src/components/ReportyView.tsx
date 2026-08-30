@@ -301,7 +301,7 @@ export const ReportyView: React.FC<ReportyViewProps> = ({
                       <span className="text-emerald-900 font-sans mx-0.5 font-bold">➜</span>
                       <span className="text-emerald-900 font-extrabold">VYPLATENÉ</span>
                       {group.isPaid ? (
-                        <img src="/yes.png" alt="Vyplatené" className="max-w-none object-contain shrink-0 -translate-y-[0.7mm]" />
+                        <img src="/yes.png" alt="Vyplatené" className="max-w-none object-contain shrink-0 translate-y-[0.3mm]" />
                       ) : (
                         <input
                           type="checkbox"

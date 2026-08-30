@@ -771,7 +771,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     <td className="box-border p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
                         {getUkZaclenie(r) ? (
-                          <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                          <img src="/yes.png" alt="" className="max-w-none object-contain translate-y-[0.5mm]" />
                         ) : null}
                       </span>
                     </td>
@@ -780,7 +780,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     <td className="box-border p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
                         {getEuVyclenie(r) ? (
-                          <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                          <img src="/yes.png" alt="" className="max-w-none object-contain translate-y-[0.5mm]" />
                         ) : null}
                       </span>
                     </td>
@@ -789,7 +789,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     <td className="box-border p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
                         {getEuZaclenie(r) ? (
-                          <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                          <img src="/yes.png" alt="" className="max-w-none object-contain translate-y-[0.5mm]" />
                         ) : null}
                       </span>
                     </td>
@@ -798,7 +798,7 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                     <td className="box-border p-2 text-center border-r border-slate-200 bg-[#F3FBFA]">
                       <span className="inline-flex mx-auto items-center justify-center w-[23px] h-[25px]">
                         {getUkVyclenie(r) ? (
-                          <img src="/yes.png" alt="" className="max-w-none object-contain" />
+                          <img src="/yes.png" alt="" className="max-w-none object-contain translate-y-[0.5mm]" />
                         ) : null}
                       </span>
                     </td>
