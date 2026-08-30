@@ -566,10 +566,10 @@ export const ColnaDatagrid: React.FC<ColnaDatagridProps> = ({
                 FAKTÚRU
               </th>
               <th colSpan={2} className="p-1.5 text-center border-r border-b border-slate-300 text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans" title="Z UK do EU (výber col. úkonu)">
-                <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
+                <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[calc(2px-0.5mm)]">➔</span> <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" />
               </th>
               <th colSpan={2} className="p-1.5 text-center border-r border-b border-[#bdc0e8] text-black bg-[#DAE3ED] font-bold text-[16px] leading-[20px] font-sans" title="Z EU do UK (výber col. úkonu)">
-                <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[2px]">➔</span> <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
+                <img src="/eu1.png" alt="EU" className="inline-block w-5 h-5 object-contain" /> <span className="inline-block translate-y-[calc(2px-0.5mm)]">➔</span> <img src="/uk1.png" alt="UK" className="inline-block w-5 h-5 object-contain" />
               </th>
               <th rowSpan={2} className="box-border py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] text-center align-middle border-r border-slate-300 font-sans text-black" title="Náklady od UK agenta">
                 <span className="whitespace-nowrap">FA OD UK</span>
