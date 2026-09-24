@@ -21,6 +21,9 @@ const passwordsMatch = (provided: string, expected: string) => {
 
 const isPermanentToken = (value: string) => /^[A-Za-z0-9_-]{43}$/.test(value);
 
+/** Temporary maintenance bypass. Restore password validation before exposing the app publicly. */
+const TEMPORARILY_DISABLE_PASSWORD = true;
+
 /** Unlock via notification invoice link when the token matches a customs record. */
 const unlockWithInvoiceToken = async (rawToken: string) => {
   const token = rawToken.trim();
@@ -75,12 +78,14 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       return;
     }
 
-    const expectedPassword = process.env.APP_ACCESS_PASSWORD;
-    if (!expectedPassword) throw new Error('Missing APP_ACCESS_PASSWORD.');
+    if (!TEMPORARILY_DISABLE_PASSWORD) {
+      const expectedPassword = process.env.APP_ACCESS_PASSWORD;
+      if (!expectedPassword) throw new Error('Missing APP_ACCESS_PASSWORD.');
 
-    if (!body.password || !passwordsMatch(body.password, expectedPassword)) {
-      sendJson(response, 401, { error: 'Nesprávne heslo' });
-      return;
+      if (!body.password || !passwordsMatch(body.password, expectedPassword)) {
+        sendJson(response, 401, { error: 'Nesprávne heslo' });
+        return;
+      }
     }
 
     response.setHeader('Set-Cookie', createSessionCookie());
