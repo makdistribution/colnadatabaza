@@ -23,6 +23,7 @@ import { ReportyView } from './components/ReportyView';
 import { SuboryView } from './components/SuboryView';
 import { ColnicaEmptyView } from './components/ColnicaEmptyView';
 import { appApi } from './lib/appApi';
+import { TEMP_DISABLE_APP_PASSWORD } from './lib/authFlags';
 
 const BROWSER_DATA_KEYS = [
   'mak_adresy_records',
@@ -71,7 +72,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastError, setToastError] = useState<string | null>(null);
   const toastDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isApplicationLocked, setIsApplicationLocked] = useState(true);
+  const [isApplicationLocked, setIsApplicationLocked] = useState(!TEMP_DISABLE_APP_PASSWORD);
   const [applicationPassword, setApplicationPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [applicationError, setApplicationError] = useState('');
@@ -172,6 +173,24 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      // Temporary: skip password gate and load data immediately.
+      if (TEMP_DISABLE_APP_PASSWORD) {
+        try {
+          setIsDataLoading(true);
+          await loadApplicationData();
+          if (!cancelled) setIsApplicationLocked(false);
+        } catch (error) {
+          if (!cancelled) {
+            showToastError(
+              error instanceof Error ? error.message : 'Aplikáciu sa nepodarilo načítať.',
+            );
+          }
+        } finally {
+          if (!cancelled) setIsDataLoading(false);
+        }
+        return;
+      }
+
       // Password is always required except notification invoice links
       // (FAKTURÁCIA NOVEJ COLNICE / FAKTURÁCIA – OPRAVA FAKTÚRY).
       // Existing session cookies must NOT skip the lock on refresh / reopen / new tab.

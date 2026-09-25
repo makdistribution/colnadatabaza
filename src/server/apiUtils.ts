@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createClient } from '@supabase/supabase-js';
 import { config as loadEnv } from 'dotenv';
+import { TEMP_DISABLE_APP_PASSWORD } from '../lib/authFlags.js';
 
 /**
  * Local API routes (vercel dev) only receive Vercel "Development" dashboard vars.
@@ -44,6 +45,8 @@ export const createSessionCookie = () => {
 };
 
 export const isAuthorized = (request: ApiRequest) => {
+  if (TEMP_DISABLE_APP_PASSWORD) return true;
+
   const cookieHeader = request.headers.cookie || '';
   const cookie = cookieHeader
     .split(';')
